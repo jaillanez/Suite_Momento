@@ -1,6 +1,6 @@
 # Momento — plan de trabajo por fases
 
-**Estado:** propuesta de trabajo, construida con la información disponible al 26 de octubre de 2026.  
+**Estado al 26/10/2026:** Fase 0 cerrada por Jorge. Fase 1 preparada; falta comprobar el entorno en su Mac.  
 **Propósito:** orientar al agente de IA y al equipo para avanzar en orden, conservar las decisiones y evitar construir funciones no validadas.
 
 ## Acuerdos del proyecto
@@ -14,7 +14,7 @@
 - No se importarán código ni datos del sistema anterior sin una decisión explícita.
 - El detalle de funcionalidades, perfiles y permisos se validará antes de implementar.
 
-## Fase 0 — Descubrimiento de producto
+## Fase 0 — Descubrimiento de producto (cerrada)
 
 **Objetivo:** entender las necesidades y procesos reales antes de fijar el alcance inicial.
 
@@ -26,17 +26,15 @@ Los materiales compartidos agregan experiencia previa sobre ficha personal, evol
 
 Documentos: [Fase 0 — Descubrimiento y definición de Momento](fase-0-descubrimiento.md), [revisión de materiales compartidos](revision-materiales-compartidos.md) y [criterios iniciales de experiencia](criterios-iniciales-experiencia.md).
 
-## Fase 1 — Base técnica y entorno local
+## Fase 1 — Base técnica y entorno local (en curso)
 
 **Objetivo:** preparar una base nueva, reproducible y fácil de desarrollar en la Mac.
 
-**Trabajo:** confirmar arquitectura del repositorio; instalar Python y PostgreSQL de forma nativa; crear entorno virtual de Python; iniciar API y aplicación React; definir configuración por ambiente, migraciones de base de datos, registros técnicos y comprobaciones automáticas de calidad. La primera interfaz toma como referencia provisional la paleta y el isotipo compartidos, con contraste y accesibilidad por validar. Docker no forma parte del entorno local acordado.
+**Trabajo:** conservar las versiones que ya están instaladas en la Mac; comprobar PostgreSQL local; crear el entorno virtual dentro del proyecto; ejecutar la API y la aplicación React existentes; configurar la conexión local y comprobar los servicios. Docker no forma parte del entorno acordado.
 
-**Stack y versiones:** verificar compatibilidad real entre macOS, Python, framework de API, paquetes y herramientas antes de fijar versiones. Al 26/10/2026, Python 3.15.2 es la versión estable más reciente; PostgreSQL 18.6 es la versión estable soportada más reciente según la política oficial, mientras PostgreSQL 19 continúa como release candidate. No usar una versión candidata como base de producción. Revalidar las versiones el día de instalación.
+**Entorno ya informado por Jorge el 26/10/2026:** macOS 27.0.1 (arm64), Python 3.13.5, PostgreSQL 18.6, Node.js 22.18.0 y npm 11.5.2. Se usarán estas instalaciones para comenzar. No instalar otra versión global de Python ni modificar Xcode o Command Line Tools. El proyecto crea su entorno Python aislado en `backend/.venv`.
 
-**Mac relevado el 26/10/2026:** macOS 27.0.1 (arm64), Python 3.13.5, PostgreSQL 18.6, Node.js 22.18.0, npm 11.5.2 y Homebrew 7.0.10. Se conservarán las instalaciones actuales; el proyecto usará un entorno aislado. Homebrew dispone de `python@3.15` y, según la consulta local del 26/10/2026, reporta 3.15.1; Python.org publica 3.15.2 como versión estable más reciente. Verificar el método de instalación antes de modificar el entorno.
-
-**Resultado esperado:** instrucciones de instalación probadas en el Mac del proyecto, backend y frontend de prueba funcionando, primera migración aplicada y forma de ejecutar las comprobaciones documentada.
+**Resultado esperado:** confirmar en la Mac que la aplicación web abre, la API responde y PostgreSQL acepta una conexión local; dejar documentada la configuración reproducible.
 
 ## Fase 2 — Organizaciones, usuarios y acceso
 

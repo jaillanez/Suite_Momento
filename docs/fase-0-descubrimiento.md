@@ -1,6 +1,8 @@
 # Fase 0 — Descubrimiento y definición de Momento
 
-**Estado:** borrador para revisión  
+**Estado:** cerrada por decisión de Jorge el 26/10/2026.  
+**Alcance del cierre:** habilita comenzar la base técnica. Las preguntas que siguen sin evidencia quedan pendientes de validación antes de aprobar funcionalidades o el alcance del MVP.
+
 **Proyecto:** Momento  
 **Repositorio:** `jaillanez/Suite_Momento`
 
