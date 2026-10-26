@@ -69,10 +69,11 @@ La siguiente estructura traduce las decisiones confirmadas a conceptos de sistem
 - Estados iniciales: recibida, asignada, en atención, respondida y cerrada.
 - Validación de tipo de servicio, nombre y país (AR/UY).
 - Pruebas con SQLite en memoria; usan datos ficticios.
-- Se agregaron modelos base `UserAccount` y `OrganizationMembership` para los grupos confirmados (personal, familia y persona mayor), con alcance opcional por servicio.
-- La migración `0003_user_memberships` agrega esas tablas; está preparada y pendiente de aplicar y probar localmente.
-- Estos modelos no tienen inicio de sesión, credenciales ni permisos; `role_label` es descriptivo y no concede acceso.
-- No se crean datos reales de personas mayores ni se gestionan solicitudes reales.
+- Modelos base `UserAccount` y `OrganizationMembership` para personal, familia y persona mayor, con alcance opcional por servicio; `0003_user_memberships` está preparada para verificación local.
+- Modelo `CareRecipient` con nombre visible únicamente y `FamilyAuthorization` por categoría y acción; registra familiar, autorizador y revocación.
+- `0004_care_recipients_family_authorizations` está preparada para verificación local.
+- Las tablas no tienen inicio de sesión, credenciales ni endpoints de acceso; `role_label` es descriptivo y no concede permisos.
+- No se crean datos reales ni solicitudes de personas mayores.
 
 **Límite de seguridad:** los endpoints de escritura actuales son un andamiaje local para comprobar el flujo. La API se inicia enlazada a `127.0.0.1`; no se debe exponer ni desplegar hasta definir autenticación, autorización y auditoría. La migración se aplica manualmente y no al iniciar el servidor. `0002` agrega la configuración de estados; `0003` agrega identidades y membresías, sin exponerlas por API hasta definir autenticación y autorización.
 

@@ -41,6 +41,14 @@ class UserGroup(str, Enum):
     OLDER_ADULT = "older_adult"
 
 
+class SharedCareCategory(str, Enum):
+    """Categorías que pueden habilitarse para el acceso familiar."""
+
+    MEDICATION = "medication"
+    ACTIVITIES = "activities"
+    DIET = "diet"
+
+
 class Organization(Base):
     """Entidad prestadora que puede administrar varios servicios."""
 
@@ -274,4 +282,104 @@ class OrganizationMembership(Base):
     care_unit: Mapped[CareUnit | None] = relationship(
         back_populates="memberships",
         overlaps="organization,memberships",
+    )
+
+
+class CareRecipient(Base):
+    """Ficha mínima de una persona cuidada, sin datos clínicos."""
+
+    __tablename__ = "care_recipients"
+    __table_args__ = (
+        UniqueConstraint(
+            "care_unit_id",
+            "id",
+            name="uq_care_recipients_service_id",
+        ),
+    )
+
+    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
+    care_unit_id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("care_units.id", ondelete="RESTRICT"),
+        nullable=False,
+        index=True,
+    )
+    display_name: Mapped[str] = mapped_column(String(160), nullable=False)
+    is_active: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=True, server_default="true"
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+        onupdate=func.now(),
+    )
+
+
+class FamilyAuthorization(Base):
+    """Permisos familiares explícitos por persona y categoría."""
+
+    __tablename__ = "family_authorizations"
+    __table_args__ = (
+        CheckConstraint(
+            "category IN ('medication', 'activities', 'diet')",
+            name="ck_family_authorizations_category",
+        ),
+        UniqueConstraint(
+            "family_membership_id",
+            "care_recipient_id",
+            "category",
+            name="uq_family_authorizations_person_family_category",
+        ),
+    )
+
+    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
+    care_recipient_id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("care_recipients.id", ondelete="RESTRICT"),
+        nullable=False,
+        index=True,
+    )
+    family_membership_id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("organization_memberships.id", ondelete="RESTRICT"),
+        nullable=False,
+        index=True,
+    )
+    authorized_by_membership_id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("organization_memberships.id", ondelete="RESTRICT"),
+        nullable=False,
+        index=True,
+    )
+    category: Mapped[SharedCareCategory] = mapped_column(
+        SAEnum(
+            SharedCareCategory,
+            name="shared_care_category",
+            native_enum=False,
+            create_constraint=False,
+            values_callable=lambda enum_type: [item.value for item in enum_type],
+        ),
+        nullable=False,
+    )
+    can_view: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=True, server_default="true"
+    )
+    can_respond: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=True, server_default="true"
+    )
+    can_request: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=True, server_default="true"
+    )
+    is_active: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=True, server_default="true"
+    )
+    granted_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+    revoked_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
     )

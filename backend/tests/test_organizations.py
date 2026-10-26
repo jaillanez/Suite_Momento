@@ -11,8 +11,11 @@ from momento_api.models import (
     Base,
     CareUnit,
     CareUnitType,
+    CareRecipient,
+    FamilyAuthorization,
     Organization,
     OrganizationMembership,
+    SharedCareCategory,
     UserAccount,
     UserGroup,
 )
@@ -279,5 +282,64 @@ def test_user_account_has_configurable_membership_scope() -> None:
         }
         assert all(membership.care_unit_id == unit.id for membership in stored.memberships)
         assert not hasattr(stored, "password_hash")
+
+    engine.dispose()
+
+
+def test_family_authorization_tracks_category_actions_and_grantor() -> None:
+    engine = create_engine("sqlite:///:memory:")
+    Base.metadata.create_all(engine)
+
+    with Session(engine) as session:
+        organization = Organization(name="Organización de prueba")
+        unit = CareUnit(
+            name="Residencia de prueba",
+            service_type=CareUnitType.RESIDENCE,
+            country_code="AR",
+        )
+        organization.care_units.append(unit)
+        family_account = UserAccount(display_name="Familiar ficticio")
+        staff_account = UserAccount(display_name="Personal ficticio")
+        family_membership = OrganizationMembership(
+            organization=organization,
+            care_unit=unit,
+            user_group=UserGroup.FAMILY,
+        )
+        authorizer_membership = OrganizationMembership(
+            organization=organization,
+            care_unit=unit,
+            user_group=UserGroup.STAFF,
+            role_label="Encargado",
+        )
+        family_account.memberships.append(family_membership)
+        staff_account.memberships.append(authorizer_membership)
+        session.add_all([organization, family_account, staff_account])
+        session.flush()
+        recipient = CareRecipient(
+            care_unit_id=unit.id,
+            display_name="Persona ficticia",
+        )
+        session.add(recipient)
+        session.flush()
+
+        authorization = FamilyAuthorization(
+            care_recipient_id=recipient.id,
+            family_membership_id=family_membership.id,
+            authorized_by_membership_id=authorizer_membership.id,
+            category=SharedCareCategory.MEDICATION,
+            can_view=True,
+            can_respond=True,
+            can_request=True,
+        )
+        session.add(authorization)
+        session.commit()
+
+        stored = session.get(FamilyAuthorization, authorization.id)
+        assert stored is not None
+        assert stored.category is SharedCareCategory.MEDICATION
+        assert stored.can_view and stored.can_respond and stored.can_request
+        assert stored.authorized_by_membership_id == authorizer_membership.id
+        assert stored.revoked_at is None
+        assert not hasattr(stored, "can_modify")
 
     engine.dispose()
