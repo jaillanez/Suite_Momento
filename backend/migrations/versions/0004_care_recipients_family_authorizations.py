@@ -24,7 +24,7 @@ def upgrade() -> None:
         sa.ForeignKeyConstraint(
             ["care_unit_id"],
             ["care_units.id"],
-            name="fk_care_recipients_care_unit_id_care_units",
+            name="fk_care_recipients_care_unit",
             ondelete="RESTRICT",
         ),
         sa.PrimaryKeyConstraint("id", name="pk_care_recipients"),
@@ -60,19 +60,19 @@ def upgrade() -> None:
         sa.ForeignKeyConstraint(
             ["authorized_by_membership_id"],
             ["organization_memberships.id"],
-            name="fk_family_authorizations_authorized_by_membership_id_organization_memberships",
+            name="fk_family_auth_authorizer_membership",
             ondelete="RESTRICT",
         ),
         sa.ForeignKeyConstraint(
             ["care_recipient_id"],
             ["care_recipients.id"],
-            name="fk_family_authorizations_care_recipient_id_care_recipients",
+            name="fk_family_auth_recipient",
             ondelete="RESTRICT",
         ),
         sa.ForeignKeyConstraint(
             ["family_membership_id"],
             ["organization_memberships.id"],
-            name="fk_family_authorizations_family_membership_id_organization_memberships",
+            name="fk_family_auth_family_membership",
             ondelete="RESTRICT",
         ),
         sa.PrimaryKeyConstraint("id", name="pk_family_authorizations"),
