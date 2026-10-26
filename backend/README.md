@@ -23,6 +23,20 @@ API: http://127.0.0.1:8020/api/health
 PostgreSQL: http://127.0.0.1:8020/api/health/database  
 Documentación interactiva: http://127.0.0.1:8020/docs
 
+## Esquema inicial de organizaciones y servicios
+
+La primera migración crea solamente `organizations` y `care_units` (residencia o cuidado domiciliario). No crea usuarios, roles ni datos de personas mayores; esos accesos siguen en definición. La migración agrega tablas y no modifica datos existentes.
+
+Después de actualizar dependencias y configurar `backend/.env`, desde esta carpeta ejecuta:
+
+    .venv/bin/alembic upgrade head
+
+Para consultar la revisión aplicada:
+
+    .venv/bin/alembic current
+
+La migración no se ejecuta automáticamente al iniciar la aplicación.
+
 ## Pruebas
 
     pytest
