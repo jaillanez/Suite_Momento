@@ -1,6 +1,6 @@
 # Momento — plan de trabajo por fases
 
-**Estado al 26/10/2026:** Fase 0 cerrada por Jorge. Fase 1 preparada; falta comprobar el entorno en su Mac.  
+**Estado al 26/10/2026:** Fase 0 y Fase 1 cerradas. Fase 2 en definición; todavía no se implementan autenticación ni permisos.  
 **Propósito:** orientar al agente de IA y al equipo para avanzar en orden, conservar las decisiones y evitar construir funciones no validadas.
 
 ## Acuerdos del proyecto
@@ -26,7 +26,7 @@ Los materiales compartidos agregan experiencia previa sobre ficha personal, evol
 
 Documentos: [Fase 0 — Descubrimiento y definición de Momento](fase-0-descubrimiento.md), [revisión de materiales compartidos](revision-materiales-compartidos.md) y [criterios iniciales de experiencia](criterios-iniciales-experiencia.md).
 
-## Fase 1 — Base técnica y entorno local (en curso)
+## Fase 1 — Base técnica y entorno local (cerrada)
 
 **Objetivo:** preparar una base nueva, reproducible y fácil de desarrollar en la Mac.
 
@@ -34,11 +34,11 @@ Documentos: [Fase 0 — Descubrimiento y definición de Momento](fase-0-descubri
 
 **Entorno ya informado por Jorge el 26/10/2026:** macOS 27.0.1 (arm64), Python 3.13.5, PostgreSQL 18.6, Node.js 22.18.0 y npm 11.5.2. Se usarán estas instalaciones para comenzar. No instalar otra versión global de Python ni modificar Xcode o Command Line Tools. El proyecto crea su entorno Python aislado en `backend/.venv`.
 
-**Resultado esperado:** confirmar en la Mac que la aplicación web abre, la API responde y PostgreSQL acepta una conexión local; dejar documentada la configuración reproducible.
+**Resultado alcanzado:** en la Mac de Jorge quedaron confirmados API y PostgreSQL con HTTP 200, 2 pruebas de backend aprobadas y compilación de React finalizada. El frontend estuvo activo y generó llamadas a las comprobaciones de salud. Se documentó la configuración reproducible. No se instalaron herramientas globales ni se modificaron Xcode/Command Line Tools.
 
-## Fase 2 — Organizaciones, usuarios y acceso
+## Fase 2 — Organizaciones, usuarios y acceso (definición en curso)
 
-**Objetivo:** controlar quién puede acceder a cada institución, servicio y dato.
+**Objetivo:** controlar quién puede acceder a cada institución, servicio y dato.\n\nBorrador de definición, con decisiones pendientes y sin alcance funcional aprobado: [Fase 2 — Organizaciones, usuarios y acceso](fase-2-organizaciones-usuarios-acceso.md).
 
 **Trabajo:** definir organizaciones y ubicaciones; alta e invitación de usuarios; autenticación; permisos por rol y contexto; consentimiento/autorización cuando corresponda; trazabilidad de acciones sensibles.
 
