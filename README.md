@@ -24,7 +24,7 @@ Después de actualizar el repositorio, desde su carpeta ejecuta:
 
 El script crea el entorno virtual dentro del proyecto, prepara dependencias y arranca API y web. No instala ni actualiza Python, Homebrew, Xcode o Command Line Tools. Presiona Control+C para detener ambos servicios.
 
-Abre http://127.0.0.1:5173. La API estará en http://127.0.0.1:8000. PostgreSQL aparecerá pendiente hasta configurar una base local.
+Abre http://127.0.0.1:5173. La API estará en http://127.0.0.1:8020. PostgreSQL aparecerá pendiente hasta configurar una base local.
 
 ## Documentación
 
