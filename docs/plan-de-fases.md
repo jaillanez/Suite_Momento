@@ -32,7 +32,9 @@ Documento de trabajo: [Fase 0 — Descubrimiento y definición de Momento](fase-
 
 **Stack y versiones:** verificar compatibilidad real entre macOS, Python, framework de API, paquetes y herramientas antes de fijar versiones. Al 26/10/2026, Python 3.15.2 es la versión estable más reciente; PostgreSQL 18.6 es la versión estable soportada más reciente según la política oficial, mientras PostgreSQL 19 continúa como release candidate. No usar una versión candidata como base de producción. Revalidar las versiones el día de instalación.
 
-**Mac relevado el 26/10/2026:** macOS 27.0.1 (arm64), Python 3.13.5, PostgreSQL 18.6, Node.js 22.18.0, npm 11.5.2 y Homebrew 7.0.10. Se conservarán las instalaciones actuales; el proyecto usará un entorno aislado. Homebrew dispone de `python@3.15` y, según la consulta local del 26/10/2026, reporta 3.15.1; Python.org publica 3.15.2 como versión estable más reciente. Verificar el método de instalación antes de modificar el entorno.\n\n**Resultado esperado:** instrucciones de instalación probadas en el Mac del proyecto, backend y frontend de prueba funcionando, primera migración aplicada y forma de ejecutar las comprobaciones documentada.
+**Mac relevado el 26/10/2026:** macOS 27.0.1 (arm64), Python 3.13.5, PostgreSQL 18.6, Node.js 22.18.0, npm 11.5.2 y Homebrew 7.0.10. Se conservarán las instalaciones actuales; el proyecto usará un entorno aislado. Homebrew dispone de `python@3.15` y, según la consulta local del 26/10/2026, reporta 3.15.1; Python.org publica 3.15.2 como versión estable más reciente. Verificar el método de instalación antes de modificar el entorno.
+
+**Resultado esperado:** instrucciones de instalación probadas en el Mac del proyecto, backend y frontend de prueba funcionando, primera migración aplicada y forma de ejecutar las comprobaciones documentada.
 
 ## Fase 2 — Organizaciones, usuarios y acceso
 
@@ -119,6 +121,7 @@ La landing institucional es un componente separado de la plataforma de cuidado. 
 
 ## Referencias de versiones consultadas
 
-- [Python 3.15.2 — versión estable](https://www.python.org/downloads/release/python-3152/)\n- [Fórmula de Python 3.15 en Homebrew](https://formulae.brew.sh/formula/python%403.15)
+- [Python 3.15.2 — versión estable](https://www.python.org/downloads/release/python-3152/)
+- [Fórmula de Python 3.15 en Homebrew](https://formulae.brew.sh/formula/python%403.15)
 - [Política oficial de versiones PostgreSQL](https://www.postgresql.org/support/versioning/)
 - [PostgreSQL 19 RC 1 — aviso oficial; todavía release candidate](https://www.postgresql.org/about/news/postgresql-19-rc-1-released-3409/)
