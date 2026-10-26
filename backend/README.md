@@ -17,11 +17,11 @@ Copia .env.example a .env y configura MOMENTO_DATABASE_URL con una base local. E
 
 Con el entorno virtual activo:
 
-    uvicorn momento_api.main:app --reload --port 8000
+    uvicorn momento_api.main:app --reload --host 127.0.0.1 --port 8020
 
-API: http://127.0.0.1:8000/api/health  
-PostgreSQL: http://127.0.0.1:8000/api/health/database  
-Documentación interactiva: http://127.0.0.1:8000/docs
+API: http://127.0.0.1:8020/api/health  
+PostgreSQL: http://127.0.0.1:8020/api/health/database  
+Documentación interactiva: http://127.0.0.1:8020/docs
 
 ## Pruebas
 
