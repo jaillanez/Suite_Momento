@@ -7,7 +7,15 @@ from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from momento_api.main import app
-from momento_api.models import Base, CareUnit, CareUnitType, Organization
+from momento_api.models import (
+    Base,
+    CareUnit,
+    CareUnitType,
+    Organization,
+    OrganizationMembership,
+    UserAccount,
+    UserGroup,
+)
 from momento_api.session import get_session
 
 
@@ -226,3 +234,50 @@ def test_workflow_statuses_reject_duplicate_order_and_wrong_service(
         f"care-units/{care_unit_id}/workflow-statuses"
     )
     assert wrong_owner.status_code == 404
+
+
+def test_user_account_has_configurable_membership_scope() -> None:
+    engine = create_engine("sqlite:///:memory:")
+    Base.metadata.create_all(engine)
+
+    with Session(engine) as session:
+        organization = Organization(name="Organización de prueba")
+        unit = CareUnit(
+            name="Residencia de prueba",
+            service_type=CareUnitType.RESIDENCE,
+            country_code="AR",
+        )
+        organization.care_units.append(unit)
+        account = UserAccount(
+            display_name="Cuenta ficticia",
+            email=None,
+            phone=None,
+        )
+        account.memberships.extend(
+            [
+                OrganizationMembership(
+                    organization=organization,
+                    care_unit=unit,
+                    user_group=UserGroup.STAFF,
+                    role_label="Personal designado",
+                ),
+                OrganizationMembership(
+                    organization=organization,
+                    care_unit=unit,
+                    user_group=UserGroup.FAMILY,
+                ),
+            ]
+        )
+        session.add_all([organization, account])
+        session.commit()
+
+        stored = session.get(UserAccount, account.id)
+        assert stored is not None
+        assert {membership.user_group for membership in stored.memberships} == {
+            UserGroup.STAFF,
+            UserGroup.FAMILY,
+        }
+        assert all(membership.care_unit_id == unit.id for membership in stored.memberships)
+        assert not hasattr(stored, "password_hash")
+
+    engine.dispose()

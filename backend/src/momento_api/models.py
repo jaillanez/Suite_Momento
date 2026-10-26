@@ -12,6 +12,7 @@ from sqlalchemy import (
     DateTime,
     Enum as SAEnum,
     ForeignKey,
+    ForeignKeyConstraint,
     Integer,
     String,
     UniqueConstraint,
@@ -30,6 +31,14 @@ class CareUnitType(str, Enum):
 
     RESIDENCE = "residence"
     HOME_CARE = "home_care"
+
+
+class UserGroup(str, Enum):
+    """Grupos generales de usuarios confirmados para el piloto."""
+
+    STAFF = "staff"
+    FAMILY = "family"
+    OLDER_ADULT = "older_adult"
 
 
 class Organization(Base):
@@ -53,6 +62,10 @@ class Organization(Base):
     )
 
     care_units: Mapped[list[CareUnit]] = relationship(back_populates="organization")
+    memberships: Mapped[list[OrganizationMembership]] = relationship(
+        back_populates="organization",
+        overlaps="care_unit,memberships",
+    )
 
 
 class CareUnit(Base):
@@ -63,6 +76,11 @@ class CareUnit(Base):
         CheckConstraint(
             "service_type IN ('residence', 'home_care')",
             name="ck_care_units_service_type",
+        ),
+        UniqueConstraint(
+            "organization_id",
+            "id",
+            name="uq_care_units_org_id",
         ),
     )
 
@@ -103,6 +121,10 @@ class CareUnit(Base):
         back_populates="care_unit",
         cascade="all, delete-orphan",
         order_by="CareUnitWorkflowStatus.display_order",
+    )
+    memberships: Mapped[list[OrganizationMembership]] = relationship(
+        back_populates="care_unit",
+        overlaps="organization,memberships",
     )
 
 
@@ -149,3 +171,107 @@ class CareUnitWorkflowStatus(Base):
     )
 
     care_unit: Mapped[CareUnit] = relationship(back_populates="workflow_statuses")
+
+
+class UserAccount(Base):
+    """Identidad de usuario; no contiene credenciales ni inicia sesión."""
+
+    __tablename__ = "user_accounts"
+
+    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
+    display_name: Mapped[str] = mapped_column(String(160), nullable=False)
+    email: Mapped[str | None] = mapped_column(String(254), nullable=True)
+    phone: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    is_active: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=True, server_default="true"
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+        onupdate=func.now(),
+    )
+
+    memberships: Mapped[list[OrganizationMembership]] = relationship(
+        back_populates="user"
+    )
+
+
+class OrganizationMembership(Base):
+    """Vínculo de una cuenta con una organización y, opcionalmente, un servicio."""
+
+    __tablename__ = "organization_memberships"
+    __table_args__ = (
+        CheckConstraint(
+            "user_group IN ('staff', 'family', 'older_adult')",
+            name="ck_membership_user_group",
+        ),
+        ForeignKeyConstraint(
+            ["organization_id", "care_unit_id"],
+            ["care_units.organization_id", "care_units.id"],
+            name="fk_membership_care_unit_same_organization",
+            ondelete="RESTRICT",
+        ),
+        UniqueConstraint(
+            "user_account_id",
+            "organization_id",
+            "care_unit_id",
+            "user_group",
+            name="uq_membership_user_scope_group",
+        ),
+    )
+
+    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
+    user_account_id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("user_accounts.id", ondelete="RESTRICT"),
+        nullable=False,
+        index=True,
+    )
+    organization_id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("organizations.id", ondelete="RESTRICT"),
+        nullable=False,
+        index=True,
+    )
+    care_unit_id: Mapped[UUID | None] = mapped_column(
+        Uuid(as_uuid=True),
+        nullable=True,
+        index=True,
+    )
+    user_group: Mapped[UserGroup] = mapped_column(
+        SAEnum(
+            UserGroup,
+            name="user_group",
+            native_enum=False,
+            create_constraint=False,
+            values_callable=lambda enum_type: [item.value for item in enum_type],
+        ),
+        nullable=False,
+    )
+    role_label: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    is_active: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=True, server_default="true"
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+        onupdate=func.now(),
+    )
+
+    user: Mapped[UserAccount] = relationship(back_populates="memberships")
+    organization: Mapped[Organization] = relationship(
+        back_populates="memberships",
+        overlaps="care_unit,memberships",
+    )
+    care_unit: Mapped[CareUnit | None] = relationship(
+        back_populates="memberships",
+        overlaps="organization,memberships",
+    )

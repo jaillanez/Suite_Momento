@@ -59,7 +59,7 @@ La siguiente estructura traduce las decisiones confirmadas a conceptos de sistem
 
 ## Primera entrega técnica de Fase 2
 
-**Comprobada localmente por Jorge el 26/10/2026:** pasaron las 6 pruebas del backend; Alembic registró `0001_org_care_units (head)` en PostgreSQL; `npm run build` completó correctamente.
+**Comprobada localmente por Jorge el 26/10/2026:** pasaron 9 pruebas del backend; Alembic registró `0002_care_workflow_statuses (head)` en PostgreSQL; `npm run build` completó correctamente.
 
 - Modelos SQLAlchemy `Organization` y `CareUnit`.
 - Tipos de servicio iniciales: residencia y cuidado domiciliario.
@@ -69,9 +69,12 @@ La siguiente estructura traduce las decisiones confirmadas a conceptos de sistem
 - Estados iniciales: recibida, asignada, en atención, respondida y cerrada.
 - Validación de tipo de servicio, nombre y país (AR/UY).
 - Pruebas con SQLite en memoria; usan datos ficticios.
-- No se crean cuentas, roles, permisos, solicitudes ni datos de personas mayores. La configuración de estados prepara el flujo, pero aún no gestiona solicitudes reales.
+- Se agregaron modelos base `UserAccount` y `OrganizationMembership` para los grupos confirmados (personal, familia y persona mayor), con alcance opcional por servicio.
+- La migración `0003_user_memberships` agrega esas tablas; está preparada y pendiente de aplicar y probar localmente.
+- Estos modelos no tienen inicio de sesión, credenciales ni permisos; `role_label` es descriptivo y no concede acceso.
+- No se crean datos reales de personas mayores ni se gestionan solicitudes reales.
 
-**Límite de seguridad:** los endpoints de escritura actuales son un andamiaje local para comprobar el flujo. La API se inicia enlazada a `127.0.0.1`; no se debe exponer ni desplegar hasta definir autenticación, autorización y auditoría. La migración se aplica manualmente y no al iniciar el servidor. La migración `0002_care_workflow_statuses` agrega la configuración de estados.
+**Límite de seguridad:** los endpoints de escritura actuales son un andamiaje local para comprobar el flujo. La API se inicia enlazada a `127.0.0.1`; no se debe exponer ni desplegar hasta definir autenticación, autorización y auditoría. La migración se aplica manualmente y no al iniciar el servidor. `0002` agrega la configuración de estados; `0003` agrega identidades y membresías, sin exponerlas por API hasta definir autenticación y autorización.
 
 ## Grupos y roles candidatos
 
