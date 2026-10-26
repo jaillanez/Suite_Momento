@@ -1,6 +1,6 @@
 # Fase 2 — Organizaciones, usuarios y acceso
 
-**Estado:** borrador de definición. No representa decisiones aprobadas ni autoriza implementar autenticación o permisos todavía.  
+**Estado:** definición en curso. La propuesta de esta versión requiere validación de Jorge y del equipo piloto antes de implementar.  
 **Propósito:** acordar cómo se organiza Momento y qué información puede consultar o modificar cada persona.
 
 ## Contexto confirmado
@@ -23,6 +23,29 @@ Definir reglas, recorridos y criterios verificables para:
 6. Registrar cambios de acceso y acciones sensibles.
 
 La base técnica de la Fase 1 queda cerrada. Esta fase no incorpora todavía información de residentes ni módulos asistenciales.
+
+## Propuesta inicial para la residencia piloto (pendiente de aprobación)
+
+Para poder avanzar, esta es la recomendación de diseño. No se considera una decisión confirmada:
+
+| Tema | Propuesta inicial | Motivo |
+|---|---|---|
+| Organización | Representa al prestador que administra el servicio; puede contener una o más sedes o servicios. | Permite iniciar con una residencia y ampliar después sin mezclar organizaciones. |
+| Sede o servicio | Representa una residencia, sede o equipo de cuidado domiciliario dentro de una organización. | Da contexto al trabajo y limita accesos según dónde trabaja cada integrante. |
+| Cuenta | Una identidad por persona; sus membresías y permisos se asignan por separado. | Permite que alguien trabaje con más de una organización sin duplicar su cuenta. |
+| Personal | Separar administración, coordinación y equipo de cuidado. Distinguir profesionales de salud solo si la residencia piloto necesita permisos diferentes. | Evita inventar una lista extensa de perfiles antes de conocer la operación real. |
+| Familia y persona mayor | Acceso individual, limitado a la persona mayor vinculada y a los contenidos que se autoricen. Sin acceso familiar general a notas internas. | Reduce exposición y deja explícito quién comparte cada tipo de información. |
+| Emergencias | No habilitar un acceso excepcional en el primer diseño hasta que el equipo defina responsables, causas, registro y revisión. | Un acceso de emergencia necesita un procedimiento real y auditable. |
+| Auditoría | Registrar invitaciones, cambios de rol, altas/bajas, concesiones y revocaciones de acceso, y operaciones sensibles. | Permite revisar quién accedió, qué cambió y bajo qué organización o sede. |
+
+### Secuencia propuesta dentro de Fase 2
+
+1. Acordar el modelo de organización, sedes y servicios para la residencia piloto.
+2. Definir qué tipos de usuarios participarán en el piloto y sus responsabilidades.
+3. Completar la matriz de permisos por información y acción.
+4. Acordar invitaciones, cambios de acceso, bajas y auditoría.
+5. Revisar reglas de autorización, privacidad y diferencias por país.
+6. Aprobar alcance y criterios; recién entonces diseñar e implementar la base de datos y la autenticación.
 
 ## Conceptos candidatos para validar
 
