@@ -20,9 +20,9 @@ Confirmadas el 26/10/2026:
 3. **Autorización familiar:** puede otorgarla el encargado de la residencia, un usuario administrativo habilitado o el médico.
 4. **Alcance familiar:** se limita a información relacionada con la persona mayor vinculada y a los temas de medicación, actividades y dietas.
 5. **Acciones familiares:** puede consultar la información autorizada, responder comunicaciones e iniciar solicitudes. No puede modificar indicaciones de medicación, dietas ni planes de actividades.
-6. **Bandeja compartida:** las solicitudes y respuestas llegan primero a una bandeja compartida; solo el personal designado puede verla y gestionarla.
+6. **Bandeja compartida:** las solicitudes y respuestas llegan primero a una bandeja compartida; solo el personal designado puede verla y gestionarla. El encargado designa a ese personal y asigna las solicitudes.
 
-Jorge confirmó que la familia podrá consultar la información autorizada, responder comunicaciones e iniciar solicitudes relacionadas con medicación, actividades y dietas. La familia no podrá modificar indicaciones ni planes. Las comunicaciones y solicitudes ingresarán primero a una bandeja compartida de la residencia o servicio; luego deberán asignarse para su atención.
+Jorge confirmó que la familia podrá consultar la información autorizada, responder comunicaciones e iniciar solicitudes relacionadas con medicación, actividades y dietas. La familia no podrá modificar indicaciones ni planes. Las comunicaciones y solicitudes ingresarán primero a una bandeja compartida de la residencia o servicio; solo el personal designado podrá verla y gestionarla. El encargado designa a ese personal y asigna cada solicitud.
 
 ## Modelo organizativo para diseñar
 
@@ -55,7 +55,7 @@ La siguiente estructura traduce las decisiones confirmadas a conceptos de sistem
 
 **Confirmado:** la familia puede consultar la información autorizada, responder comunicaciones e iniciar solicitudes. Estas ingresan primero a una bandeja compartida de la residencia o servicio y luego se asignan para su atención. La solicitud y la respuesta no cambian por sí mismas la medicación indicada, la dieta ni el plan de actividades.
 
-**Pendiente:** definir quién designa al personal con acceso a la bandeja, quién asigna las solicitudes y qué estados o confirmaciones verá la familia.
+**Pendiente:** definir qué estados o confirmaciones de recepción y avance verá la familia. La autorización familiar y la gestión de la bandeja son responsabilidades distintas: pueden autorizar el acceso familiar el encargado, un administrativo habilitado o el médico; la designación de quienes gestionan la bandeja y la asignación de solicitudes corresponden al encargado.
 
 ## Primera entrega técnica de Fase 2
 
@@ -123,9 +123,8 @@ Para familiares, el alcance inicial confirmado es la información vinculada a me
 
 ## Decisiones pendientes de Jorge y del equipo piloto
 
-1. ¿Quién puede designar al personal que tendrá acceso a la bandeja y asignar cada solicitud?
-2. ¿Qué estados o confirmaciones de recepción y avance verá la familia?
-3. ¿Qué perfiles de personal se necesitan en la residencia piloto y qué diferencia de acceso tiene cada uno?
+1. ¿Qué estados o confirmaciones de recepción y avance verá la familia?
+2. ¿Qué perfiles de personal se necesitan en la residencia piloto y qué diferencia de acceso tiene cada uno?
 3. ¿La persona mayor tendrá una cuenta individual? ¿Qué alternativa se usará si necesita ayuda para acceder?
 4. ¿Un usuario podrá pertenecer a varias organizaciones o sedes desde el piloto?
 5. ¿La invitación y recuperación de acceso se harán por correo, teléfono, ambos u otro canal?
