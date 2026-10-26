@@ -1,6 +1,6 @@
 # Fase 1 — Base técnica local
 
-**Estado:** API responde en la Mac; pendientes la conexión con PostgreSQL y la comprobación de la web.  
+**Estado:** API y conexión PostgreSQL confirmadas en la Mac; pendientes la comprobación de la web y las pruebas locales.  
 **Objetivo:** iniciar el repositorio nuevo con las herramientas ya instaladas y comprobar la conexión local entre React, la API y PostgreSQL.
 
 ## Entorno informado
@@ -44,37 +44,18 @@ Con los servicios en ejecución, comprobar:
 - API: `http://127.0.0.1:8020/api/health`
 - Documentación interactiva de API: `http://127.0.0.1:8020/docs`
 
-La comprobación de PostgreSQL puede aparecer como pendiente hasta crear la base local.
-
 ## Conexión local de PostgreSQL
 
-Primero comprobar que el servidor local responde:
+PostgreSQL está activo y conectado a la API en el entorno local de Jorge. La API registra respuestas HTTP 200 tanto en `/api/health` como en `/api/health/database`.
 
-```bash
-pg_isready
-```
-
-Si el servidor está disponible y el rol aún no existe, crear un usuario de desarrollo y una base vacía:
-
-```bash
-createuser --login --pwprompt momento_dev
-createdb --owner=momento_dev momento_dev
-```
-
-Luego copiar el ejemplo de configuración y hacer que la contraseña de la URL coincida con la que se asignó al rol:
-
-```bash
-cp backend/.env.example backend/.env
-```
-
-La variable que utiliza la API es `MOMENTO_DATABASE_URL`. No subir `backend/.env` al repositorio. Si el rol o la base ya existen, o los comandos muestran errores de autenticación, revisar el estado actual antes de crear o modificar usuarios; no cambiar la configuración global de PostgreSQL sin revisar el error.
+La configuración local se guarda en `backend/.env`, excluido de Git. No compartir ni subir ese archivo.
 
 ## Criterios de verificación
 
 - El script inicia ambos servicios y se detiene con Control+C.
 - La web carga y muestra la marca Momento.
-- `/api/health` responde con estado correcto. **Confirmado por Jorge en su Mac.**
-- La consulta de PostgreSQL informa disponibilidad después de configurar la base local.
+- `/api/health` responde HTTP 200. **Confirmado por Jorge en su Mac.**
+- `/api/health/database` responde HTTP 200. **Confirmado por Jorge en su Mac.**
 - El backend pasa sus pruebas automatizadas.
 - La compilación de React finaliza correctamente.
 - No se guardan datos personales o clínicos reales en esta etapa.
