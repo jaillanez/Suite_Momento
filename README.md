@@ -6,7 +6,7 @@ Este repositorio comienza como un proyecto nuevo. El sistema anterior de 2014 es
 
 ## Estado actual
 
-Primera base técnica en construcción: API Python, conexión de verificación a PostgreSQL y aplicación React. La pantalla actual es de desarrollo y no registra datos de personas.
+Primera base técnica en construcción: API Python, comprobación de PostgreSQL y aplicación React. La pantalla actual es de desarrollo y no registra datos de personas.
 
 ## Tecnologías
 
@@ -16,18 +16,23 @@ Primera base técnica en construcción: API Python, conexión de verificación a
 - Desarrollo local en Mac, sin Docker.
 - La aplicación móvil con Capacitor y la landing pública son decisiones para fases posteriores.
 
-## Ejecutar localmente
+## Ejecutar localmente en Mac
 
-Consulta las instrucciones de backend y frontend:
+Después de actualizar el repositorio, desde su carpeta ejecuta:
 
-- backend/README.md
-- frontend/README.md
+    bash scripts/iniciar-local.sh
 
-## Documentación del producto
+El script crea el entorno virtual dentro del proyecto, prepara dependencias y arranca API y web. No instala ni actualiza Python, Homebrew, Xcode o Command Line Tools. Presiona Control+C para detener ambos servicios.
+
+Abre http://127.0.0.1:5173. La API estará en http://127.0.0.1:8000. PostgreSQL aparecerá pendiente hasta configurar una base local.
+
+## Documentación
 
 - docs/vision.md
 - docs/fase-0-descubrimiento.md
 - docs/plan-de-fases.md
+- backend/README.md
+- frontend/README.md
 - AGENTS.md
 
 No cargar datos personales o clínicos reales en esta base de desarrollo.
