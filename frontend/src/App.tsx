@@ -41,7 +41,7 @@ export default function App() {
       <header className="topbar">
         <a className="brand" href="/" aria-label="Momento, inicio">
           <img className="brand-logo" src="/brand/iso-momento.png" alt="" />
-          <span>momento</span>
+          <span>Momento</span>
         </a>
         <span className="environment-tag">
           <span className="environment-dot" aria-hidden="true" />
@@ -52,7 +52,9 @@ export default function App() {
       <section className="hero" aria-labelledby="welcome-title">
         <div className="hero-copy">
           <p className="eyebrow">Una base nueva para cuidar mejor</p>
-          <h1 id="welcome-title">El cuidado se construye en red, con la persona en el centro.</h1>
+          <h1 id="welcome-title">
+            El cuidado se construye en red, con la persona en el centro.
+          </h1>
           <p className="hero-description">
             Momento nace para acompañar el cuidado de personas mayores en
             residencias y domicilios, conectando a quienes forman parte de su
@@ -61,7 +63,9 @@ export default function App() {
           <div className="hero-note">
             <span className="note-symbol" aria-hidden="true">i</span>
             <p>
-              Esta es una base de desarrollo. Los antecedentes de Momento orientan el descubrimiento; el alcance nuevo todavía se está definiendo.
+              Esta es una base de desarrollo. Los antecedentes de Momento
+              orientan el descubrimiento; el alcance nuevo todavía se está
+              definiendo.
             </p>
           </div>
         </div>
@@ -89,28 +93,32 @@ export default function App() {
         </div>
 
         <p className="section-intro">
-          Son líneas surgidas de los materiales compartidos, no funciones ya implementadas.
+          Son líneas surgidas de los materiales compartidos, no funciones ya
+          implementadas.
         </p>
         <div className="foundation-grid">
           <article className="foundation-card">
             <span className="card-number">01</span>
             <h3>La persona y su historia</h3>
             <p>
-              Preferencias, apoyos y aspectos de su vida que pueden ayudar a personalizar el cuidado.
+              Preferencias, apoyos y aspectos de su vida que pueden ayudar a
+              personalizar el cuidado.
             </p>
           </article>
           <article className="foundation-card">
             <span className="card-number">02</span>
             <h3>Continuidad entre quienes cuidan</h3>
             <p>
-              Novedades, actividades y asuntos pendientes que podrían facilitar la coordinación.
+              Novedades, actividades y asuntos pendientes que podrían
+              facilitar la coordinación.
             </p>
           </article>
           <article className="foundation-card">
             <span className="card-number">03</span>
             <h3>Comunicación con la familia</h3>
             <p>
-              Información clara y autorizada, diferenciada de los registros profesionales privados.
+              Información clara y autorizada, diferenciada de los registros
+              profesionales privados.
             </p>
           </article>
           <article className="foundation-card">
