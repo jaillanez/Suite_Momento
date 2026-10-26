@@ -121,15 +121,29 @@ Para familiares, el alcance inicial confirmado es la información vinculada a me
 - Definir por separado los requisitos aplicables en Argentina y Uruguay con asesoramiento adecuado; este documento no constituye una interpretación legal.
 - No habilitar un acceso excepcional de emergencia sin procedimiento, responsables, auditoría y revisión aprobados.
 
+**Configuración inicial propuesta del seguimiento familiar**  
+Para avanzar sin convertir estos nombres en reglas rígidas, cada servicio podrá configurar los estados habilitados, sus etiquetas y cuáles ve la familia. Valores iniciales propuestos:
+
+| Estado interno | Evento inicial propuesto | Visibilidad familiar |
+|---|---|---|
+| Recibida | Se crea al enviar la solicitud | Sí |
+| Asignada | El encargado la asigna a personal designado | Sí |
+| En atención | La persona asignada indica que comenzó a gestionarla | Sí |
+| Respondida | El personal designado registra una respuesta | Sí |
+| Cerrada | El responsable marca la solicitud como finalizada | Sí |
+
+La familia verá el estado y la respuesta compartida, no notas internas ni datos personales del trabajador asignado. Estos son valores iniciales editables por servicio; no se fijan plazos de respuesta. La configuración definitiva se revisará antes del piloto.
+
 ## Decisiones pendientes de Jorge y del equipo piloto
 
-1. ¿Qué estados o confirmaciones de recepción y avance verá la familia?
-2. ¿Qué perfiles de personal se necesitan en la residencia piloto y qué diferencia de acceso tiene cada uno?
-3. ¿La persona mayor tendrá una cuenta individual? ¿Qué alternativa se usará si necesita ayuda para acceder?
-4. ¿Un usuario podrá pertenecer a varias organizaciones o sedes desde el piloto?
-5. ¿La invitación y recuperación de acceso se harán por correo, teléfono, ambos u otro canal?
-6. ¿Qué eventos deben quedar auditados y quién podrá revisar esos registros?
-7. ¿Se necesita un acceso excepcional de emergencia? Si sí, ¿quién puede usarlo, en qué circunstancias y cómo se revisa después?
+Los siguientes aspectos quedan como parámetros por definir y configurar con el equipo piloto; no bloquean la estructura actual ni se tomarán como reglas clínicas:
+
+- Perfiles de personal y permisos por organización o servicio.
+- Cuenta individual de la persona mayor y apoyos para acceder.
+- Pertenencia de una persona a varias organizaciones o sedes.
+- Canales de invitación y recuperación de acceso.
+- Eventos de auditoría, responsables de revisión y retención.
+- Acceso excepcional de emergencia; deshabilitado por defecto hasta definir y revisar su procedimiento.
 
 ## Criterios de aceptación de la definición
 
