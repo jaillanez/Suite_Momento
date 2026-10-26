@@ -1,14 +1,14 @@
 """Sesiones SQLAlchemy para las rutas que requieren PostgreSQL."""
 
 import os
-from functools import lru_cache
 from collections.abc import Generator
+from functools import lru_cache
 
+from dotenv import load_dotenv
 from fastapi import HTTPException
 from sqlalchemy import Engine, create_engine
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
-
-from momento_api.database import load_dotenv
 
 
 @lru_cache(maxsize=4)
@@ -29,5 +29,11 @@ def get_session() -> Generator[Session, None, None]:
     session = Session(_engine_for_url(database_url))
     try:
         yield session
+    except SQLAlchemyError:
+        session.rollback()
+        raise HTTPException(
+            status_code=503,
+            detail="PostgreSQL no está configurado o no responde.",
+        ) from None
     finally:
         session.close()
