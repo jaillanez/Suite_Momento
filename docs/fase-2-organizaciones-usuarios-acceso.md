@@ -33,6 +33,26 @@ Queda por precisar si el acceso familiar será solo de consulta o si también pe
 | Autorización familiar | Permiso vinculado a una persona mayor y a categorías de información definidas | Alcance y autorizadores confirmados; acciones y vigencia pendientes |
 | Auditoría | Registro de accesos y cambios relevantes | Requisito del proyecto; eventos y retención por definir |
 
+## Modelo conceptual de acceso para el piloto
+
+La siguiente estructura traduce las decisiones confirmadas a conceptos de sistema. Es una propuesta funcional; aún no es un esquema de base de datos aprobado.
+
+- **Organización** contiene una o más **sedes o servicios**.
+- **Cuenta** identifica a una persona usuaria; el vínculo con una organización y sede se administra por separado.
+- **Persona mayor** se vincula con su residencia o servicio de cuidado.
+- **Autorización familiar** vincula una cuenta familiar con una persona mayor, incluye las categorías autorizadas (medicación, actividades y dietas), identifica quién la concedió y permite revocarla.
+- **Acción permitida** (consultar, responder, solicitar o modificar) debe quedar separada de la categoría de información. Jorge confirmó las categorías y quién puede autorizar; falta confirmar las acciones.
+
+### Flujo propuesto para autorizar a una familia
+
+1. El encargado de la residencia, un administrativo habilitado o el médico selecciona a la persona mayor y al familiar/persona de confianza.
+2. Quien autoriza selecciona una o más categorías: medicación, actividades y dietas.
+3. El sistema registra quién autorizó, cuándo, para quién y qué categorías habilitó.
+4. La autorización se puede revisar y revocar; al revocarla, deja de habilitar el acceso.
+5. El acceso a otra persona o a otra categoría no autorizada se rechaza y queda sujeto a auditoría.
+
+**Punto aún abierto:** el comportamiento inicial recomendado es solo consulta para la familia. No se habilitarán respuestas, solicitudes ni modificaciones hasta que Jorge y el equipo definan cuáles necesitan y quién las atiende.
+
 ## Grupos y roles candidatos
 
 Los tres grupos generales del piloto están confirmados. Los roles exactos y sus permisos siguen abiertos:
