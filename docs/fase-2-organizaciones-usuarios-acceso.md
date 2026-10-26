@@ -21,7 +21,7 @@ Confirmadas el 26/10/2026:
 4. **Alcance familiar:** se limita a información relacionada con la persona mayor vinculada y a los temas de medicación, actividades y dietas.
 5. **Acciones familiares:** puede consultar la información autorizada, responder comunicaciones e iniciar solicitudes. No puede modificar indicaciones de medicación, dietas ni planes de actividades.
 
-Jorge confirmó que la familia podrá consultar la información autorizada, responder comunicaciones e iniciar solicitudes relacionadas con medicación, actividades y dietas. La familia no podrá modificar indicaciones ni planes. El circuito de recepción y atención de esos mensajes y solicitudes queda por definir.
+Jorge confirmó que la familia podrá consultar la información autorizada, responder comunicaciones e iniciar solicitudes relacionadas con medicación, actividades y dietas. La familia no podrá modificar indicaciones ni planes. Las comunicaciones y solicitudes ingresarán primero a una bandeja compartida de la residencia o servicio; luego deberán asignarse para su atención.
 
 ## Modelo organizativo para diseñar
 
@@ -52,7 +52,9 @@ La siguiente estructura traduce las decisiones confirmadas a conceptos de sistem
 4. La autorización se puede revisar y revocar; al revocarla, deja de habilitar el acceso.
 5. El acceso a otra persona o a otra categoría no autorizada se rechaza y queda sujeto a auditoría.
 
-**Confirmado:** la familia puede consultar la información autorizada, responder comunicaciones e iniciar solicitudes. La solicitud y la respuesta no cambian por sí mismas la medicación indicada, la dieta ni el plan de actividades. Falta definir a qué equipo o persona llegan y cómo se confirma su atención.
+**Confirmado:** la familia puede consultar la información autorizada, responder comunicaciones e iniciar solicitudes. Estas ingresan primero a una bandeja compartida de la residencia o servicio y luego se asignan para su atención. La solicitud y la respuesta no cambian por sí mismas la medicación indicada, la dieta ni el plan de actividades.
+
+**Pendiente:** definir qué perfiles pueden ver y gestionar la bandeja, quién asigna las solicitudes, cuáles serán sus estados y qué confirmación de recepción o avance verá la familia.
 
 ## Primera entrega técnica de Fase 2
 
@@ -120,7 +122,7 @@ Para familiares, el alcance inicial confirmado es la información vinculada a me
 
 ## Decisiones pendientes de Jorge y del equipo piloto
 
-1. ¿Las respuestas y solicitudes familiares deben llegar a una bandeja compartida del servicio/residencia o a una persona designada? Definir responsables, estados y confirmación de recepción.
+1. ¿Qué perfiles pueden ver y gestionar la bandeja compartida, y quién asigna cada solicitud? También definir qué confirmación o estado verá la familia.
 2. ¿Qué perfiles de personal se necesitan en la residencia piloto y qué diferencia de acceso tiene cada uno?
 3. ¿La persona mayor tendrá una cuenta individual? ¿Qué alternativa se usará si necesita ayuda para acceder?
 4. ¿Un usuario podrá pertenecer a varias organizaciones o sedes desde el piloto?
