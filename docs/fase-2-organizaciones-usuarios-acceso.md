@@ -20,7 +20,7 @@ Confirmadas el 26/10/2026:
 3. **Autorización familiar:** puede otorgarla el encargado de la residencia, un usuario administrativo habilitado o el médico.
 4. **Alcance familiar:** se limita a información relacionada con la persona mayor vinculada y a los temas de medicación, actividades y dietas.
 
-Queda por precisar si el acceso familiar será solo de consulta o si también permitirá responder o iniciar solicitudes. La definición de acceso no habilita a familiares a modificar indicaciones de medicación, dietas o planes de actividades.
+Queda por precisar qué acciones tendrá la familia. Las opciones para validar son: (A) solo consultar la información autorizada; o (B) consultar y además responder comunicaciones o iniciar solicitudes, sin modificar indicaciones de medicación, dietas ni planes de actividades.
 
 ## Modelo organizativo para diseñar
 
@@ -55,7 +55,7 @@ La siguiente estructura traduce las decisiones confirmadas a conceptos de sistem
 
 ## Primera entrega técnica de Fase 2
 
-**Comprobada localmente por Jorge el 26/10/2026:** las tres pruebas pasaron y Alembic registró `0001_org_care_units (head)` en el PostgreSQL local.
+**Comprobada localmente por Jorge el 26/10/2026:** pasaron las 6 pruebas del backend; Alembic registró `0001_org_care_units (head)` en PostgreSQL; `npm run build` completó correctamente.
 
 - Modelos SQLAlchemy `Organization` y `CareUnit`.
 - Tipos de servicio iniciales: residencia y cuidado domiciliario.
@@ -119,7 +119,7 @@ Para familiares, el alcance inicial confirmado es la información vinculada a me
 
 ## Decisiones pendientes de Jorge y del equipo piloto
 
-1. ¿El acceso familiar a medicación, actividades y dietas será solo de consulta, o permitirá responder o iniciar solicitudes? ¿Cuáles?
+1. Para la familia, ¿elegimos A) solo consulta de medicación, actividades y dietas autorizadas, o B) consulta más respuestas a comunicaciones e inicio de solicitudes, sin modificar esos datos?
 2. ¿Qué perfiles de personal se necesitan en la residencia piloto y qué diferencia de acceso tiene cada uno?
 3. ¿La persona mayor tendrá una cuenta individual? ¿Qué alternativa se usará si necesita ayuda para acceder?
 4. ¿Un usuario podrá pertenecer a varias organizaciones o sedes desde el piloto?
