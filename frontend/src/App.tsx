@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import OrganizationsPanel from "./OrganizationsPanel";
 
 type ServiceState = "checking" | "available" | "unavailable";
 
@@ -85,6 +86,8 @@ export default function App() {
           </p>
         </aside>
       </section>
+
+      <OrganizationsPanel />
 
       <section className="foundation" aria-labelledby="foundation-title">
         <div className="section-heading">
