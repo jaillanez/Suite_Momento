@@ -76,10 +76,10 @@ trap cleanup EXIT
 trap 'exit 130' INT
 trap 'exit 143' TERM
 
-printf '\nIniciando API en http://127.0.0.1:8000 ...\n'
+printf '\nIniciando API en http://127.0.0.1:8020 ...\n'
 (
   cd "$BACKEND_DIR"
-  exec "$VENV_DIR/bin/uvicorn" momento_api.main:app --reload --host 127.0.0.1 --port 8000
+  exec "$VENV_DIR/bin/uvicorn" momento_api.main:app --reload --host 127.0.0.1 --port 8020
 ) &
 API_PID=$!
 
