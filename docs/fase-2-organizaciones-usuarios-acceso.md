@@ -53,6 +53,17 @@ La siguiente estructura traduce las decisiones confirmadas a conceptos de sistem
 
 **Punto aún abierto:** el comportamiento inicial recomendado es solo consulta para la familia. No se habilitarán respuestas, solicitudes ni modificaciones hasta que Jorge y el equipo definan cuáles necesitan y quién las atiende.
 
+## Primera entrega técnica de Fase 2
+
+**Preparada en el repositorio; pendiente de aplicar y comprobar en la Mac de Jorge.**
+
+- Modelos SQLAlchemy `Organization` y `CareUnit`.
+- Tipos de servicio iniciales: residencia y cuidado domiciliario.
+- Migración Alembic reversible que crea `organizations` y `care_units`.
+- Prueba del modelo con datos ficticios en una base SQLite en memoria.
+- No se crean cuentas, roles, permisos ni datos de personas mayores.
+- La migración no se ejecuta al iniciar el servidor; se aplica manualmente después de revisar el repositorio actualizado.
+
 ## Grupos y roles candidatos
 
 Los tres grupos generales del piloto están confirmados. Los roles exactos y sus permisos siguen abiertos:
