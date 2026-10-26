@@ -42,9 +42,11 @@ Documentos: [Fase 0 — Descubrimiento y definición de Momento](fase-0-descubri
 
 **Trabajo:** definir organizaciones y ubicaciones; alta e invitación de usuarios; autenticación; permisos por rol y contexto; consentimiento/autorización cuando corresponda; trazabilidad de acciones sensibles.
 
-**Pendiente de validar:** catálogo de roles, separación entre residencia y domicilio, usuarios que pueden pertenecer a más de una organización, reglas de acceso familiar y condiciones por país.
+**Decisiones confirmadas por Jorge:** una organización prestadora puede contener varias sedes o servicios; el piloto contempla personal, familias/personas de confianza y personas mayores; el acceso familiar lo autoriza el encargado de la residencia, un administrativo habilitado o el médico, y se limita a información de la persona vinculada sobre medicación, actividades y dietas.
 
-**Resultado esperado:** matriz de acceso acordada y comprobable antes de cargar datos reales.
+**Pendiente de validar:** permisos concretos por rol, si la familia solo consulta o también interactúa, acceso individual de la persona mayor, pertenencia de usuarios a varias organizaciones o sedes, canales de invitación/recuperación, auditoría, acceso de emergencia y requisitos por país.
+
+**Resultado esperado:** matriz de acceso acordada y comprobable antes de implementar autenticación o cargar datos reales.
 
 ## Fase 3 — Perfil y contexto de la persona mayor
 
