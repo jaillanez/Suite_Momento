@@ -1,6 +1,6 @@
 # Fase 1 — Base técnica local
 
-**Estado:** preparada; pendiente de verificación en la Mac de Jorge.  
+**Estado:** en verificación en la Mac de Jorge.  
 **Objetivo:** iniciar el repositorio nuevo con las herramientas ya instaladas y comprobar la conexión local entre React, la API y PostgreSQL.
 
 ## Entorno informado
@@ -22,6 +22,7 @@ Se comienza con estas instalaciones. No se instalará otra versión global de Py
 - Aplicación React con Vite.
 - Script `scripts/iniciar-local.sh`, que crea `backend/.venv` y prepara dependencias dentro de las carpetas del proyecto.
 - Archivo de ejemplo `backend/.env.example`; los archivos `.env` locales están excluidos de Git.
+- API local en el puerto **8020** para evitar el puerto 8000 ya utilizado en la Mac de Jorge.
 
 La pantalla web continúa siendo de desarrollo. No registra residentes, historias clínicas ni actividades.
 
@@ -40,8 +41,8 @@ El script utiliza el Python disponible, comprueba las versiones requeridas y lev
 Con los servicios en ejecución, comprobar:
 
 - Web: `http://127.0.0.1:5173`
-- API: `http://127.0.0.1:8000/api/health`
-- Documentación interactiva de API: `http://127.0.0.1:8000/docs`
+- API: `http://127.0.0.1:8020/api/health`
+- Documentación interactiva de API: `http://127.0.0.1:8020/docs`
 
 La comprobación de PostgreSQL puede aparecer como pendiente hasta crear la base local.
 
