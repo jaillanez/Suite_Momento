@@ -55,14 +55,17 @@ La siguiente estructura traduce las decisiones confirmadas a conceptos de sistem
 
 ## Primera entrega técnica de Fase 2
 
-**Preparada en el repositorio; pendiente de aplicar y comprobar en la Mac de Jorge.**
+**Comprobada localmente por Jorge el 26/10/2026:** las tres pruebas pasaron y Alembic registró `0001_org_care_units (head)` en el PostgreSQL local.
 
 - Modelos SQLAlchemy `Organization` y `CareUnit`.
 - Tipos de servicio iniciales: residencia y cuidado domiciliario.
 - Migración Alembic reversible que crea `organizations` y `care_units`.
-- Prueba del modelo con datos ficticios en una base SQLite en memoria.
+- API inicial para crear y consultar organizaciones y sus servicios.
+- Validación de tipo de servicio, nombre y país (AR/UY).
+- Pruebas con SQLite en memoria; usan datos ficticios.
 - No se crean cuentas, roles, permisos ni datos de personas mayores.
-- La migración no se ejecuta al iniciar el servidor; se aplica manualmente después de revisar el repositorio actualizado.
+
+**Límite de seguridad:** los endpoints de escritura actuales son un andamiaje local para comprobar el flujo. La API se inicia enlazada a `127.0.0.1`; no se debe exponer ni desplegar hasta definir autenticación, autorización y auditoría. La migración se aplica manualmente y no al iniciar el servidor.
 
 ## Grupos y roles candidatos
 

@@ -3,12 +3,14 @@
 from fastapi import FastAPI, HTTPException
 
 from momento_api.database import database_is_ready
+from momento_api.organizations import router as organizations_router
 
 app = FastAPI(
     title="Momento API",
     description="Base técnica inicial de Momento.",
     version="0.1.0",
 )
+app.include_router(organizations_router)
 
 
 @app.get("/api/health", tags=["Sistema"])

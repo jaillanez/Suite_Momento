@@ -1,0 +1,109 @@
+"""Operaciones iniciales para organizaciones y servicios de cuidado."""
+
+from uuid import UUID
+
+from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
+from sqlalchemy import select
+from sqlalchemy.orm import Session
+
+from momento_api.models import CareUnit, Organization
+from momento_api.schemas import (
+    CareUnitCreate,
+    CareUnitRead,
+    OrganizationCreate,
+    OrganizationRead,
+)
+from momento_api.session import get_session
+
+router = APIRouter(prefix="/api/organizations", tags=["Organizaciones"])
+
+
+@router.post(
+    "",
+    response_model=OrganizationRead,
+    status_code=status.HTTP_201_CREATED,
+)
+def create_organization(
+    payload: OrganizationCreate,
+    response: Response,
+    session: Session = Depends(get_session),
+) -> Organization:
+    """Crea una organización en la base configurada."""
+    organization = Organization(name=payload.name)
+    session.add(organization)
+    session.commit()
+    session.refresh(organization)
+    response.headers["Location"] = f"/api/organizations/{organization.id}"
+    return organization
+
+
+@router.get("", response_model=list[OrganizationRead])
+def list_organizations(
+    limit: int = Query(default=100, ge=1, le=100),
+    session: Session = Depends(get_session),
+) -> list[Organization]:
+    """Lista organizaciones sin incluir datos de personas cuidadas."""
+    statement = (
+        select(Organization)
+        .where(Organization.is_active.is_(True))
+        .order_by(Organization.name, Organization.id)
+        .limit(limit)
+    )
+    return list(session.scalars(statement).all())
+
+
+@router.post(
+    "/{organization_id}/care-units",
+    response_model=CareUnitRead,
+    status_code=status.HTTP_201_CREATED,
+)
+def create_care_unit(
+    organization_id: UUID,
+    payload: CareUnitCreate,
+    response: Response,
+    session: Session = Depends(get_session),
+) -> CareUnit:
+    """Agrega una residencia o servicio domiciliario a una organización."""
+    organization = session.get(Organization, organization_id)
+    if organization is None or not organization.is_active:
+        raise HTTPException(status_code=404, detail="Organización no encontrada.")
+
+    care_unit = CareUnit(
+        organization_id=organization_id,
+        name=payload.name,
+        service_type=payload.service_type,
+        country_code=payload.country_code,
+    )
+    session.add(care_unit)
+    session.commit()
+    session.refresh(care_unit)
+    response.headers["Location"] = (
+        f"/api/organizations/{organization_id}/care-units/{care_unit.id}"
+    )
+    return care_unit
+
+
+@router.get(
+    "/{organization_id}/care-units",
+    response_model=list[CareUnitRead],
+)
+def list_care_units(
+    organization_id: UUID,
+    limit: int = Query(default=100, ge=1, le=100),
+    session: Session = Depends(get_session),
+) -> list[CareUnit]:
+    """Lista los servicios de una organización activa."""
+    organization = session.get(Organization, organization_id)
+    if organization is None or not organization.is_active:
+        raise HTTPException(status_code=404, detail="Organización no encontrada.")
+
+    statement = (
+        select(CareUnit)
+        .where(
+            CareUnit.organization_id == organization_id,
+            CareUnit.is_active.is_(True),
+        )
+        .order_by(CareUnit.name, CareUnit.id)
+        .limit(limit)
+    )
+    return list(session.scalars(statement).all())
