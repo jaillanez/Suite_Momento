@@ -120,3 +120,109 @@ def test_api_returns_not_found_for_unknown_organization(api_client: TestClient) 
     )
 
     assert response.status_code == 404
+
+
+def create_test_service(client: TestClient) -> tuple[str, str]:
+    organization = client.post(
+        "/api/organizations",
+        json={"name": "Organización de prueba"},
+    ).json()
+    unit = client.post(
+        f"/api/organizations/{organization['id']}/care-units",
+        json={
+            "name": "Residencia de prueba",
+            "service_type": "residence",
+            "country_code": "AR",
+        },
+    ).json()
+    return organization["id"], unit["id"]
+
+
+def test_care_unit_receives_configurable_default_workflow(api_client: TestClient) -> None:
+    organization_id, care_unit_id = create_test_service(api_client)
+    response = api_client.get(
+        f"/api/organizations/{organization_id}/care-units/{care_unit_id}/workflow-statuses"
+    )
+
+    assert response.status_code == 200
+    assert [item["code"] for item in response.json()] == [
+        "received",
+        "assigned",
+        "in_progress",
+        "responded",
+        "closed",
+    ]
+    assert all(item["is_active"] and item["family_visible"] for item in response.json())
+
+
+def test_workflow_status_labels_and_family_visibility_are_configurable(
+    api_client: TestClient,
+) -> None:
+    organization_id, care_unit_id = create_test_service(api_client)
+    path = (
+        f"/api/organizations/{organization_id}/care-units/"
+        f"{care_unit_id}/workflow-statuses"
+    )
+    current = api_client.get(path).json()
+    payload = {
+        "statuses": [
+            {
+                "code": item["code"],
+                "label": (
+                    "Recibida por el equipo"
+                    if item["code"] == "received"
+                    else item["label"]
+                ),
+                "display_order": item["display_order"],
+                "is_active": item["is_active"],
+                "family_visible": (
+                    False if item["code"] == "assigned" else item["family_visible"]
+                ),
+            }
+            for item in current
+        ]
+    }
+
+    updated = api_client.put(path, json=payload)
+
+    assert updated.status_code == 200
+    first = next(item for item in updated.json() if item["code"] == "received")
+    assigned = next(item for item in updated.json() if item["code"] == "assigned")
+    assert first["label"] == "Recibida por el equipo"
+    assert assigned["family_visible"] is False
+
+
+def test_workflow_statuses_reject_duplicate_order_and_wrong_service(
+    api_client: TestClient,
+) -> None:
+    organization_id, care_unit_id = create_test_service(api_client)
+    path = (
+        f"/api/organizations/{organization_id}/care-units/"
+        f"{care_unit_id}/workflow-statuses"
+    )
+    payload = {
+        "statuses": [
+            {
+                "code": "received",
+                "label": "Recibida",
+                "display_order": 1,
+                "is_active": True,
+                "family_visible": True,
+            },
+            {
+                "code": "assigned",
+                "label": "Asignada",
+                "display_order": 1,
+                "is_active": True,
+                "family_visible": True,
+            },
+        ]
+    }
+    invalid = api_client.put(path, json=payload)
+    assert invalid.status_code == 422
+
+    wrong_owner = api_client.get(
+        "/api/organizations/aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa/"
+        f"care-units/{care_unit_id}/workflow-statuses"
+    )
+    assert wrong_owner.status_code == 404

@@ -64,12 +64,14 @@ La siguiente estructura traduce las decisiones confirmadas a conceptos de sistem
 - Modelos SQLAlchemy `Organization` y `CareUnit`.
 - Tipos de servicio iniciales: residencia y cuidado domiciliario.
 - Migración Alembic reversible que crea `organizations` y `care_units`.
-- API inicial para crear y consultar organizaciones y sus servicios.
+- API y pantalla local para crear y consultar organizaciones y sus servicios.
+- Configuración por servicio de nombres, orden, activación y visibilidad familiar de los estados de seguimiento.
+- Estados iniciales: recibida, asignada, en atención, respondida y cerrada.
 - Validación de tipo de servicio, nombre y país (AR/UY).
 - Pruebas con SQLite en memoria; usan datos ficticios.
-- No se crean cuentas, roles, permisos ni datos de personas mayores.
+- No se crean cuentas, roles, permisos, solicitudes ni datos de personas mayores. La configuración de estados prepara el flujo, pero aún no gestiona solicitudes reales.
 
-**Límite de seguridad:** los endpoints de escritura actuales son un andamiaje local para comprobar el flujo. La API se inicia enlazada a `127.0.0.1`; no se debe exponer ni desplegar hasta definir autenticación, autorización y auditoría. La migración se aplica manualmente y no al iniciar el servidor.
+**Límite de seguridad:** los endpoints de escritura actuales son un andamiaje local para comprobar el flujo. La API se inicia enlazada a `127.0.0.1`; no se debe exponer ni desplegar hasta definir autenticación, autorización y auditoría. La migración se aplica manualmente y no al iniciar el servidor. La migración `0002_care_workflow_statuses` agrega la configuración de estados.
 
 ## Grupos y roles candidatos
 

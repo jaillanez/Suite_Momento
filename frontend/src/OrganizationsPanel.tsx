@@ -15,6 +15,16 @@ type CareUnit = {
   country_code: "AR" | "UY";
 };
 
+type WorkflowStatus = {
+  id: string;
+  care_unit_id: string;
+  code: string;
+  label: string;
+  display_order: number;
+  is_active: boolean;
+  family_visible: boolean;
+};
+
 async function readApiError(response: Response): Promise<string> {
   try {
     const body = (await response.json()) as { detail?: string };
@@ -180,15 +190,21 @@ export default function OrganizationsPanel() {
                   <p className="unit-empty">Aún no tiene sedes o servicios.</p>
                 ) : (
                   (unitsByOrganization[organization.id] ?? []).map((unit) => (
-                    <div className="unit-row" key={unit.id}>
-                      <span className="unit-type-mark" aria-hidden="true" />
-                      <span className="unit-name">{unit.name}</span>
-                      <span className="unit-description">
-                        {unit.service_type === "residence"
-                          ? "Residencia"
-                          : "Cuidado domiciliario"}{" "}
-                        · {unit.country_code === "AR" ? "Argentina" : "Uruguay"}
-                      </span>
+                    <div className="unit-item" key={unit.id}>
+                      <div className="unit-row">
+                        <span className="unit-type-mark" aria-hidden="true" />
+                        <span className="unit-name">{unit.name}</span>
+                        <span className="unit-description">
+                          {unit.service_type === "residence"
+                            ? "Residencia"
+                            : "Cuidado domiciliario"}{" "}
+                          · {unit.country_code === "AR" ? "Argentina" : "Uruguay"}
+                        </span>
+                      </div>
+                      <WorkflowStatusEditor
+                        organizationId={organization.id}
+                        careUnitId={unit.id}
+                      />
                     </div>
                   ))
                 )}
@@ -283,5 +299,204 @@ function CareUnitForm({
       </div>
       {error && <p className="form-message error-message" role="alert">{error}</p>}
     </form>
+  );
+}
+
+
+function WorkflowStatusEditor({
+  organizationId,
+  careUnitId,
+}: {
+  organizationId: string;
+  careUnitId: string;
+}) {
+  const [statuses, setStatuses] = useState<WorkflowStatus[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
+
+  const path =
+    `/api/organizations/${organizationId}/care-units/${careUnitId}/workflow-statuses`;
+
+  useEffect(() => {
+    let active = true;
+    setLoading(true);
+    void fetch(path)
+      .then(async (response) => {
+        if (!response.ok) throw new Error(await readApiError(response));
+        return (await response.json()) as WorkflowStatus[];
+      })
+      .then((items) => {
+        if (active) setStatuses(items);
+      })
+      .catch((caught: unknown) => {
+        if (active) {
+          setError(
+            caught instanceof Error
+              ? caught.message
+              : "No se pudo cargar la configuración.",
+          );
+        }
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [path]);
+
+  function updateStatus(
+    code: string,
+    field: "label" | "is_active" | "family_visible",
+    value: string | boolean,
+  ) {
+    setStatuses((current) =>
+      current.map((status) =>
+        status.code === code ? { ...status, [field]: value } : status,
+      ),
+    );
+  }
+
+  function moveStatus(index: number, offset: -1 | 1) {
+    setStatuses((current) => {
+      const sorted = [...current].sort(
+        (first, second) => first.display_order - second.display_order,
+      );
+      const nextIndex = index + offset;
+      if (nextIndex < 0 || nextIndex >= sorted.length) return current;
+      [sorted[index], sorted[nextIndex]] = [sorted[nextIndex], sorted[index]];
+      return sorted.map((status, position) => ({
+        ...status,
+        display_order: position + 1,
+      }));
+    });
+  }
+
+  async function save() {
+    setSaving(true);
+    setError("");
+    setNotice("");
+    try {
+      const response = await fetch(path, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          statuses: statuses.map(
+            ({ code, label, display_order, is_active, family_visible }) => ({
+              code,
+              label,
+              display_order,
+              is_active,
+              family_visible,
+            }),
+          ),
+        }),
+      });
+      if (!response.ok) throw new Error(await readApiError(response));
+      setStatuses((await response.json()) as WorkflowStatus[]);
+      setNotice("Configuración guardada.");
+    } catch (caught) {
+      setError(
+        caught instanceof Error
+          ? caught.message
+          : "No se pudo guardar la configuración.",
+      );
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <section className="workflow-editor" aria-label="Estados de seguimiento familiar">
+      <div className="workflow-editor-heading">
+        <div>
+          <h4>Seguimiento de solicitudes</h4>
+          <p>Configura las etiquetas y lo que verá la familia.</p>
+        </div>
+        <button
+          className="workflow-save-button"
+          type="button"
+          onClick={() => void save()}
+          disabled={loading || saving || statuses.length === 0}
+        >
+          {saving ? "Guardando..." : "Guardar estados"}
+        </button>
+      </div>
+      {loading ? (
+        <p className="workflow-message">Cargando estados…</p>
+      ) : (
+        <div className="workflow-status-list">
+          {[...statuses]
+            .sort((first, second) => first.display_order - second.display_order)
+            .map((status, index) => (
+              <div className="workflow-status-row" key={status.code}>
+                <div className="workflow-order-controls" aria-label="Orden">
+                  <button
+                    type="button"
+                    aria-label={`Subir ${status.label}`}
+                    disabled={index === 0}
+                    onClick={() => moveStatus(index, -1)}
+                  >
+                    ↑
+                  </button>
+                  <button
+                    type="button"
+                    aria-label={`Bajar ${status.label}`}
+                    disabled={index === statuses.length - 1}
+                    onClick={() => moveStatus(index, 1)}
+                  >
+                    ↓
+                  </button>
+                </div>
+                <label className="workflow-label-field">
+                  Nombre del estado
+                  <input
+                    value={status.label}
+                    maxLength={80}
+                    onChange={(event) =>
+                      updateStatus(status.code, "label", event.target.value)
+                    }
+                  />
+                </label>
+                <label className="workflow-check">
+                  <input
+                    type="checkbox"
+                    checked={status.family_visible}
+                    onChange={(event) =>
+                      updateStatus(
+                        status.code,
+                        "family_visible",
+                        event.target.checked,
+                      )
+                    }
+                  />
+                  Visible a familia
+                </label>
+                <label className="workflow-check">
+                  <input
+                    type="checkbox"
+                    checked={status.is_active}
+                    onChange={(event) =>
+                      updateStatus(
+                        status.code,
+                        "is_active",
+                        event.target.checked,
+                      )
+                    }
+                  />
+                  Activo
+                </label>
+              </div>
+            ))}
+        </div>
+      )}
+      {error && <p className="form-message error-message" role="alert">{error}</p>}
+      {notice && <p className="form-message success-message" role="status">{notice}</p>}
+      <p className="workflow-message">
+        Desactivar un estado lo conserva en el historial; no borra registros.
+      </p>
+    </section>
   );
 }

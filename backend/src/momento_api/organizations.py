@@ -6,7 +6,8 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from momento_api.models import CareUnit, Organization
+from momento_api.models import CareUnit, CareUnitWorkflowStatus, Organization
+from momento_api.workflow_defaults import DEFAULT_WORKFLOW_STATUSES
 from momento_api.schemas import (
     CareUnitCreate,
     CareUnitRead,
@@ -73,6 +74,9 @@ def create_care_unit(
         name=payload.name,
         service_type=payload.service_type,
         country_code=payload.country_code,
+    )
+    care_unit.workflow_statuses.extend(
+        CareUnitWorkflowStatus(**item) for item in DEFAULT_WORKFLOW_STATUSES
     )
     session.add(care_unit)
     session.commit()

@@ -518,7 +518,152 @@ a:focus-visible {
   gap: 10px;
 }
 
+
+.workflow-editor {
+  margin: 12px 0 4px;
+  padding: 16px;
+  border: 1px solid #e4e0ef;
+  border-radius: 13px;
+  background: #faf9fd;
+}
+
+.workflow-editor-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 14px;
+  margin-bottom: 12px;
+}
+
+.workflow-editor-heading h4 {
+  margin: 0;
+  font-size: 0.92rem;
+}
+
+.workflow-editor-heading p,
+.workflow-message {
+  margin: 5px 0 0;
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.5;
+}
+
+.workflow-save-button {
+  min-height: 38px;
+  padding: 0 13px;
+  border: 1px solid #c8b9f4;
+  border-radius: 9px;
+  color: #5336a6;
+  background: #f2edff;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 750;
+  white-space: nowrap;
+}
+
+.workflow-save-button:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}
+
+.workflow-status-list {
+  display: grid;
+  gap: 7px;
+}
+
+.workflow-status-row {
+  display: grid;
+  grid-template-columns: auto minmax(150px, 1fr) auto auto;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 10px;
+  border: 1px solid #eceaf1;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.workflow-order-controls {
+  display: flex;
+  gap: 4px;
+}
+
+.workflow-order-controls button {
+  width: 28px;
+  height: 28px;
+  border: 1px solid #dfe0e8;
+  border-radius: 7px;
+  color: var(--ink);
+  background: #fff;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.workflow-order-controls button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.workflow-label-field {
+  display: grid;
+  gap: 5px;
+  color: #555b6c;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.workflow-label-field input {
+  min-height: 36px;
+  padding: 7px 9px;
+  border: 1px solid #d4d6e0;
+  border-radius: 8px;
+  color: var(--ink);
+  background: #fff;
+  font: inherit;
+  font-size: 0.84rem;
+}
+
+.workflow-check {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #41485b;
+  font-size: 0.76rem;
+  white-space: nowrap;
+}
+
+.workflow-check input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--plum-dark);
+}
+
 @media (max-width: 760px) {
+  .workflow-editor-heading {
+    flex-direction: column;
+  }
+
+  .workflow-save-button {
+    width: 100%;
+  }
+
+  .workflow-status-row {
+    grid-template-columns: auto 1fr;
+    align-items: start;
+  }
+
+  .workflow-order-controls {
+    grid-row: span 2;
+  }
+
+  .workflow-label-field {
+    grid-column: 2;
+  }
+
+  .workflow-check {
+    grid-column: 2;
+  }
+
   .organization-section {
     margin-bottom: 48px;
     padding: 21px;

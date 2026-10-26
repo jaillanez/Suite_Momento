@@ -12,7 +12,9 @@ from sqlalchemy import (
     DateTime,
     Enum as SAEnum,
     ForeignKey,
+    Integer,
     String,
+    UniqueConstraint,
     Uuid,
     func,
 )
@@ -97,3 +99,53 @@ class CareUnit(Base):
     )
 
     organization: Mapped[Organization] = relationship(back_populates="care_units")
+    workflow_statuses: Mapped[list[CareUnitWorkflowStatus]] = relationship(
+        back_populates="care_unit",
+        cascade="all, delete-orphan",
+        order_by="CareUnitWorkflowStatus.display_order",
+    )
+
+
+class CareUnitWorkflowStatus(Base):
+    """Estado editable del seguimiento familiar de un servicio."""
+
+    __tablename__ = "care_unit_workflow_statuses"
+    __table_args__ = (
+        UniqueConstraint(
+            "care_unit_id",
+            "code",
+            name="uq_care_unit_workflow_statuses_service_code",
+        ),
+        CheckConstraint(
+            "display_order > 0",
+            name="ck_care_unit_workflow_statuses_order",
+        ),
+    )
+
+    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
+    care_unit_id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("care_units.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    code: Mapped[str] = mapped_column(String(40), nullable=False)
+    label: Mapped[str] = mapped_column(String(80), nullable=False)
+    display_order: Mapped[int] = mapped_column(Integer, nullable=False)
+    is_active: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=True, server_default="true"
+    )
+    family_visible: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=True, server_default="true"
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+        onupdate=func.now(),
+    )
+
+    care_unit: Mapped[CareUnit] = relationship(back_populates="workflow_statuses")

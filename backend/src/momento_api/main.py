@@ -4,6 +4,7 @@ from fastapi import FastAPI, HTTPException
 
 from momento_api.database import database_is_ready
 from momento_api.organizations import router as organizations_router
+from momento_api.workflow_config import router as workflow_config_router
 
 app = FastAPI(
     title="Momento API",
@@ -11,6 +12,7 @@ app = FastAPI(
     version="0.1.0",
 )
 app.include_router(organizations_router)
+app.include_router(workflow_config_router)
 
 
 @app.get("/api/health", tags=["Sistema"])
