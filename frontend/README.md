@@ -1,6 +1,6 @@
 # Aplicación web Momento
 
-Aplicación web React y TypeScript. Vite dirige las solicitudes de /api al backend local de FastAPI.
+Aplicación web React y TypeScript. Vite dirige las solicitudes de /api al backend local de FastAPI en el puerto 8020.
 
 ## Preparar e iniciar
 
