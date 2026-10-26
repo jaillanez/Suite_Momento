@@ -140,9 +140,13 @@ Ninguna línea queda aprobada como funcionalidad hasta conocer el proceso real, 
 - ¿Qué comunicaciones externas e integraciones son realmente necesarias?
 - ¿Qué conocimientos, herramientas y versiones están disponibles en la Mac de desarrollo?
 
-## Criterio de salida de la Fase 0
+## Cierre de Fase 0 y pendientes explícitos
 
-La fase podrá considerarse lista para diseñar la primera versión cuando exista:
+Jorge dio por cerrada esta fase para iniciar la base técnica. El cierre registra la visión inicial, los materiales revisados y las líneas de producto a validar. No convierte las ideas documentales en funcionalidades aprobadas.
+
+Las preguntas que siguen abiertas no bloquean la preparación técnica. Deben resolverse antes de acordar el alcance del MVP o implementar funciones que involucren datos asistenciales, permisos o comunicación con familiares.
+
+Como controles para esas decisiones, se mantienen los siguientes puntos:
 
 - Un problema prioritario validado con participantes del contexto piloto.
 - Personas usuarias y responsabilidades descritas.
@@ -152,8 +156,8 @@ La fase podrá considerarse lista para diseñar la primera versión cuando exist
 - Decisiones pendientes visibles, con responsable de resolverlas.
 - Criterios de aceptación redactados en lenguaje verificable.
 
-## Próximo paso
+## Próximas actividades
 
-Relevar el recorrido actual en una residencia piloto y contrastarlo con cuidadores, coordinación, profesionales, familiares y, cuando sea posible, personas mayores. Después se consolidarán hallazgos, alcance inicial y criterios de aceptación.
+La Fase 1 comienza con la comprobación del entorno local. Al definir el MVP y cada módulo funcional, se retomarán las preguntas pendientes y se documentará qué evidencia las resuelve. No cargar datos identificables o clínicos reales de residentes en esta base de desarrollo.
 
 No registrar datos identificables o clínicos reales de residentes en este repositorio.
