@@ -1,6 +1,6 @@
 # Fase 1 — Base técnica local
 
-**Estado:** en verificación en la Mac de Jorge.  
+**Estado:** API responde en la Mac; pendientes la conexión con PostgreSQL y la comprobación de la web.  
 **Objetivo:** iniciar el repositorio nuevo con las herramientas ya instaladas y comprobar la conexión local entre React, la API y PostgreSQL.
 
 ## Entorno informado
@@ -73,7 +73,7 @@ La variable que utiliza la API es `MOMENTO_DATABASE_URL`. No subir `backend/.env
 
 - El script inicia ambos servicios y se detiene con Control+C.
 - La web carga y muestra la marca Momento.
-- `/api/health` responde con estado correcto.
+- `/api/health` responde con estado correcto. **Confirmado por Jorge en su Mac.**
 - La consulta de PostgreSQL informa disponibilidad después de configurar la base local.
 - El backend pasa sus pruebas automatizadas.
 - La compilación de React finaliza correctamente.
