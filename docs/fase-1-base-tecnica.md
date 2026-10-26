@@ -1,6 +1,6 @@
 # Fase 1 — Base técnica local
 
-**Estado:** API, PostgreSQL y pruebas del backend confirmados en la Mac; pendiente volver a ejecutar la compilación React después de corregir los tipos de Vite.  
+**Estado:** cerrada en la Mac de Jorge el 26/10/2026. API, PostgreSQL, pruebas de backend y compilación de React verificados.  
 **Objetivo:** iniciar el repositorio nuevo con las herramientas ya instaladas y comprobar la conexión local entre React, la API y PostgreSQL.
 
 ## Entorno informado
@@ -20,11 +20,11 @@ Se comienza con estas instalaciones. No se instalará otra versión global de Py
 - API Python con comprobación de salud en `/api/health`.
 - Comprobación de conexión PostgreSQL en `/api/health/database`.
 - Aplicación React con Vite.
-- Script `scripts/iniciar-local.sh), que crea `backend/.venv` y prepara dependencias dentro de las carpetas del proyecto.
+- Script `scripts/iniciar-local.sh`, que crea `backend/.venv` y prepara dependencias dentro de las carpetas del proyecto.
 - Archivo de ejemplo `backend/.env.example`; los archivos `.env` locales están excluidos de Git.
 - API local en el puerto **8020** para evitar el puerto 8000 ya utilizado en la Mac de Jorge.
 
-La pantalla web continúa siendo de desarrollo. No registra residentes, historias clínicas ni actividades.
+La pantalla web continúa siendo una base de desarrollo y no registra residentes, historias clínicas ni actividades. El servidor Vite estuvo activo y la API recibió llamadas de salud desde el entorno web.
 
 ## Comprobación inicial en la Mac
 
@@ -57,7 +57,7 @@ La configuración local se guarda en `backend/.env`, excluido de Git. No compart
 - `/api/health` responde HTTP 200. **Confirmado por Jorge en su Mac.**
 - `/api/health/database` responde HTTP 200. **Confirmado por Jorge en su Mac.**
 - Las pruebas del backend finalizan correctamente: **2 pasaron**.
-- La compilación de React debe repetirse después de agregar la declaración de tipos de Vite para reconocer la importación de CSS.
+- La compilación de React finaliza correctamente después de agregar la declaración de tipos de Vite. **Confirmado por Jorge en su Mac.**
 - No se guardan datos personales o clínicos reales en esta etapa.
 
 ## Límites de esta fase
