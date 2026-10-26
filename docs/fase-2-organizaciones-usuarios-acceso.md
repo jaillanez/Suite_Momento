@@ -19,8 +19,9 @@ Confirmadas el 26/10/2026:
 2. **Usuarios del piloto:** se contemplan personal, familiares/personas de confianza y personas mayores.
 3. **Autorización familiar:** puede otorgarla el encargado de la residencia, un usuario administrativo habilitado o el médico.
 4. **Alcance familiar:** se limita a información relacionada con la persona mayor vinculada y a los temas de medicación, actividades y dietas.
+5. **Acciones familiares:** puede consultar la información autorizada, responder comunicaciones e iniciar solicitudes. No puede modificar indicaciones de medicación, dietas ni planes de actividades.
 
-Queda por precisar qué acciones tendrá la familia. Las opciones para validar son: (A) solo consultar la información autorizada; o (B) consultar y además responder comunicaciones o iniciar solicitudes, sin modificar indicaciones de medicación, dietas ni planes de actividades.
+Jorge confirmó que la familia podrá consultar la información autorizada, responder comunicaciones e iniciar solicitudes relacionadas con medicación, actividades y dietas. La familia no podrá modificar indicaciones ni planes. El circuito de recepción y atención de esos mensajes y solicitudes queda por definir.
 
 ## Modelo organizativo para diseñar
 
@@ -30,7 +31,7 @@ Queda por precisar qué acciones tendrá la familia. Las opciones para validar s
 | Sede o servicio | Residencia, sede física o equipo de atención domiciliaria dentro de una organización | Compatible con el modelo; alcance del piloto por precisar |
 | Cuenta de usuario | Identidad de acceso de una persona | Propuesta técnica, pendiente de validar |
 | Membresía | Vínculo de una cuenta con una organización, sede o equipo y sus permisos | Propuesta técnica, pendiente de validar |
-| Autorización familiar | Permiso vinculado a una persona mayor y a categorías de información definidas | Alcance y autorizadores confirmados; acciones y vigencia pendientes |
+| Autorización familiar | Permiso vinculado a una persona mayor, categorías autorizadas y acciones familiares | Categorías, autorizadores y acciones generales confirmados; vigencia y circuito de atención pendientes |
 | Auditoría | Registro de accesos y cambios relevantes | Requisito del proyecto; eventos y retención por definir |
 
 ## Modelo conceptual de acceso para el piloto
@@ -41,7 +42,7 @@ La siguiente estructura traduce las decisiones confirmadas a conceptos de sistem
 - **Cuenta** identifica a una persona usuaria; el vínculo con una organización y sede se administra por separado.
 - **Persona mayor** se vincula con su residencia o servicio de cuidado.
 - **Autorización familiar** vincula una cuenta familiar con una persona mayor, incluye las categorías autorizadas (medicación, actividades y dietas), identifica quién la concedió y permite revocarla.
-- **Acción permitida** (consultar, responder, solicitar o modificar) debe quedar separada de la categoría de información. Jorge confirmó las categorías y quién puede autorizar; falta confirmar las acciones.
+- **Acción permitida** (consultar, responder o iniciar una solicitud) debe quedar separada de la categoría de información. Jorge confirmó las categorías, quién puede autorizar y las acciones generales. La familia no modifica indicaciones ni planes.
 
 ### Flujo propuesto para autorizar a una familia
 
@@ -51,7 +52,7 @@ La siguiente estructura traduce las decisiones confirmadas a conceptos de sistem
 4. La autorización se puede revisar y revocar; al revocarla, deja de habilitar el acceso.
 5. El acceso a otra persona o a otra categoría no autorizada se rechaza y queda sujeto a auditoría.
 
-**Punto aún abierto:** el comportamiento inicial recomendado es solo consulta para la familia. No se habilitarán respuestas, solicitudes ni modificaciones hasta que Jorge y el equipo definan cuáles necesitan y quién las atiende.
+**Confirmado:** la familia puede consultar la información autorizada, responder comunicaciones e iniciar solicitudes. La solicitud y la respuesta no cambian por sí mismas la medicación indicada, la dieta ni el plan de actividades. Falta definir a qué equipo o persona llegan y cómo se confirma su atención.
 
 ## Primera entrega técnica de Fase 2
 
@@ -119,7 +120,7 @@ Para familiares, el alcance inicial confirmado es la información vinculada a me
 
 ## Decisiones pendientes de Jorge y del equipo piloto
 
-1. Para la familia, ¿elegimos A) solo consulta de medicación, actividades y dietas autorizadas, o B) consulta más respuestas a comunicaciones e inicio de solicitudes, sin modificar esos datos?
+1. ¿Las respuestas y solicitudes familiares deben llegar a una bandeja compartida del servicio/residencia o a una persona designada? Definir responsables, estados y confirmación de recepción.
 2. ¿Qué perfiles de personal se necesitan en la residencia piloto y qué diferencia de acceso tiene cada uno?
 3. ¿La persona mayor tendrá una cuenta individual? ¿Qué alternativa se usará si necesita ayuda para acceder?
 4. ¿Un usuario podrá pertenecer a varias organizaciones o sedes desde el piloto?
@@ -133,7 +134,7 @@ La fase estará lista para implementar cuando:
 
 - El alcance de organización, sedes y residencia piloto esté definido.
 - La matriz de roles y permisos identifique cada acción y tipo de información.
-- Las acciones familiares posibles dentro de medicación, actividades y dietas estén acordadas.
+- El circuito de recepción, asignación y respuesta de solicitudes familiares esté acordado.
 - Se definan los permisos y apoyos para la persona mayor.
 - Los recorridos de invitación, cambio de permisos, revocación y baja estén acordados.
 - Se definan auditoría, aislamiento entre organizaciones y reglas de revisión.
