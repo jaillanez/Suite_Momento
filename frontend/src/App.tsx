@@ -40,7 +40,7 @@ export default function App() {
     <main className="page-shell">
       <header className="topbar">
         <a className="brand" href="/" aria-label="Momento, inicio">
-          <span className="brand-mark" aria-hidden="true">M</span>
+          <img className="brand-logo" src="/brand/iso-momento.png" alt="" />
           <span>momento</span>
         </a>
         <span className="environment-tag">
@@ -52,7 +52,7 @@ export default function App() {
       <section className="hero" aria-labelledby="welcome-title">
         <div className="hero-copy">
           <p className="eyebrow">Una base nueva para cuidar mejor</p>
-          <h1 id="welcome-title">El cuidado se construye entre todos.</h1>
+          <h1 id="welcome-title">El cuidado se construye en red, con la persona en el centro.</h1>
           <p className="hero-description">
             Momento nace para acompañar el cuidado de personas mayores en
             residencias y domicilios, conectando a quienes forman parte de su
@@ -61,8 +61,7 @@ export default function App() {
           <div className="hero-note">
             <span className="note-symbol" aria-hidden="true">i</span>
             <p>
-              Esta es la primera base técnica. Todavía no registra información
-              de personas ni procesos asistenciales.
+              Esta es una base de desarrollo. Los antecedentes de Momento orientan el descubrimiento; el alcance nuevo todavía se está definiendo.
             </p>
           </div>
         </div>
@@ -85,40 +84,47 @@ export default function App() {
 
       <section className="foundation" aria-labelledby="foundation-title">
         <div className="section-heading">
-          <p className="eyebrow">Punto de partida</p>
-          <h2 id="foundation-title">Diseñada para crecer con el cuidado real</h2>
+          <p className="eyebrow">De la experiencia de Momento</p>
+          <h2 id="foundation-title">Temas que vamos a validar con el piloto</h2>
         </div>
 
+        <p className="section-intro">
+          Son líneas surgidas de los materiales compartidos, no funciones ya implementadas.
+        </p>
         <div className="foundation-grid">
           <article className="foundation-card">
             <span className="card-number">01</span>
-            <h3>Personas primero</h3>
+            <h3>La persona y su historia</h3>
             <p>
-              La dignidad, las preferencias y la autonomía guían las decisiones
-              de producto.
+              Preferencias, apoyos y aspectos de su vida que pueden ayudar a personalizar el cuidado.
             </p>
           </article>
           <article className="foundation-card">
             <span className="card-number">02</span>
-            <h3>Continuidad del cuidado</h3>
+            <h3>Continuidad entre quienes cuidan</h3>
             <p>
-              La información debe ayudar a que las personas involucradas
-              puedan coordinarse.
+              Novedades, actividades y asuntos pendientes que podrían facilitar la coordinación.
             </p>
           </article>
           <article className="foundation-card">
             <span className="card-number">03</span>
-            <h3>Construcción por etapas</h3>
+            <h3>Comunicación con la familia</h3>
             <p>
-              Primero se validan las necesidades; luego se implementan los
-              procesos acordados.
+              Información clara y autorizada, diferenciada de los registros profesionales privados.
+            </p>
+          </article>
+          <article className="foundation-card">
+            <span className="card-number">04</span>
+            <h3>Apoyo a cuidadores</h3>
+            <p>
+              Herramientas de trabajo junto con capacitación y recursos de acompañamiento.
             </p>
           </article>
         </div>
       </section>
 
       <footer className="page-footer">
-        <span>Momento · base técnica inicial</span>
+        <span>Momento · producto en descubrimiento</span>
         <span>Sin datos reales de residentes</span>
       </footer>
     </main>

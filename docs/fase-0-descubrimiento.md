@@ -27,6 +27,18 @@ Esta fase no parte del código ni del modelo de datos del sistema anterior. El s
 - **Hipótesis:** idea sugerida por los materiales o por el análisis, pendiente de validación.
 - **Pendiente:** todavía no hay decisión suficiente para construirla.
 
+## Materiales compartidos y cómo se interpretan
+
+Se revisaron los documentos de Momento, las capturas de interfaces y las notas de experiencia que Jorge compartió. El inventario y la síntesis se encuentran en [revisión de materiales compartidos](revision-materiales-compartidos.md).
+
+El informe técnico de una etapa previa registra como áreas exploradas la ficha personal, los registros profesionales con información privada y compartida, las evaluaciones, los pedidos a familiares, las actividades planificadas, la comunicación institucional, la aplicación móvil para familiares y la capacitación del personal. Estas experiencias deben servir para preguntar y validar; no se supone que estén implementadas hoy ni se trasladan automáticamente al producto nuevo.
+
+Las capturas muestran interfaces anteriores de gestión institucional y una aplicación móvil. Sirven para reconocer el contexto y conversar sobre problemas observables; no son diseños a copiar ni confirman que sus flujos fueran satisfactorios.
+
+Las propuestas tituladas Red de Cuidados, Portal del Cuidador, Navegación Geriátrica, Interfaces Intuitivas y Diseño Esqueuomórfico incluyen ideas generadas para explorar. Se consideran hipótesis. Las métricas promocionales incluidas allí, las funciones de vigilancia con sensores o cámaras y el análisis automático de voz o emociones no tienen evidencia suficiente para transformarse en compromisos.
+
+Las notas de revisión de septiembre de 2026 registran problemas concretos de la experiencia previa, como la jerarquía de acciones, la localización de escalas, la carga de estudios y la presentación o puntuación de algunos elementos. Cada observación necesita comprobarse en su contexto antes de convertirse en una regla del nuevo sistema.
+
 ## Problema que queremos entender
 
 Los materiales apuntan a posibles dificultades en la continuidad del cuidado, la coordinación entre personas, el registro de novedades, la comunicación con familiares y la facilidad de uso para personas mayores y cuidadores.

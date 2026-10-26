@@ -6,6 +6,9 @@ Momento es un producto nuevo para el cuidado de personas mayores en residencias 
 
 ## Reglas de trabajo
 
+- Antes de diseñar o implementar producto, leer `docs/revision-materiales-compartidos.md` y `docs/criterios-iniciales-experiencia.md`; verificar en la visión qué está confirmado y qué sigue como hipótesis.
+- La marca inicial proviene de los archivos compartidos por Jorge. No inventar logos o imágenes para sustituirla; validar con el equipo si la versión de marca sigue vigente.
+
 1. No copiar ni reutilizar código, estructura, base de datos, pantallas o arquitectura del sistema viejo.
 2. Usar los materiales históricos solo para extraer necesidades, problemas y aprendizajes; diferenciar hechos confirmados de propuestas.
 3. No inventar reglas clínicas, legales, operativas ni comerciales. Marcar dudas y pedir validación antes de convertirlas en comportamiento del producto.

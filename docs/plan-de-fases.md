@@ -18,17 +18,19 @@
 
 **Objetivo:** entender las necesidades y procesos reales antes de fijar el alcance inicial.
 
-**Trabajo:** relevar a la persona mayor, familiares, cuidadores, profesionales y responsables; documentar el recorrido actual en la residencia piloto y contemplar diferencias con el cuidado domiciliario; distinguir problemas observados de ideas propuestas; identificar riesgos y decisiones legales pendientes.
+**Trabajo:** relevar a la persona mayor, familiares, cuidadores, profesionales y responsables; documentar el recorrido actual en la residencia piloto y contemplar diferencias con el cuidado domiciliario; contrastar con la experiencia funcional documentada de Momento; distinguir problemas observados de ideas propuestas; identificar riesgos y decisiones legales pendientes.
 
 **Resultado esperado:** problema prioritario validado, personas usuarias y responsabilidades, recorridos actuales, límites del producto y alcance de la primera versión con criterios de aceptación.
 
-Documento de trabajo: [Fase 0 — Descubrimiento y definición de Momento](fase-0-descubrimiento.md).
+Los materiales compartidos agregan experiencia previa sobre ficha personal, evoluciones, evaluaciones, actividades, comunicación y capacitación. Se revisan como antecedentes, no como alcance aprobado.
+
+Documentos: [Fase 0 — Descubrimiento y definición de Momento](fase-0-descubrimiento.md), [revisión de materiales compartidos](revision-materiales-compartidos.md) y [criterios iniciales de experiencia](criterios-iniciales-experiencia.md).
 
 ## Fase 1 — Base técnica y entorno local
 
 **Objetivo:** preparar una base nueva, reproducible y fácil de desarrollar en la Mac.
 
-**Trabajo:** confirmar arquitectura del repositorio; instalar Python y PostgreSQL de forma nativa; crear entorno virtual de Python; iniciar API y aplicación React; definir configuración por ambiente, migraciones de base de datos, registros técnicos y comprobaciones automáticas de calidad. Docker no forma parte del entorno local acordado.
+**Trabajo:** confirmar arquitectura del repositorio; instalar Python y PostgreSQL de forma nativa; crear entorno virtual de Python; iniciar API y aplicación React; definir configuración por ambiente, migraciones de base de datos, registros técnicos y comprobaciones automáticas de calidad. La primera interfaz toma como referencia provisional la paleta y el isotipo compartidos, con contraste y accesibilidad por validar. Docker no forma parte del entorno local acordado.
 
 **Stack y versiones:** verificar compatibilidad real entre macOS, Python, framework de API, paquetes y herramientas antes de fijar versiones. Al 26/10/2026, Python 3.15.2 es la versión estable más reciente; PostgreSQL 18.6 es la versión estable soportada más reciente según la política oficial, mientras PostgreSQL 19 continúa como release candidate. No usar una versión candidata como base de producción. Revalidar las versiones el día de instalación.
 

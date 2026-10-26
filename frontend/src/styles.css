@@ -1,19 +1,19 @@
 :root {
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  color: #25312e;
-  background: #f5f3ef;
+  color: #23283d;
+  background: #f7f8fc;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
-  --ink: #25312e;
-  --muted: #65716d;
-  --line: #e3e1db;
-  --paper: #fffefa;
-  --plum: #513d66;
-  --plum-dark: #3f2f51;
-  --sage: #dce8dc;
-  --mint: #e9f1e8;
-  --amber: #f2e5ca;
+  --ink: #23283d;
+  --muted: #51596d;
+  --line: #e1e4ed;
+  --paper: #ffffff;
+  --plum: #875cff;
+  --plum-dark: #5336a6;
+  --sage: #a6ded4;
+  --mint: #e9f7f4;
+  --amber: #f0ebff;
 }
 
 * {
@@ -33,7 +33,7 @@ a {
 
 button:focus-visible,
 a:focus-visible {
-  outline: 3px solid #9b7bb3;
+  outline: 3px solid #875cff;
   outline-offset: 3px;
 }
 
@@ -61,16 +61,11 @@ a:focus-visible {
   text-decoration: none;
 }
 
-.brand-mark {
-  display: grid;
-  width: 38px;
-  height: 38px;
-  place-items: center;
-  border-radius: 13px;
-  color: white;
-  background: var(--plum);
-  font-family: Georgia, serif;
-  font-size: 1.3rem;
+.brand-logo {
+  display: block;
+  width: 42px;
+  height: 42px;
+  object-fit: contain;
 }
 
 .environment-tag {
@@ -80,8 +75,8 @@ a:focus-visible {
   padding: 9px 13px;
   border: 1px solid #d9e3d7;
   border-radius: 999px;
-  color: #4c6252;
-  background: #eff4ed;
+  color: #273d42;
+  background: var(--mint);
   font-size: 0.82rem;
   font-weight: 600;
 }
@@ -104,7 +99,7 @@ a:focus-visible {
 
 .eyebrow {
   margin: 0 0 13px;
-  color: var(--plum);
+  color: var(--plum-dark);
   font-size: 0.74rem;
   font-weight: 800;
   letter-spacing: 0.13em;
@@ -229,14 +224,14 @@ a:focus-visible {
   border: 0;
   border-radius: 12px;
   color: #fff;
-  background: var(--plum);
+  background: var(--plum-dark);
   cursor: pointer;
   font-weight: 700;
   transition: background 150ms ease, transform 150ms ease;
 }
 
 .check-button:hover {
-  background: var(--plum-dark);
+  background: #3f287f;
 }
 
 .check-button:active {
@@ -256,12 +251,19 @@ a:focus-visible {
 }
 
 .section-heading {
-  margin-bottom: 24px;
+  margin-bottom: 12px;
+}
+
+.section-intro {
+  max-width: 720px;
+  margin: 0 0 24px;
+  color: var(--muted);
+  line-height: 1.6;
 }
 
 .foundation-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 16px;
 }
 
@@ -279,8 +281,8 @@ a:focus-visible {
   height: 34px;
   place-items: center;
   border-radius: 11px;
-  color: var(--plum);
-  background: #eee8f3;
+  color: #5336a6;
+  background: #f0ebff;
   font-size: 0.78rem;
   font-weight: 800;
 }
@@ -328,6 +330,10 @@ a:focus-visible {
 
   .hero-description {
     font-size: 1rem;
+  }
+
+  .foundation-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .foundation-grid {

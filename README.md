@@ -30,6 +30,8 @@ Abre http://127.0.0.1:5173. La API estará en http://127.0.0.1:8000. PostgreSQL 
 
 - docs/vision.md
 - docs/fase-0-descubrimiento.md
+- docs/revision-materiales-compartidos.md
+- docs/criterios-iniciales-experiencia.md
 - docs/plan-de-fases.md
 - backend/README.md
 - frontend/README.md
