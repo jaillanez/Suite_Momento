@@ -1,6 +1,6 @@
 # Fase 1 — Base técnica local
 
-**Estado:** API y conexión PostgreSQL confirmadas en la Mac; pendientes la comprobación de la web y las pruebas locales.  
+**Estado:** API, PostgreSQL y pruebas del backend confirmados en la Mac; pendiente volver a ejecutar la compilación React después de corregir los tipos de Vite.  
 **Objetivo:** iniciar el repositorio nuevo con las herramientas ya instaladas y comprobar la conexión local entre React, la API y PostgreSQL.
 
 ## Entorno informado
@@ -20,7 +20,7 @@ Se comienza con estas instalaciones. No se instalará otra versión global de Py
 - API Python con comprobación de salud en `/api/health`.
 - Comprobación de conexión PostgreSQL en `/api/health/database`.
 - Aplicación React con Vite.
-- Script `scripts/iniciar-local.sh`, que crea `backend/.venv` y prepara dependencias dentro de las carpetas del proyecto.
+- Script `scripts/iniciar-local.sh), que crea `backend/.venv` y prepara dependencias dentro de las carpetas del proyecto.
 - Archivo de ejemplo `backend/.env.example`; los archivos `.env` locales están excluidos de Git.
 - API local en el puerto **8020** para evitar el puerto 8000 ya utilizado en la Mac de Jorge.
 
@@ -56,8 +56,8 @@ La configuración local se guarda en `backend/.env`, excluido de Git. No compart
 - La web carga y muestra la marca Momento.
 - `/api/health` responde HTTP 200. **Confirmado por Jorge en su Mac.**
 - `/api/health/database` responde HTTP 200. **Confirmado por Jorge en su Mac.**
-- El backend pasa sus pruebas automatizadas.
-- La compilación de React finaliza correctamente.
+- Las pruebas del backend finalizan correctamente: **2 pasaron**.
+- La compilación de React debe repetirse después de agregar la declaración de tipos de Vite para reconocer la importación de CSS.
 - No se guardan datos personales o clínicos reales en esta etapa.
 
 ## Límites de esta fase
