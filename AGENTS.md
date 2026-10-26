@@ -14,8 +14,9 @@ Momento es un producto nuevo para el cuidado de personas mayores en residencias 
 6. La IA no debe diagnosticar, prescribir, modificar indicaciones clínicas ni enviar información sensible a terceros sin autorización explícita.
 7. Proteger datos personales y de salud desde el diseño. Aplicar acceso por rol y organización cuando se defina el modelo.
 8. Mantener el desarrollo local sin Docker. Stack acordado: Python, PostgreSQL y React. Validar las versiones al configurar el entorno.
-9. No agregar servicios, dependencias o infraestructura sin una necesidad identificada.
-10. Antes de modificar archivos, revisar el estado del repositorio. Al terminar, resumir cambios, comprobaciones y decisiones pendientes.
+9. No instalar, actualizar ni eliminar Xcode o Command Line Tools; esta Mac también se usa para otros proyectos.
+10. No agregar servicios, dependencias o infraestructura sin una necesidad identificada.
+11. Antes de modificar archivos, revisar el estado del repositorio. Al terminar, resumir cambios, comprobaciones y decisiones pendientes.
 
 ## Forma de avanzar
 
