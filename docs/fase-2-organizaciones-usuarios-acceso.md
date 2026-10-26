@@ -1,6 +1,6 @@
 # Fase 2 — Organizaciones, usuarios y acceso
 
-**Estado:** definición en curso. La propuesta de esta versión requiere validación de Jorge y del equipo piloto antes de implementar.  
+**Estado:** definición en curso. Jorge confirmó el modelo de organización, los grupos de usuarios del piloto y el alcance de acceso familiar; faltan decisiones operativas antes de implementar.  
 **Propósito:** acordar cómo se organiza Momento y qué información puede consultar o modificar cada persona.
 
 ## Contexto confirmado
@@ -47,9 +47,9 @@ Para poder avanzar, esta es la recomendación de diseño. No se considera una de
 5. Revisar reglas de autorización, privacidad y diferencias por país.
 6. Aprobar alcance y criterios; recién entonces diseñar e implementar la base de datos y la autenticación.
 
-## Conceptos candidatos para validar
+## Decisiones confirmadas por Jorge
 
-Estos nombres sirven para conversar; no son un modelo de datos aprobado:
+Estas decisiones forman parte del alcance acordado el 26/10/2026:
 
 - **Organización:** entidad que presta o administra el servicio de cuidado.
 - **Sede o servicio:** residencia, sede física, equipo o servicio domiciliario dentro de la organización.
@@ -72,7 +72,7 @@ La siguiente lista es una hipótesis inicial. La separación entre funciones se 
 | Familiar o persona de confianza | Consultar y aportar información autorizada | Qué puede ver, enviar, descargar o solicitar |
 | Persona mayor | Consultar información propia y usar funciones que elija | Capacidades, apoyos, representación y preferencias de acceso |
 
-No se presupone que todas estas cuentas deban existir en la primera versión.
+Los grupos de personal, familia/personas de confianza y personas mayores están incluidos en el piloto. Falta definir la habilitación y los permisos concretos de cada tipo de cuenta.
 
 ## Reglas de acceso que debe resolver la definición
 
