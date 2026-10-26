@@ -6,7 +6,7 @@ Este repositorio comienza como un proyecto nuevo. El sistema anterior de 2014 es
 
 ## Estado actual
 
-Primera base técnica en construcción: API Python, comprobación de PostgreSQL y aplicación React. La pantalla actual es de desarrollo y no registra datos de personas.
+Base técnica local verificada: API Python, PostgreSQL y React. La interfaz actual es de desarrollo y no registra datos de personas. Se está definiendo el modelo de organizaciones, usuarios y accesos antes de implementar autenticación.
 
 ## Tecnologías
 
@@ -32,7 +32,7 @@ Abre http://127.0.0.1:5173. La API estará en http://127.0.0.1:8020. PostgreSQL 
 - docs/fase-0-descubrimiento.md
 - docs/revision-materiales-compartidos.md
 - docs/criterios-iniciales-experiencia.md
-- docs/plan-de-fases.md
+- docs/plan-de-fases.md\n- docs/fase-2-organizaciones-usuarios-acceso.md
 - backend/README.md
 - frontend/README.md
 - AGENTS.md
