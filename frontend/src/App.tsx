@@ -114,7 +114,6 @@ function PublicLanding({ onLogin }: { onLogin: () => void }) {
         <p className="eyebrow">Cuidado conectado</p>
         <h1>Más cerca de cada persona. Mejor coordinados en cada cuidado.</h1>
         <p>Momento acompaña el trabajo de residencias y equipos de cuidado, y conecta a las personas autorizadas con quienes las cuidan.</p>
-        <button className="primary-action landing-login" type="button" onClick={onLogin}>Ingresar a Momento</button>
       </section>
       <footer className="public-footer">Plataforma de cuidado para residencias y atención domiciliaria</footer>
     </main>
