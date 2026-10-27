@@ -21,7 +21,7 @@ Para recorrer la pantalla, iniciá los servicios en otra terminal:
 bash scripts/iniciar-local.sh
 ```
 
-Abrí http://127.0.0.1:5173 e ingresá con el correo y la contraseña que configuraste. La API valida el acceso y emite una cookie de sesión HttpOnly, de ocho horas. Al salir, la sesión se revoca. Las rutas de administración requieren sesión.
+Abrí http://127.0.0.1:5173 e ingresá con el correo y la contraseña que configuraste. La API valida el acceso y emite una cookie de sesión HttpOnly, de ocho horas. Al salir, la sesión se revoca. Las rutas de gestión requieren sesión y un vínculo activo de personal con la organización y el servicio consultados.
 
 El escenario se crea una sola vez. Si ya existe Residencia Los Aromos, el asistente se detiene sin reemplazar ni borrar registros.
 
@@ -29,4 +29,4 @@ El escenario se crea una sola vez. Si ya existe Residencia Los Aromos, el asiste
 
 Los nombres y cantidades sirven para recorrer la experiencia local; no representan personas, turnos ni eventos reales. La agenda y las solicitudes visibles en la vista de demostración son ejemplos de interfaz y no forman parte de los registros guardados por el asistente.
 
-El cookie local no usa Secure por defecto porque el desarrollo corre por HTTP en localhost. En un despliegue con HTTPS, configurá MOMENTO_COOKIE_SECURE=true. Este recorrido no configura un despliegue ni sustituye una revisión de permisos por organización antes de usar datos reales.
+El cookie local no usa Secure por defecto porque el desarrollo corre por HTTP en localhost. En un despliegue con HTTPS, configurá MOMENTO_COOKIE_SECURE=true. La aplicación de esta rama es un entorno local de demostración: el asistente genera identidades ficticias y no habilita la operación con información real.

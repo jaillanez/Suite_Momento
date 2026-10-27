@@ -6,7 +6,8 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from momento_api.models import CareUnit, CareUnitWorkflowStatus, Organization
+from momento_api.models import CareUnit, CareUnitWorkflowStatus, Organization, OrganizationMembership, UserAccount, UserGroup
+from momento_api.auth import get_management_account
 from momento_api.workflow_defaults import DEFAULT_WORKFLOW_STATUSES
 from momento_api.schemas import (
     CareUnitCreate,
@@ -28,9 +29,15 @@ def create_organization(
     payload: OrganizationCreate,
     response: Response,
     session: Session = Depends(get_session),
+    current_user: UserAccount = Depends(get_management_account),
 ) -> Organization:
-    """Crea una organización en la base configurada."""
+    """Crea una organización y vincula a quien la inició como personal gestor."""
     organization = Organization(name=payload.name)
+    organization.memberships.append(OrganizationMembership(
+        user_account_id=current_user.id,
+        user_group=UserGroup.STAFF,
+        role_label="Encargado/a",
+    ))
     session.add(organization)
     session.commit()
     session.refresh(organization)
@@ -42,11 +49,17 @@ def create_organization(
 def list_organizations(
     limit: int = Query(default=100, ge=1, le=100),
     session: Session = Depends(get_session),
+    current_user: UserAccount = Depends(get_management_account),
 ) -> list[Organization]:
-    """Lista organizaciones sin incluir datos de personas cuidadas."""
+    """Lista solo organizaciones donde la cuenta tiene un vínculo activo de personal."""
+    member_organizations = select(OrganizationMembership.organization_id).where(
+        OrganizationMembership.user_account_id == current_user.id,
+        OrganizationMembership.is_active.is_(True),
+        OrganizationMembership.user_group == UserGroup.STAFF,
+    )
     statement = (
         select(Organization)
-        .where(Organization.is_active.is_(True))
+        .where(Organization.is_active.is_(True), Organization.id.in_(member_organizations))
         .order_by(Organization.name, Organization.id)
         .limit(limit)
     )
