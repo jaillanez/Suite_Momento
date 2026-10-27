@@ -6,7 +6,7 @@ Este repositorio comienza como un proyecto nuevo. El sistema anterior de 2014 es
 
 ## Estado actual
 
-Base técnica local verificada: API Python, PostgreSQL y React. La interfaz actual es de desarrollo y no registra datos de personas. Se está definiendo el modelo de organizaciones, usuarios y accesos antes de implementar autenticación.
+Base técnica local: API Python, PostgreSQL y React. La interfaz de desarrollo permite crear organizaciones, servicios, cuentas de prueba y fichas mínimas con nombre visible. No cargues datos reales: autenticación y permisos todavía no están implementados.
 
 ## Tecnologías
 

@@ -380,3 +380,51 @@ def test_care_recipient_api_rejects_empty_name_and_unknown_service(
         "/api/care-units/aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa/care-recipients"
     )
     assert unknown_service.status_code == 404
+
+
+def test_membership_api_creates_and_lists_user_by_organization(
+    api_client: TestClient,
+) -> None:
+    organization_id, care_unit_id = create_test_service(api_client)
+
+    created = api_client.post(
+        f"/api/organizations/{organization_id}/memberships",
+        json={
+            "display_name": "  Familiar ficticio ",
+            "email": " familiar@example.test ",
+            "phone": "",
+            "user_group": "family",
+            "care_unit_id": care_unit_id,
+        },
+    )
+
+    assert created.status_code == 201
+    result = created.json()
+    assert result["user"]["display_name"] == "Familiar ficticio"
+    assert result["user"]["email"] == "familiar@example.test"
+    assert result["user"]["phone"] is None
+    assert result["user_group"] == "family"
+    assert result["care_unit_id"] == care_unit_id
+
+    listed = api_client.get(f"/api/organizations/{organization_id}/memberships")
+    assert listed.status_code == 200
+    assert [item["id"] for item in listed.json()] == [result["id"]]
+
+
+def test_membership_api_rejects_service_from_another_organization(
+    api_client: TestClient,
+) -> None:
+    first_organization_id, _ = create_test_service(api_client)
+    second_organization_id, other_care_unit_id = create_test_service(api_client)
+
+    response = api_client.post(
+        f"/api/organizations/{first_organization_id}/memberships",
+        json={
+            "display_name": "Personal ficticio",
+            "user_group": "staff",
+            "care_unit_id": other_care_unit_id,
+        },
+    )
+
+    assert second_organization_id != first_organization_id
+    assert response.status_code == 422

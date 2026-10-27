@@ -220,6 +220,10 @@ export default function OrganizationsPanel() {
               <CareUnitForm
                 onSubmit={(payload) => createCareUnit(organization.id, payload)}
               />
+              <MembershipsPanel
+                organizationId={organization.id}
+                careUnits={unitsByOrganization[organization.id] ?? []}
+              />
             </article>
           ))}
         </div>
@@ -601,6 +605,209 @@ function CareRecipientPanel({ careUnitId }: { careUnitId: string }) {
           {recipients.map((recipient) => (
             <li key={recipient.id}>{recipient.display_name}</li>
           ))}
+        </ul>
+      )}
+    </section>
+  );
+}
+
+type Membership = {
+  id: string;
+  user_account_id: string;
+  care_unit_id: string | null;
+  user_group: "staff" | "family" | "older_adult";
+  role_label: string | null;
+  user: {
+    display_name: string;
+    email: string | null;
+    phone: string | null;
+  };
+};
+
+function MembershipsPanel({
+  organizationId,
+  careUnits,
+}: {
+  organizationId: string;
+  careUnits: CareUnit[];
+}) {
+  const [memberships, setMemberships] = useState<Membership[]>([]);
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [group, setGroup] = useState<Membership["user_group"]>("staff");
+  const [roleLabel, setRoleLabel] = useState("");
+  const [careUnitId, setCareUnitId] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
+  const path = `/api/organizations/${organizationId}/memberships`;
+
+  async function loadMemberships() {
+    setError("");
+    try {
+      const response = await fetch(path);
+      if (!response.ok) throw new Error(await readApiError(response));
+      setMemberships((await response.json()) as Membership[]);
+    } catch (caught) {
+      setError(
+        caught instanceof Error
+          ? caught.message
+          : "No se pudieron cargar los usuarios.",
+      );
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    void loadMemberships();
+  }, [path]);
+
+  async function createMembership(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setSaving(true);
+    setError("");
+    setNotice("");
+    try {
+      const response = await fetch(path, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          display_name: name,
+          email,
+          phone,
+          user_group: group,
+          care_unit_id: careUnitId || null,
+          role_label: roleLabel || null,
+        }),
+      });
+      if (!response.ok) throw new Error(await readApiError(response));
+      setName("");
+      setEmail("");
+      setPhone("");
+      setRoleLabel("");
+      setNotice("La cuenta de prueba se vinculó a la organización.");
+      await loadMemberships();
+    } catch (caught) {
+      setError(
+        caught instanceof Error
+          ? caught.message
+          : "No se pudo guardar la cuenta.",
+      );
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  const groupLabel = (value: Membership["user_group"]) =>
+    value === "staff"
+      ? "Personal"
+      : value === "family"
+        ? "Familia / persona de confianza"
+        : "Persona mayor";
+
+  return (
+    <section className="membership-panel" aria-label="Usuarios de la organización">
+      <div className="membership-heading">
+        <div>
+          <h4>Usuarios y vínculos</h4>
+          <p>Registro local de cuentas de prueba; no crea credenciales ni permisos.</p>
+        </div>
+        <span className="membership-count">{memberships.length}</span>
+      </div>
+      <form className="membership-form" onSubmit={createMembership}>
+        <div className="membership-form-grid">
+          <label>
+            Nombre visible
+            <input
+              value={name}
+              onChange={(event) => setName(event.target.value)}
+              maxLength={160}
+              required
+            />
+          </label>
+          <label>
+            Grupo
+            <select
+              value={group}
+              onChange={(event) => setGroup(event.target.value as Membership["user_group"])}
+            >
+              <option value="staff">Personal</option>
+              <option value="family">Familia / persona de confianza</option>
+              <option value="older_adult">Persona mayor</option>
+            </select>
+          </label>
+          <label>
+            Servicio
+            <select
+              value={careUnitId}
+              onChange={(event) => setCareUnitId(event.target.value)}
+            >
+              <option value="">Toda la organización</option>
+              {careUnits.map((unit) => (
+                <option value={unit.id} key={unit.id}>{unit.name}</option>
+              ))}
+            </select>
+          </label>
+          <label>
+            Función del personal (descriptiva)
+            <input
+              value={roleLabel}
+              onChange={(event) => setRoleLabel(event.target.value)}
+              maxLength={80}
+              placeholder="Ej.: Encargado"
+              disabled={group !== "staff"}
+            />
+          </label>
+          <label>
+            Correo electrónico (opcional)
+            <input
+              type="email"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              maxLength={254}
+            />
+          </label>
+          <label>
+            Teléfono (opcional)
+            <input
+              type="tel"
+              value={phone}
+              onChange={(event) => setPhone(event.target.value)}
+              maxLength={32}
+            />
+          </label>
+          <button type="submit" disabled={saving}>
+            {saving ? "Guardando…" : "Agregar usuario"}
+          </button>
+        </div>
+      </form>
+      {error && <p className="form-message error-message" role="alert">{error}</p>}
+      {notice && <p className="form-message success-message" role="status">{notice}</p>}
+      {loading ? (
+        <p className="membership-empty" role="status">Cargando usuarios…</p>
+      ) : memberships.length === 0 ? (
+        <p className="membership-empty">Todavía no hay cuentas vinculadas.</p>
+      ) : (
+        <ul className="membership-list">
+          {memberships.map((membership) => {
+            const unit = careUnits.find((item) => item.id === membership.care_unit_id);
+            return (
+              <li key={membership.id}>
+                <div>
+                  <strong>{membership.user.display_name}</strong>
+                  <span>{groupLabel(membership.user_group)}</span>
+                </div>
+                <div className="membership-details">
+                  {membership.role_label && <span>{membership.role_label}</span>}
+                  <span>{unit?.name ?? "Toda la organización"}</span>
+                  {membership.user.email && <span>{membership.user.email}</span>}
+                </div>
+              </li>
+            );
+          })}
         </ul>
       )}
     </section>

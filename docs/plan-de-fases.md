@@ -1,6 +1,6 @@
 # Momento — plan de trabajo por fases
 
-**Estado al 26/10/2026:** Fase 0 y Fase 1 cerradas. Fase 2 en definición; todavía no se implementan autenticación ni permisos.  
+**Estado al 27/10/2026:** Fase 0 y Fase 1 cerradas. Fase 2 en curso: organizaciones, servicios, fichas mínimas, cuentas y membresías cuentan con una base local; autenticación y permisos siguen pendientes.  
 **Propósito:** orientar al agente de IA y al equipo para avanzar en orden, conservar las decisiones y evitar construir funciones no validadas.
 
 ## Acuerdos del proyecto
@@ -40,7 +40,9 @@ Documentos: [Fase 0 — Descubrimiento y definición de Momento](fase-0-descubri
 
 **Objetivo:** controlar quién puede acceder a cada institución, servicio y dato.\n\nBorrador de definición, con decisiones pendientes y sin alcance funcional aprobado: [Fase 2 — Organizaciones, usuarios y acceso](fase-2-organizaciones-usuarios-acceso.md).
 
-**Trabajo:** definir organizaciones y ubicaciones; alta e invitación de usuarios; autenticación; permisos por rol y contexto; consentimiento/autorización cuando corresponda; trazabilidad de acciones sensibles.
+**Avance técnico local:** altas y consultas de organizaciones, servicios, fichas mínimas de personas cuidadas y cuentas/membresías por grupo y alcance de organización o servicio. Son datos de prueba; el inicio de sesión y los permisos todavía no están implementados.
+
+**Trabajo pendiente:** cerrar la matriz de permisos; definir invitaciones y autenticación; implementar autorizaciones familiares y la designación del personal de bandeja; completar trazabilidad de acciones sensibles.
 
 **Decisiones confirmadas por Jorge:** una organización prestadora puede contener varias sedes o servicios; el piloto contempla personal, familias/personas de confianza y personas mayores; el acceso familiar lo autoriza el encargado de la residencia, un administrativo habilitado o el médico, y se limita a información de la persona vinculada sobre medicación, actividades y dietas.
 

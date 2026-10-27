@@ -6,7 +6,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
-from momento_api.models import CareUnitType
+from momento_api.models import CareUnitType, UserGroup
 
 
 class OrganizationCreate(BaseModel):
@@ -56,6 +56,54 @@ class CareUnitRead(BaseModel):
     is_active: bool
     created_at: datetime
     updated_at: datetime
+
+
+
+class MembershipCreate(BaseModel):
+    display_name: str = Field(min_length=1, max_length=160)
+    email: str | None = Field(default=None, max_length=254)
+    phone: str | None = Field(default=None, max_length=32)
+    user_group: UserGroup
+    care_unit_id: UUID | None = None
+    role_label: str | None = Field(default=None, max_length=80)
+
+    @field_validator("display_name")
+    @classmethod
+    def clean_display_name(cls, value: str) -> str:
+        value = value.strip()
+        if not value:
+            raise ValueError("El nombre no puede estar vacío.")
+        return value
+
+    @field_validator("email", "phone", "role_label")
+    @classmethod
+    def clean_optional_text(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        cleaned = value.strip()
+        return cleaned or None
+
+
+class UserAccountSummary(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    display_name: str
+    email: str | None
+    phone: str | None
+
+
+class OrganizationMembershipRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    user_account_id: UUID
+    organization_id: UUID
+    care_unit_id: UUID | None
+    user_group: UserGroup
+    role_label: str | None
+    is_active: bool
+    user: UserAccountSummary
 
 
 class CareRecipientCreate(BaseModel):

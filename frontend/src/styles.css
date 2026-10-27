@@ -755,6 +755,154 @@ a:focus-visible {
   font-weight: 650;
 }
 
+
+.membership-panel {
+  margin-top: 18px;
+  padding: 18px;
+  border: 1px solid #e1e4ed;
+  border-radius: 14px;
+  background: #fafafe;
+}
+
+.membership-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.membership-heading h4 {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.membership-heading p {
+  margin: 5px 0 0;
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.5;
+}
+
+.membership-count {
+  display: grid;
+  flex: 0 0 30px;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  border-radius: 10px;
+  color: #5336a6;
+  background: #f0ebff;
+  font-size: 0.8rem;
+  font-weight: 800;
+}
+
+.membership-form {
+  margin-top: 14px;
+}
+
+.membership-form-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: end;
+  gap: 10px;
+}
+
+.membership-form-grid label {
+  display: grid;
+  gap: 6px;
+  color: #41485b;
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.membership-form-grid input,
+.membership-form-grid select {
+  width: 100%;
+  min-width: 0;
+  min-height: 40px;
+  padding: 8px 10px;
+  border: 1px solid #cfd3df;
+  border-radius: 9px;
+  color: var(--ink);
+  background: #fff;
+  font: inherit;
+}
+
+.membership-form-grid input:focus,
+.membership-form-grid select:focus {
+  outline: 3px solid rgb(135 92 255 / 25%);
+  border-color: var(--plum);
+}
+
+.membership-form-grid input:disabled {
+  color: #787d89;
+  background: #f0f1f4;
+}
+
+.membership-form-grid button {
+  min-height: 40px;
+  padding: 0 13px;
+  border: 0;
+  border-radius: 9px;
+  color: #fff;
+  background: var(--plum-dark);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.membership-form-grid button:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.membership-empty {
+  margin: 12px 0 0;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.membership-list {
+  display: grid;
+  gap: 7px;
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.membership-list li {
+  display: grid;
+  grid-template-columns: minmax(150px, 1fr) minmax(140px, auto);
+  align-items: center;
+  gap: 12px;
+  padding: 10px 11px;
+  border: 1px solid #e8e8ef;
+  border-radius: 9px;
+  background: #fff;
+}
+
+.membership-list li > div:first-child {
+  display: grid;
+  gap: 3px;
+}
+
+.membership-list li strong {
+  font-size: 0.84rem;
+}
+
+.membership-list li span {
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+.membership-details {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px 12px;
+}
+
 @media (max-width: 760px) {
   .workflow-editor-heading {
     flex-direction: column;
@@ -832,6 +980,22 @@ a:focus-visible {
 
   .care-recipient-form-row button {
     width: 100%;
+  }
+
+  .membership-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .membership-form-grid button {
+    width: 100%;
+  }
+
+  .membership-list li {
+    grid-template-columns: 1fr;
+  }
+
+  .membership-details {
+    justify-content: flex-start;
   }
 }
 
