@@ -1286,3 +1286,20 @@ a:focus-visible {
   .request-preview { align-items:flex-start; flex-wrap:wrap; }
   .settings-grid { grid-template-columns:1fr; }
 }
+
+
+/* Corrección: mantener la cabecera de la landing en su altura visible */
+.public-header {
+  flex: 0 0 86px;
+  height: 86px;
+  min-height: 86px;
+  padding-block: 0;
+}
+
+@media (max-width: 700px) {
+  .public-header {
+    flex-basis: 70px;
+    height: 70px;
+    min-height: 70px;
+  }
+}
