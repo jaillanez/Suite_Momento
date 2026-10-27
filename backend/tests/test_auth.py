@@ -22,6 +22,13 @@ def test_login_rejects_invalid_password_with_generic_error(api_client: TestClien
 def test_logout_revokes_session_and_protected_routes_require_login(api_client: TestClient) -> None:
     logout = api_client.post("/api/auth/logout")
     assert logout.status_code == 204
+    session_state = api_client.get("/api/auth/session")
+    assert session_state.status_code == 200
+    assert session_state.json() == {
+        "authenticated": False,
+        "user": None,
+        "memberships": [],
+    }
     assert api_client.get("/api/organizations").status_code == 401
 
 
@@ -38,5 +45,6 @@ def test_family_account_cannot_open_management_login(api_client: TestClient) -> 
 def test_login_creates_a_session_readable_after_navigation(api_client: TestClient) -> None:
     response = api_client.get("/api/auth/session")
     assert response.status_code == 200
+    assert response.json()["authenticated"] is True
     assert response.json()["user"]["display_name"] == "Encargada de prueba"
     assert response.json()["memberships"][0]["organization_name"] == "Organización autenticada"

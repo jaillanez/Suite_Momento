@@ -245,10 +245,17 @@ def get_authenticated_account(
 
 @router.get("/session")
 def read_session(
-    account: UserAccount = Depends(get_authenticated_account),
+    request: Request,
     session: Session = Depends(get_session),
 ) -> dict[str, object]:
-    return _session_payload(account, session)
+    """Informa si hay una sesión activa sin tratar la visita pública como error."""
+    try:
+        account = get_authenticated_account(request, session)
+    except HTTPException as error:
+        if error.status_code != 401:
+            raise
+        return {"authenticated": False, "user": None, "memberships": []}
+    return {"authenticated": True, **_session_payload(account, session)}
 
 
 @router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)

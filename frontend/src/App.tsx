@@ -31,7 +31,11 @@ export default function App() {
     void fetch("/api/auth/session")
       .then(async (response) => {
         if (!active || !response.ok) return;
-        const data = (await response.json()) as { user: { display_name: string } };
+        const data = (await response.json()) as {
+          authenticated: boolean;
+          user: { display_name: string } | null;
+        };
+        if (!data.authenticated || !data.user) return;
         setUserName(data.user.display_name);
         setPage("dashboard");
       })
