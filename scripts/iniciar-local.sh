@@ -7,20 +7,23 @@ BACKEND_DIR="${PROJECT_DIR}/backend"
 FRONTEND_DIR="${PROJECT_DIR}/frontend"
 VENV_DIR="${BACKEND_DIR}/.venv"
 API_PID=""
-API_PORT=""
-WEB_PORT=""
+API_PORT="8020"
+WEB_PORT="5173"
 
 fail() {
   printf 'Error: %s\n' "$*" >&2
   exit 1
 }
 
-first_available_port() {
+require_free_port() {
   local port="$1"
-  while lsof -nP -iTCP:"$port" -sTCP:LISTEN >/dev/null 2>&1; do
-    port=$((port + 1))
-  done
-  printf '%s' "$port"
+  local service="$2"
+  if lsof -nP -iTCP:"$port" -sTCP:LISTEN >/dev/null 2>&1; then
+    printf 'Error: el puerto %s para %s ya está ocupado.\n' "$port" "$service" >&2
+    lsof -nP -iTCP:"$port" -sTCP:LISTEN >&2 || true
+    printf 'Cierra ese proceso y vuelve a ejecutar el script.\n' >&2
+    return 1
+  fi
 }
 
 for command_name in python3 node npm lsof; do
@@ -86,14 +89,8 @@ trap cleanup EXIT
 trap 'exit 130' INT
 trap 'exit 143' TERM
 
-API_PORT="$(first_available_port 8020)"
-WEB_PORT="$(first_available_port 5173)"
-if [[ "$API_PORT" != "8020" ]]; then
-  printf 'El puerto 8020 está ocupado; usaré el puerto %s para la API.\n' "$API_PORT"
-fi
-if [[ "$WEB_PORT" != "5173" ]]; then
-  printf 'El puerto 5173 está ocupado; usaré el puerto %s para la aplicación web.\n' "$WEB_PORT"
-fi
+require_free_port "$API_PORT" "la API"
+require_free_port "$WEB_PORT" "la aplicación web"
 
 printf '\nIniciando API en http://127.0.0.1:%s ...\n' "$API_PORT"
 (
