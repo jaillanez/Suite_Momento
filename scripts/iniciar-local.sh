@@ -7,13 +7,23 @@ BACKEND_DIR="${PROJECT_DIR}/backend"
 FRONTEND_DIR="${PROJECT_DIR}/frontend"
 VENV_DIR="${BACKEND_DIR}/.venv"
 API_PID=""
+API_PORT=""
+WEB_PORT=""
 
 fail() {
   printf 'Error: %s\n' "$*" >&2
   exit 1
 }
 
-for command_name in python3 node npm; do
+first_available_port() {
+  local port="$1"
+  while lsof -nP -iTCP:"$port" -sTCP:LISTEN >/dev/null 2>&1; do
+    port=$((port + 1))
+  done
+  printf '%s' "$port"
+}
+
+for command_name in python3 node npm lsof; do
   if ! command -v "$command_name" >/dev/null 2>&1; then
     fail "No se encontró $command_name. No se instalará automáticamente."
   fi
@@ -76,14 +86,23 @@ trap cleanup EXIT
 trap 'exit 130' INT
 trap 'exit 143' TERM
 
-printf '\nIniciando API en http://127.0.0.1:8020 ...\n'
+API_PORT="$(first_available_port 8020)"
+WEB_PORT="$(first_available_port 5173)"
+if [[ "$API_PORT" != "8020" ]]; then
+  printf 'El puerto 8020 está ocupado; usaré el puerto %s para la API.\n' "$API_PORT"
+fi
+if [[ "$WEB_PORT" != "5173" ]]; then
+  printf 'El puerto 5173 está ocupado; usaré el puerto %s para la aplicación web.\n' "$WEB_PORT"
+fi
+
+printf '\nIniciando API en http://127.0.0.1:%s ...\n' "$API_PORT"
 (
   cd "$BACKEND_DIR"
-  exec "$VENV_DIR/bin/uvicorn" momento_api.main:app --reload --host 127.0.0.1 --port 8020
+  exec "$VENV_DIR/bin/uvicorn" momento_api.main:app --reload --host 127.0.0.1 --port "$API_PORT"
 ) &
 API_PID=$!
 
-printf 'Iniciando aplicación web en http://127.0.0.1:5173 ...\n'
+printf 'Iniciando aplicación web en http://127.0.0.1:%s ...\n' "$WEB_PORT"
 printf 'Presiona Control+C para detener ambos servicios.\n\n'
 cd "$FRONTEND_DIR"
-npm run dev -- --strictPort
+MOMENTO_API_PROXY_TARGET="http://127.0.0.1:${API_PORT}" npm run dev -- --host 127.0.0.1 --port "$WEB_PORT" --strictPort
