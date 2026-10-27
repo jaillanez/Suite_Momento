@@ -145,7 +145,7 @@ def main() -> None:
                     organization=organization,
                     care_unit=unit,
                     user_group=UserGroup.FAMILY,
-                    role_label="Familiar autorizado",
+                    role_label="Familiar de demostración",
                 ))
                 session.add(account)
 

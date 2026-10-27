@@ -21,7 +21,7 @@ Para recorrer la pantalla, iniciá los servicios en otra terminal:
 bash scripts/iniciar-local.sh
 ```
 
-Abrí http://127.0.0.1:5173 e ingresá con el correo y la contraseña que configuraste. La API valida el acceso y emite una cookie de sesión HttpOnly, de ocho horas. Al salir, la sesión se revoca. La aplicación web de gestión acepta cuentas de personal con alcance de organización; las cuentas familiares no entran al panel de gestión. Las rutas de servicios verifican el vínculo activo de la cuenta con el servicio.
+Abrí http://127.0.0.1:5173 e ingresá con el correo y la contraseña que configuraste. La API valida el acceso y emite una cookie de sesión HttpOnly, de ocho horas. Al salir, la sesión se revoca. La aplicación web de gestión acepta cuentas de personal con alcance de organización; las cuentas familiares no entran al panel de gestión. El panel solo habilita la gestión de organizaciones para personal con vínculo a nivel de organización; las rutas de servicio verifican que el vínculo de personal alcance ese servicio.
 
 El escenario se crea una sola vez. Si ya existe Residencia Los Aromos, el asistente se detiene sin reemplazar ni borrar registros.
 

@@ -32,3 +32,11 @@ def test_family_account_cannot_open_management_login(api_client: TestClient) -> 
         json={"email": "familia@example.test", "password": "ClaveFamiliar2026!"},
     )
     assert response.status_code == 401
+
+
+
+def test_login_creates_a_session_readable_after_navigation(api_client: TestClient) -> None:
+    response = api_client.get("/api/auth/session")
+    assert response.status_code == 200
+    assert response.json()["user"]["display_name"] == "Encargada de prueba"
+    assert response.json()["memberships"][0]["organization_name"] == "Organización autenticada"
