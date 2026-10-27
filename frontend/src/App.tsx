@@ -16,7 +16,7 @@ const pageTitles: Record<Exclude<Page, "landing" | "login">, string> = {
 export default function App() {
   const [page, setPage] = useState<Page>("landing");
   const [apiState, setApiState] = useState<ApiState>("checking");
-  const [userName, setUserName] = useState("");
+  const [userName, setUserName] = useState("");\n  const [logoutError, setLogoutError] = useState("");
 
   useEffect(() => {
     let active = true;
@@ -35,9 +35,17 @@ export default function App() {
   }, []);
 
   async function logout() {
-    try { await fetch("/api/auth/logout", { method: "POST" }); } finally {
+    setLogoutError("");
+    try {
+      const response = await fetch("/api/auth/logout", { method: "POST" });
+      if (!response.ok) {
+        setLogoutError("No se pudo cerrar la sesión. Comprobá la conexión e intentá nuevamente.");
+        return;
+      }
       setUserName("");
       setPage("landing");
+    } catch {
+      setLogoutError("No se pudo cerrar la sesión. Comprobá la conexión e intentá nuevamente.");
     }
   }
 
@@ -75,7 +83,7 @@ export default function App() {
             <h1>{pageTitles[page]}</h1>
           </div>
           <div className="topbar-actions">
-            <span className="demo-user-badge">{userName}</span>
+            {logoutError && <span className="form-message error-message" role="alert">{logoutError}</span>}<span className="demo-user-badge">{userName}</span>
             <button className="login-button" type="button" onClick={() => void logout()}>Salir</button>
           </div>
         </header>

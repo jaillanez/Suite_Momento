@@ -18,6 +18,7 @@ from momento_api.models import (
     OrganizationMembership,
     SharedCareCategory,
     UserAccount,
+    UserCredential,
     UserGroup,
 )
 from momento_api.session import get_session
