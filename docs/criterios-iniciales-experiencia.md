@@ -34,4 +34,6 @@ La información clínica o profesional no debe mostrarse automáticamente a fami
 
 ## Pantalla actual del repositorio
 
-La pantalla existente es una base de desarrollo: muestra el estado local de API y PostgreSQL y comunica qué líneas del producto están en definición. No es todavía un tablero operativo ni una promesa de funcionalidades.
+La aplicación de desarrollo presenta una landing pública con un único botón de acceso y un formulario de inicio de sesión conectado con la API. Después del acceso, muestra el área de gestión descrita en la Fase 2. Este recorrido sirve para probar la base técnica y la autenticación; no representa una interfaz final aprobada ni una promesa de funcionalidades.
+
+El isotipo se toma de los materiales de marca compartidos y debe mostrarse en tamaño controlado en cada pantalla. El texto público actual es provisional y debe revisarse con el equipo antes de una publicación institucional. No se incorporan porcentajes ni afirmaciones de impacto sin evidencia verificable.
