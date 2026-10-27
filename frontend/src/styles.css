@@ -1303,3 +1303,61 @@ a:focus-visible {
     min-height: 70px;
   }
 }
+
+
+/* Marca y acceso de la landing: limitar el PNG del isotipo a tamaño de interfaz */
+.app-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 11px;
+  color: var(--ink);
+  font-size: 1.2rem;
+  font-weight: 700;
+  letter-spacing: -0.035em;
+}
+
+.app-brand img {
+  display: block;
+  flex: 0 0 42px;
+  width: 42px;
+  height: 42px;
+  max-width: 42px;
+  max-height: 42px;
+  object-fit: contain;
+}
+
+.public-header .primary-action {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  min-width: 142px;
+  min-height: 44px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 11px;
+  color: #fff;
+  background: var(--plum-dark);
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.public-header .primary-action:hover {
+  background: #3f287f;
+}
+
+@media (max-width: 700px) {
+  .app-brand img {
+    flex-basis: 38px;
+    width: 38px;
+    height: 38px;
+    max-width: 38px;
+    max-height: 38px;
+  }
+
+  .public-header .primary-action {
+    min-width: 120px;
+    min-height: 40px;
+    padding: 0 13px;
+  }
+}
