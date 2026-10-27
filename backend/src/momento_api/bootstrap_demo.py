@@ -86,7 +86,7 @@ def main() -> None:
             manager = UserAccount(display_name="Mariana López", email=email, phone=None)
             manager.memberships.append(OrganizationMembership(
                 organization=organization,
-                care_unit=unit,
+                care_unit=None,
                 user_group=UserGroup.STAFF,
                 role_label="Encargada de residencia",
             ))

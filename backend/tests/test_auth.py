@@ -23,3 +23,12 @@ def test_logout_revokes_session_and_protected_routes_require_login(api_client: T
     logout = api_client.post("/api/auth/logout")
     assert logout.status_code == 204
     assert api_client.get("/api/organizations").status_code == 401
+
+
+
+def test_family_account_cannot_open_management_login(api_client: TestClient) -> None:
+    response = api_client.post(
+        "/api/auth/login",
+        json={"email": "familia@example.test", "password": "ClaveFamiliar2026!"},
+    )
+    assert response.status_code == 401

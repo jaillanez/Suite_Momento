@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from momento_api.auth import get_organization_admin_account
 from momento_api.models import CareUnit, CareUnitWorkflowStatus
 from momento_api.schemas import WorkflowStatusListUpdate, WorkflowStatusRead
 from momento_api.session import get_session
@@ -55,7 +56,7 @@ def list_workflow_statuses(
     return list(session.scalars(statement).all())
 
 
-@router.put("", response_model=list[WorkflowStatusRead])
+@router.put("", response_model=list[WorkflowStatusRead], dependencies=[Depends(get_organization_admin_account)])
 def replace_workflow_statuses(
     organization_id: UUID,
     care_unit_id: UUID,

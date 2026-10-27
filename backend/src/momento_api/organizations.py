@@ -7,7 +7,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from momento_api.models import CareUnit, CareUnitWorkflowStatus, Organization, OrganizationMembership, UserAccount, UserGroup
-from momento_api.auth import get_management_account
+from momento_api.auth import get_management_account, get_organization_admin_account
 from momento_api.workflow_defaults import DEFAULT_WORKFLOW_STATUSES
 from momento_api.schemas import (
     CareUnitCreate,
@@ -29,7 +29,7 @@ def create_organization(
     payload: OrganizationCreate,
     response: Response,
     session: Session = Depends(get_session),
-    current_user: UserAccount = Depends(get_management_account),
+    current_user: UserAccount = Depends(get_organization_admin_account),
 ) -> Organization:
     """Crea una organización y vincula a quien la inició como personal gestor."""
     organization = Organization(name=payload.name)
@@ -69,6 +69,7 @@ def list_organizations(
 @router.post(
     "/{organization_id}/care-units",
     response_model=CareUnitRead,
+    dependencies=[Depends(get_organization_admin_account)],
     status_code=status.HTTP_201_CREATED,
 )
 def create_care_unit(
@@ -103,6 +104,7 @@ def create_care_unit(
 @router.get(
     "/{organization_id}/care-units",
     response_model=list[CareUnitRead],
+    dependencies=[Depends(get_organization_admin_account)],
 )
 def list_care_units(
     organization_id: UUID,

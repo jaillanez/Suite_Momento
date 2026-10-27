@@ -85,6 +85,15 @@ def api_client() -> Generator[TestClient, None, None]:
         session.add_all([organization, account])
         session.flush()
         session.add(UserCredential(user_account_id=account.id, password_hash=hash_password("ClaveSegura2026!")))
+        family = UserAccount(display_name="Familiar de prueba", email="familia@example.test")
+        family.memberships.append(OrganizationMembership(
+            organization=organization,
+            user_group=UserGroup.FAMILY,
+            role_label="Familiar",
+        ))
+        session.add(family)
+        session.flush()
+        session.add(UserCredential(user_account_id=family.id, password_hash=hash_password("ClaveFamiliar2026!")))
         session.commit()
     try:
         with TestClient(app) as client:

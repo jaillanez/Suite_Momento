@@ -13,7 +13,7 @@ cd backend
 .venv/bin/python -m momento_api.bootstrap_demo
 ```
 
-La cuenta encargada se crea con el nombre Mariana López, dentro de Residencia Los Aromos. El asistente muestra el correo elegido y confirma que la contraseña no se guarda en texto legible. El conjunto incluye 42 personas cuidadas, 18 cuidadores, 3 profesionales médicos y 31 cuentas familiares con nombres ficticios.
+La cuenta encargada se crea con el nombre Mariana López, dentro de Residencia Los Aromos. El asistente muestra el correo elegido y confirma que la contraseña no se guarda en texto legible. El conjunto incluye 42 personas cuidadas, 18 cuidadores, 3 profesionales médicos y 31 cuentas familiares con nombres ficticios. Solo la cuenta encargada recibe una contraseña en este asistente.
 
 Para recorrer la pantalla, iniciá los servicios en otra terminal:
 
@@ -21,7 +21,7 @@ Para recorrer la pantalla, iniciá los servicios en otra terminal:
 bash scripts/iniciar-local.sh
 ```
 
-Abrí http://127.0.0.1:5173 e ingresá con el correo y la contraseña que configuraste. La API valida el acceso y emite una cookie de sesión HttpOnly, de ocho horas. Al salir, la sesión se revoca. Las rutas de gestión requieren sesión y un vínculo activo de personal con la organización y el servicio consultados.
+Abrí http://127.0.0.1:5173 e ingresá con el correo y la contraseña que configuraste. La API valida el acceso y emite una cookie de sesión HttpOnly, de ocho horas. Al salir, la sesión se revoca. La aplicación web de gestión acepta cuentas de personal con alcance de organización; las cuentas familiares no entran al panel de gestión. Las rutas de servicios verifican el vínculo activo de la cuenta con el servicio.
 
 El escenario se crea una sola vez. Si ya existe Residencia Los Aromos, el asistente se detiene sin reemplazar ni borrar registros.
 

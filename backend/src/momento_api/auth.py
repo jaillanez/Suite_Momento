@@ -175,6 +175,7 @@ def login(
                 OrganizationMembership.user_account_id == account.id,
                 OrganizationMembership.is_active.is_(True),
                 OrganizationMembership.user_group == UserGroup.STAFF,
+                OrganizationMembership.care_unit_id.is_(None),
             )
             .limit(1)
         )
@@ -319,4 +320,30 @@ def get_management_account(
 
     if session.scalar(statement.limit(1)) is None:
         raise HTTPException(status_code=404, detail="Recurso no encontrado.")
+    return account
+
+
+
+def get_organization_admin_account(
+    request: Request,
+    account: UserAccount = Depends(get_authenticated_account),
+    session: Session = Depends(get_session),
+) -> UserAccount:
+    """Permite acciones de configuración solo a personal con alcance de organización."""
+    statement = select(OrganizationMembership.id).where(
+        OrganizationMembership.user_account_id == account.id,
+        OrganizationMembership.is_active.is_(True),
+        OrganizationMembership.user_group == UserGroup.STAFF,
+        OrganizationMembership.care_unit_id.is_(None),
+    )
+    organization_id = request.path_params.get("organization_id")
+    if organization_id:
+        try:
+            statement = statement.where(
+                OrganizationMembership.organization_id == UUID(organization_id)
+            )
+        except ValueError:
+            raise HTTPException(status_code=404, detail="Recurso no encontrado.") from None
+    if session.scalar(statement.limit(1)) is None:
+        raise HTTPException(status_code=403, detail="La acción requiere permisos de gestión de la organización.")
     return account

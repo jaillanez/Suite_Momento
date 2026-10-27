@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session, joinedload
 
+from momento_api.auth import get_organization_admin_account
 from momento_api.models import (
     CareUnit,
     Organization,
@@ -21,6 +22,7 @@ router = APIRouter(prefix="/api/organizations", tags=["Usuarios y membresías"])
 @router.post(
     "/{organization_id}/memberships",
     response_model=OrganizationMembershipRead,
+    dependencies=[Depends(get_organization_admin_account)],
     status_code=status.HTTP_201_CREATED,
 )
 def create_membership(
@@ -71,6 +73,7 @@ def create_membership(
 @router.get(
     "/{organization_id}/memberships",
     response_model=list[OrganizationMembershipRead],
+    dependencies=[Depends(get_organization_admin_account)],
 )
 def list_memberships(
     organization_id: UUID,
