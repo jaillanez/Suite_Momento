@@ -55,14 +55,20 @@ def main() -> None:
     if not re.fullmatch(r"[^\s@]+@[^\s@]+\.[^\s@]+", email):
         raise SystemExit("Ingresá un correo con formato válido.")
 
-    password = getpass.getpass("Elegí una contraseña (mínimo 12 caracteres): ")
-    confirmation = getpass.getpass("Repetí la contraseña: ")
-    if password != confirmation:
-        raise SystemExit("Las contraseñas no coinciden.")
-    try:
-        password_hash = hash_password(password)
-    except ValueError as error:
-        raise SystemExit(str(error)) from None
+    password_hash = None
+    for attempt in range(3):
+        password = getpass.getpass("Elegí una contraseña (mínimo 12 caracteres): ")
+        confirmation = getpass.getpass("Repetí la contraseña: ")
+        if password != confirmation:
+            print("Las contraseñas no coinciden. Volvé a ingresarlas.")
+            continue
+        try:
+            password_hash = hash_password(password)
+            break
+        except ValueError as error:
+            print(error)
+    if password_hash is None:
+        raise SystemExit("No se pudo validar la contraseña. Ejecutá el asistente nuevamente.")
 
     engine = create_engine(database_url, pool_pre_ping=True)
     try:

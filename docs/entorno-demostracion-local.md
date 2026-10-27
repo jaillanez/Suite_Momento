@@ -13,7 +13,7 @@ cd backend
 .venv/bin/python -m momento_api.bootstrap_demo
 ```
 
-La cuenta encargada se crea con el nombre Mariana López, dentro de Residencia Los Aromos. El asistente muestra el correo elegido y confirma que la contraseña no se guarda en texto legible. El conjunto incluye 42 personas cuidadas, 18 cuidadores, 3 profesionales médicos y 31 cuentas familiares con nombres ficticios. Solo la cuenta encargada recibe una contraseña en este asistente.
+La cuenta encargada se crea con el nombre Mariana López, dentro de Residencia Los Aromos. El asistente muestra el correo elegido y confirma que la contraseña no se guarda en texto legible. Si la contraseña y su confirmación no coinciden o no alcanzan 12 caracteres, podés volver a ingresarlas hasta tres veces. El conjunto incluye 42 personas cuidadas, 18 cuidadores, 3 profesionales médicos y 31 cuentas familiares con nombres ficticios. Solo la cuenta encargada recibe una contraseña en este asistente.
 
 Para recorrer la pantalla, iniciá los servicios en otra terminal:
 

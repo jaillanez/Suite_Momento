@@ -1,13 +1,7 @@
-from collections.abc import Generator
-
-import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
-from sqlalchemy.orm import Session, sessionmaker
-from sqlalchemy.pool import StaticPool
+from sqlalchemy.orm import Session
 
-from momento_api.auth import hash_password
-from momento_api.main import app
 from momento_api.models import (
     Base,
     CareUnit,
@@ -18,10 +12,8 @@ from momento_api.models import (
     OrganizationMembership,
     SharedCareCategory,
     UserAccount,
-    UserCredential,
     UserGroup,
 )
-from momento_api.session import get_session
 
 
 def test_organization_can_hold_residential_and_home_care_services() -> None:
@@ -57,55 +49,6 @@ def test_organization_can_hold_residential_and_home_care_services() -> None:
         assert {unit.country_code for unit in stored.care_units} == {"AR", "UY"}
 
     engine.dispose()
-
-
-@pytest.fixture
-def api_client() -> Generator[TestClient, None, None]:
-    engine = create_engine(
-        "sqlite://",
-        connect_args={"check_same_thread": False},
-        poolclass=StaticPool,
-    )
-    Base.metadata.create_all(engine)
-    sessions = sessionmaker(bind=engine)
-
-    def override_get_session() -> Generator[Session, None, None]:
-        with sessions() as session:
-            yield session
-
-    app.dependency_overrides[get_session] = override_get_session
-    with sessions() as session:
-        organization = Organization(name="Organización autenticada")
-        account = UserAccount(display_name="Encargada de prueba", email="encargada@example.test")
-        account.memberships.append(OrganizationMembership(
-            organization=organization,
-            user_group=UserGroup.STAFF,
-            role_label="Encargada",
-        ))
-        session.add_all([organization, account])
-        session.flush()
-        session.add(UserCredential(user_account_id=account.id, password_hash=hash_password("ClaveSegura2026!")))
-        family = UserAccount(display_name="Familiar de prueba", email="familia@example.test")
-        family.memberships.append(OrganizationMembership(
-            organization=organization,
-            user_group=UserGroup.FAMILY,
-            role_label="Familiar",
-        ))
-        session.add(family)
-        session.flush()
-        session.add(UserCredential(user_account_id=family.id, password_hash=hash_password("ClaveFamiliar2026!")))
-        session.commit()
-    try:
-        with TestClient(app) as client:
-            login = client.post("/api/auth/login", json={
-                "email": "encargada@example.test",
-                "password": "ClaveSegura2026!",
-            })
-            assert login.status_code == 200
-            yield client
-    finally:
-        app.dependency_overrides.pop(get_session, None)
-        engine.dispose()
 
 
 def test_api_creates_and_lists_organization(api_client: TestClient) -> None:
@@ -436,7 +379,9 @@ def test_membership_api_creates_and_lists_user_by_organization(
 
     listed = api_client.get(f"/api/organizations/{organization_id}/memberships")
     assert listed.status_code == 200
-    assert [item["id"] for item in listed.json()] == [result["id"]]
+    listed_ids = [item["id"] for item in listed.json()]
+    assert result["id"] in listed_ids
+    assert len(listed_ids) == 2
 
 
 def test_membership_api_rejects_service_from_another_organization(

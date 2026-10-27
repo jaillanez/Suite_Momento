@@ -2,7 +2,11 @@ import { type FormEvent, useEffect, useState } from "react";
 import OrganizationsPanel, { type OrganizationView } from "./OrganizationsPanel";
 
 type Page = OrganizationView | "landing" | "login" | "dashboard" | "inbox" | "settings";
-type ApiState = "checking" | "available" | "unavailable";\ntype Organization = { id: string; name: string };\ntype CareUnit = { id: string; name: string };\ntype Member = { user_group: "staff" | "family" | "older_adult"; role_label: string | null };\ntype DashboardData = { organization: string; services: number; residents: number; caregivers: number; physicians: number; families: number };
+type ApiState = "checking" | "available" | "unavailable";
+type Organization = { id: string; name: string };
+type CareUnit = { id: string; name: string };
+type Member = { user_group: "staff" | "family" | "older_adult"; role_label: string | null };
+type DashboardData = { organization: string; services: number; residents: number; caregivers: number; physicians: number; families: number };
 
 const pageTitles: Record<Exclude<Page, "landing" | "login">, string> = {
   dashboard: "Panel de gestión",
@@ -16,7 +20,8 @@ const pageTitles: Record<Exclude<Page, "landing" | "login">, string> = {
 export default function App() {
   const [page, setPage] = useState<Page>("landing");
   const [apiState, setApiState] = useState<ApiState>("checking");
-  const [userName, setUserName] = useState("");\n  const [logoutError, setLogoutError] = useState("");
+  const [userName, setUserName] = useState("");
+  const [logoutError, setLogoutError] = useState("");
 
   useEffect(() => {
     let active = true;
