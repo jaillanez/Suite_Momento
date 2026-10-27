@@ -1,6 +1,6 @@
 # Fase 2 — Organizaciones, usuarios y acceso
 
-**Estado:** definición en curso. Jorge confirmó el modelo de organización, los grupos de usuarios del piloto y quién autoriza el acceso familiar. Faltan reglas operativas antes de implementar autenticación y permisos.  
+**Estado:** implementación en curso. Están acordados el modelo de organización, los grupos del piloto, las categorías de acceso familiar y el circuito general de solicitudes. El repositorio ya incluye autenticación de personal y protección inicial de rutas; todavía falta implementar la matriz completa de permisos, el acceso familiar y la bandeja persistente.  
 **Propósito:** acordar cómo se organiza Momento y qué información puede consultar o modificar cada persona.
 
 ## Contexto confirmado
@@ -57,30 +57,34 @@ La siguiente estructura traduce las decisiones confirmadas a conceptos de sistem
 
 **Pendiente:** definir qué estados o confirmaciones de recepción y avance verá la familia. La autorización familiar y la gestión de la bandeja son responsabilidades distintas: pueden autorizar el acceso familiar el encargado, un administrativo habilitado o el médico; la designación de quienes gestionan la bandeja y la asignación de solicitudes corresponden al encargado.
 
-## Primera entrega técnica de Fase 2
+## Implementado en el repositorio
 
-**Comprobada localmente por Jorge el 26/10/2026:** pasaron 9 pruebas del backend; Alembic registró `0002_care_workflow_statuses (head)` en PostgreSQL; `npm run build` completó correctamente.
+- Organizaciones, residencias/servicios, fichas mínimas de personas cuidadas y membresías de cuentas.
+- Migraciones Alembic hasta autenticación, credenciales y sesiones.
+- Login de personal con contraseñas derivadas mediante scrypt y sesión revocable en cookie HttpOnly; el logout revoca la sesión.
+- Rutas de gestión protegidas para personal activo. El alcance de permisos todavía es preliminar; no equivale a la matriz funcional completa.
+- El login de gestión rechaza cuentas familiares.
+- Landing pública separada con un solo botón de acceso; navegación y dashboard dentro de la aplicación después del login.
+- Dashboard con indicadores de personas cuidadas, cuidadores, médicos, familias y servicios consultados desde las APIs y la base local.
+- Datos locales ficticios de residencia para pruebas. El bootstrap persiste membresías con claves explícitas y ahora incluye una prueba de regresión para el campo organization_id requerido.
+- Vistas independientes de organizaciones, personas cuidadas, usuarios, bandeja y configuración.
 
-- Modelos SQLAlchemy `Organization` y `CareUnit`.
-- Tipos de servicio iniciales: residencia y cuidado domiciliario.
-- Migración Alembic reversible que crea `organizations` y `care_units`.
-- API y pantalla local para crear y consultar organizaciones y sus servicios.
-- Configuración por servicio de nombres, orden, activación y visibilidad familiar de los estados de seguimiento.
-- Estados iniciales: recibida, asignada, en atención, respondida y cerrada.
-- Validación de tipo de servicio, nombre y país (AR/UY).
-- Pruebas con SQLite en memoria; usan datos ficticios.
-- Modelos base `UserAccount` y `OrganizationMembership` para personal, familia y persona mayor, con alcance opcional por servicio; `0003_user_memberships` está preparada para verificación local.
-- Modelo `CareRecipient` con nombre visible únicamente y `FamilyAuthorization` por categoría y acción; registra familiar, autorizador y revocación.
-- API local para crear y consultar fichas mínimas de personas cuidadas por servicio; no expone datos clínicos ni habilita acceso familiar.
-- API y pantalla local para crear y consultar cuentas de prueba por grupo (personal, familia/personas de confianza, persona mayor) y vincularlas a una organización o servicio.
-- Interfaz de gestión con menú lateral y vistas separadas para organizaciones, personas cuidadas y usuarios; las altas se abren en formularios modales.
-- Pantalla visual de inicio de sesión aún no conectada al backend de autenticación.
-- La función descriptiva del personal no concede permisos. No se implementan inicio de sesión, invitaciones, autenticación ni autorización.
-- La migración `0004_care_recipients_family_authorizations.py` usa la revisión Alembic `0004_family_auth`, compatible con el límite de 32 caracteres de `alembic_version`.
-- Las tablas no tienen inicio de sesión, credenciales ni endpoints de acceso; `role_label` es descriptivo y no concede permisos.
-- No se crean datos reales ni solicitudes de personas mayores.
+## Límites actuales del código
 
-**Límite de seguridad:** los endpoints de escritura actuales son un andamiaje local para comprobar el flujo. La API se inicia enlazada a `127.0.0.1`; no se debe exponer ni desplegar hasta definir autenticación, autorización y auditoría. La migración se aplica manualmente y no al iniciar el servidor. `0002` agrega la configuración de estados; `0003` agrega identidades y membresías, sin exponerlas por API hasta definir autenticación y autorización.
+- La bandeja sigue siendo una demostración en el navegador: las solicitudes y sus cambios no se guardan en PostgreSQL.
+- La API y la pantalla para gestionar autorizaciones familiares aún no están conectadas; las cuentas familiares no pueden iniciar sesión.
+- La designación del personal que puede acceder a la bandeja y la asignación de solicitudes todavía no están aplicadas de extremo a extremo.
+- Agenda, guardias y actividad reciente contienen datos de muestra; no representan registros operativos guardados.
+- No se debe exponer ni desplegar el entorno local hasta completar y probar permisos, auditoría y aislamiento entre organizaciones.
+
+## Trabajo pendiente para cerrar Fase 2
+
+1. Implementar permisos por organización y servicio, con pruebas de acceso permitido y denegado.
+2. Implementar autorización familiar por persona, categoría y acciones acordadas, con otorgamiento y revocación.
+3. Separar el acceso familiar del login de gestión y exponer solo información autorizada.
+4. Persistir solicitudes y respuestas; hacer que el encargado designe al personal y asigne cada caso. Solo el encargado y el personal designado podrán ver y gestionar la bandeja según su alcance.
+5. Registrar las acciones sensibles y comprobar el aislamiento entre organizaciones y servicios.
+6. Acordar invitación, recuperación, baja de cuentas y reglas de auditoría antes del piloto.
 
 ## Grupos y roles candidatos
 
@@ -156,9 +160,9 @@ Los siguientes aspectos quedan como parámetros por definir y configurar con el 
 - Eventos de auditoría, responsables de revisión y retención.
 - Acceso excepcional de emergencia; deshabilitado por defecto hasta definir y revisar su procedimiento.
 
-## Criterios de aceptación de la definición
+## Criterios de aceptación para cerrar la fase
 
-La fase estará lista para implementar cuando:
+La fase estará lista para validación del piloto cuando:
 
 - El alcance de organización, sedes y residencia piloto esté definido.
 - La matriz de roles y permisos identifique cada acción y tipo de información.
@@ -167,8 +171,8 @@ La fase estará lista para implementar cuando:
 - Los recorridos de invitación, cambio de permisos, revocación y baja estén acordados.
 - Se definan auditoría, aislamiento entre organizaciones y reglas de revisión.
 - Las preguntas legales o de consentimiento que afecten el diseño estén asignadas a revisión, sin suposiciones del agente.
-- Jorge confirme el documento de alcance antes de implementar autenticación o permisos.
+- Los permisos implementados tengan pruebas automatizadas y revisión con el equipo piloto.
 
 ## Instrucción para el agente de IA
 
-Hasta que estas decisiones se confirmen, el agente puede proponer alternativas, diagramar flujos y preparar casos de prueba con usuarios ficticios. No debe implementar un catálogo definitivo de roles, asumir consentimiento, crear cuentas reales ni habilitar acceso a información de personas mayores.
+No inventar reglas asistenciales ni legales. Implementar únicamente las decisiones confirmadas; marcar propuestas y decisiones pendientes en la documentación. Usar cuentas y personas ficticias en desarrollo. No habilitar acceso familiar ni desplegar la plataforma antes de probar autorización, revocación, aislamiento y trazabilidad.
