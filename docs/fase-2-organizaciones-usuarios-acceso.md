@@ -71,7 +71,8 @@ La siguiente estructura traduce las decisiones confirmadas a conceptos de sistem
 - Pruebas con SQLite en memoria; usan datos ficticios.
 - Modelos base `UserAccount` y `OrganizationMembership` para personal, familia y persona mayor, con alcance opcional por servicio; `0003_user_memberships` está preparada para verificación local.
 - Modelo `CareRecipient` con nombre visible únicamente y `FamilyAuthorization` por categoría y acción; registra familiar, autorizador y revocación.
-- `0004_care_recipients_family_authorizations` está preparada para verificación local.
+- API local para crear y consultar fichas mínimas de personas cuidadas por servicio; no expone datos clínicos ni habilita acceso familiar.
+- La migración `0004_care_recipients_family_authorizations.py` usa la revisión Alembic `0004_family_auth`, compatible con el límite de 32 caracteres de `alembic_version`.
 - Las tablas no tienen inicio de sesión, credenciales ni endpoints de acceso; `role_label` es descriptivo y no concede permisos.
 - No se crean datos reales ni solicitudes de personas mayores.
 

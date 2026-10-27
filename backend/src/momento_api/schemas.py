@@ -58,6 +58,29 @@ class CareUnitRead(BaseModel):
     updated_at: datetime
 
 
+class CareRecipientCreate(BaseModel):
+    display_name: str = Field(min_length=1, max_length=160)
+
+    @field_validator("display_name")
+    @classmethod
+    def clean_display_name(cls, value: str) -> str:
+        value = value.strip()
+        if not value:
+            raise ValueError("El nombre visible no puede estar vacío.")
+        return value
+
+
+class CareRecipientRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    care_unit_id: UUID
+    display_name: str
+    is_active: bool
+    created_at: datetime
+    updated_at: datetime
+
+
 class WorkflowStatusInput(BaseModel):
     code: str = Field(min_length=2, max_length=40, pattern=r"^[a-z][a-z0-9_]*$")
     label: str = Field(min_length=1, max_length=80)

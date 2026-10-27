@@ -343,3 +343,40 @@ def test_family_authorization_tracks_category_actions_and_grantor() -> None:
         assert not hasattr(stored, "can_modify")
 
     engine.dispose()
+
+
+def test_care_recipient_api_creates_and_lists_only_active_records(
+    api_client: TestClient,
+) -> None:
+    _, care_unit_id = create_test_service(api_client)
+
+    created = api_client.post(
+        f"/api/care-units/{care_unit_id}/care-recipients",
+        json={"display_name": "  Persona de prueba  "},
+    )
+
+    assert created.status_code == 201
+    assert created.json()["display_name"] == "Persona de prueba"
+    assert created.json()["care_unit_id"] == care_unit_id
+    assert created.headers["location"].endswith(created.json()["id"])
+
+    listed = api_client.get(f"/api/care-units/{care_unit_id}/care-recipients")
+    assert listed.status_code == 200
+    assert [item["id"] for item in listed.json()] == [created.json()["id"]]
+
+
+def test_care_recipient_api_rejects_empty_name_and_unknown_service(
+    api_client: TestClient,
+) -> None:
+    _, care_unit_id = create_test_service(api_client)
+
+    empty_name = api_client.post(
+        f"/api/care-units/{care_unit_id}/care-recipients",
+        json={"display_name": "   "},
+    )
+    assert empty_name.status_code == 422
+
+    unknown_service = api_client.get(
+        "/api/care-units/aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa/care-recipients"
+    )
+    assert unknown_service.status_code == 404
