@@ -13,6 +13,8 @@ Desde esta carpeta, crea un entorno con el Python 3.13.5 que ya está instalado:
 
 Copia .env.example a .env y configura MOMENTO_DATABASE_URL con una base local. El archivo .env es privado y no se sube a GitHub. La API puede iniciarse aunque PostgreSQL todavía no esté configurado; la comprobación de base de datos informará que no está disponible.
 
+Para ejecutar el asistente sin preguntas, puedes definir MOMENTO_DEMO_EMAIL y MOMENTO_DEMO_PASSWORD en backend/.env. La contraseña se almacena como hash y nunca aparece en la salida de consola.
+
 ## Iniciar y comprobar
 
 Con el entorno virtual activo:

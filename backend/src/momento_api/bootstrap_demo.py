@@ -6,6 +6,7 @@ import getpass
 import os
 import re
 import sys
+from uuid import UUID
 
 from dotenv import load_dotenv
 from sqlalchemy import create_engine, select
@@ -43,32 +44,45 @@ LAST_NAMES = [
 ]
 
 
+def add_membership(
+    session: Session,
+    *,
+    user_account_id: UUID,
+    organization_id: UUID,
+    care_unit_id: UUID | None,
+    user_group: UserGroup,
+    role_label: str,
+) -> OrganizationMembership:
+    """Persiste el alcance con claves explícitas para evitar relaciones ORM ambiguas."""
+    membership = OrganizationMembership(
+        user_account_id=user_account_id,
+        organization_id=organization_id,
+        care_unit_id=care_unit_id,
+        user_group=user_group,
+        role_label=role_label,
+    )
+    session.add(membership)
+    return membership
+
+
 def main() -> None:
     load_dotenv()
     database_url = os.getenv("MOMENTO_DATABASE_URL")
     if not database_url:
         raise SystemExit("Configurá MOMENTO_DATABASE_URL en backend/.env y aplicá las migraciones.")
 
-    email = input("Correo de acceso para la cuenta encargada [encargado@losaromos.demo]: ").strip().lower()
-    if not email:
-        email = "encargado@losaromos.demo"
+    configured_email = os.getenv("MOMENTO_DEMO_EMAIL", "encargado@losaromos.demo").strip().lower()
+    email = configured_email or input("Correo de acceso para la cuenta encargada: ").strip().lower()
     if not re.fullmatch(r"[^\s@]+@[^\s@]+\.[^\s@]+", email):
         raise SystemExit("Ingresá un correo con formato válido.")
 
-    password_hash = None
-    for attempt in range(3):
-        password = getpass.getpass("Elegí una contraseña (mínimo 12 caracteres): ")
-        confirmation = getpass.getpass("Repetí la contraseña: ")
-        if password != confirmation:
-            print("Las contraseñas no coinciden. Volvé a ingresarlas.")
-            continue
-        try:
-            password_hash = hash_password(password)
-            break
-        except ValueError as error:
-            print(error)
-    if password_hash is None:
-        raise SystemExit("No se pudo validar la contraseña. Ejecutá el asistente nuevamente.")
+    password = os.getenv("MOMENTO_DEMO_PASSWORD")
+    if password is None:
+        password = getpass.getpass("Contraseña de acceso (mínimo 12 caracteres): ")
+    try:
+        password_hash = hash_password(password)
+    except ValueError as error:
+        raise SystemExit(str(error)) from error
 
     engine = create_engine(database_url, pool_pre_ping=True)
     try:
@@ -89,15 +103,17 @@ def main() -> None:
             session.add(organization)
             session.flush()
 
-            manager = UserAccount(display_name="Mariana López", email=email, phone=None)
-            manager.memberships.append(OrganizationMembership(
-                organization=organization,
-                care_unit=None,
-                user_group=UserGroup.STAFF,
-                role_label="Encargada de residencia",
-            ))
+            manager = UserAccount(display_name="Encargado de residencia", email=email, phone=None)
             session.add(manager)
             session.flush()
+            add_membership(
+                session,
+                user_account_id=manager.id,
+                organization_id=organization.id,
+                care_unit_id=None,
+                user_group=UserGroup.STAFF,
+                role_label="Encargado de residencia",
+            )
             session.add(UserCredential(user_account_id=manager.id, password_hash=password_hash))
 
             for index, (first, last) in enumerate(zip(FIRST_NAMES, LAST_NAMES, strict=True), start=1):
@@ -116,24 +132,27 @@ def main() -> None:
             physicians = [
                 "Dra. Laura Méndez", "Dr. Pablo Navarro", "Dra. Elena Campos",
             ]
-            for index, name in enumerate(caregivers, start=1):
-                account = UserAccount(display_name=name, email=f"cuidador{index:02d}@losaromos.demo")
-                account.memberships.append(OrganizationMembership(
-                    organization=organization,
-                    care_unit=unit,
+            staff_accounts = [
+                UserAccount(display_name=name, email=f"cuidador{index:02d}@losaromos.demo")
+                for index, name in enumerate(caregivers, start=1)
+            ] + [
+                UserAccount(display_name=name, email=f"medico{index:02d}@losaromos.demo")
+                for index, name in enumerate(physicians, start=1)
+            ]
+            session.add_all(staff_accounts)
+            session.flush()
+            session.add_all([
+                OrganizationMembership(
+                    user_account_id=account.id,
+                    organization_id=organization.id,
+                    care_unit_id=unit.id,
                     user_group=UserGroup.STAFF,
-                    role_label="Cuidador/a",
-                ))
-                session.add(account)
-            for index, name in enumerate(physicians, start=1):
-                account = UserAccount(display_name=name, email=f"medico{index:02d}@losaromos.demo")
-                account.memberships.append(OrganizationMembership(
-                    organization=organization,
-                    care_unit=unit,
-                    user_group=UserGroup.STAFF,
-                    role_label="Médico/a",
-                ))
-                session.add(account)
+                    role_label=(
+                        "Médico/a" if account.email.startswith("medico") else "Cuidador/a"
+                    ),
+                )
+                for account in staff_accounts
+            ])
 
             family_names = [
                 "Lucía Ferreyra", "Andrés Molina", "Nicolás Acosta", "Paula Benítez",
@@ -145,15 +164,22 @@ def main() -> None:
                 "Ramiro Campos", "Luciana Figueroa", "Hernán Carrizo", "Cecilia Ledesma",
                 "Emiliano Correa", "Romina Vargas", "Joaquín Ponce",
             ]
-            for index, name in enumerate(family_names, start=1):
-                account = UserAccount(display_name=name, email=f"familia{index:02d}@losaromos.demo")
-                account.memberships.append(OrganizationMembership(
-                    organization=organization,
-                    care_unit=unit,
+            family_accounts = [
+                UserAccount(display_name=name, email=f"familia{index:02d}@losaromos.demo")
+                for index, name in enumerate(family_names, start=1)
+            ]
+            session.add_all(family_accounts)
+            session.flush()
+            session.add_all([
+                OrganizationMembership(
+                    user_account_id=account.id,
+                    organization_id=organization.id,
+                    care_unit_id=unit.id,
                     user_group=UserGroup.FAMILY,
                     role_label="Familiar de demostración",
-                ))
-                session.add(account)
+                )
+                for account in family_accounts
+            ])
 
         print("Escenario local creado:")
         print(f"  Organización: {ORG_NAME}")
@@ -162,7 +188,7 @@ def main() -> None:
         print("  Equipo: 18 cuidadores, 3 profesionales médicos y 1 encargada")
         print("  Vínculos familiares: 31")
         print(f"  Cuenta de acceso: {email}")
-        print("  Contraseña: la que acabás de elegir; no se guarda en texto legible.")
+        print("  Acceso: contraseña configurada localmente; nunca se imprime ni se guarda en texto legible.")
         print("  Todos los nombres y registros son ficticios y se guardan solo en tu base local.")
     finally:
         engine.dispose()
