@@ -40,7 +40,7 @@ Documentos: [Fase 0 — Descubrimiento y definición de Momento](fase-0-descubri
 
 **Objetivo:** controlar quién puede acceder a cada institución, servicio y dato.\n\nBorrador de definición, con decisiones pendientes y sin alcance funcional aprobado: [Fase 2 — Organizaciones, usuarios y acceso](fase-2-organizaciones-usuarios-acceso.md).
 
-**Avance técnico local:** altas y consultas de organizaciones, servicios, fichas mínimas de personas cuidadas y cuentas/membresías por grupo y alcance de organización o servicio. Son datos de prueba; el inicio de sesión y los permisos todavía no están implementados.
+**Avance técnico local:** altas y consultas de organizaciones, servicios, fichas mínimas de personas cuidadas y cuentas/membresías por grupo y alcance de organización o servicio. La web usa menú lateral, vistas separadas y formularios modales; el inicio de sesión es solo visual. Son datos de prueba; autenticación y permisos todavía no están implementados.
 
 **Trabajo pendiente:** cerrar la matriz de permisos; definir invitaciones y autenticación; implementar autorizaciones familiares y la designación del personal de bandeja; completar trazabilidad de acciones sensibles.
 

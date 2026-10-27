@@ -73,6 +73,8 @@ La siguiente estructura traduce las decisiones confirmadas a conceptos de sistem
 - Modelo `CareRecipient` con nombre visible únicamente y `FamilyAuthorization` por categoría y acción; registra familiar, autorizador y revocación.
 - API local para crear y consultar fichas mínimas de personas cuidadas por servicio; no expone datos clínicos ni habilita acceso familiar.
 - API y pantalla local para crear y consultar cuentas de prueba por grupo (personal, familia/personas de confianza, persona mayor) y vincularlas a una organización o servicio.
+- Interfaz de gestión con menú lateral y vistas separadas para organizaciones, personas cuidadas y usuarios; las altas se abren en formularios modales.
+- Pantalla visual de inicio de sesión aún no conectada al backend de autenticación.
 - La función descriptiva del personal no concede permisos. No se implementan inicio de sesión, invitaciones, autenticación ni autorización.
 - La migración `0004_care_recipients_family_authorizations.py` usa la revisión Alembic `0004_family_auth`, compatible con el límite de 32 caracteres de `alembic_version`.
 - Las tablas no tienen inicio de sesión, credenciales ni endpoints de acceso; `role_label` es descriptivo y no concede permisos.

@@ -1,4 +1,4 @@
-import { FormEvent, useEffect, useState } from "react";
+import { type FormEvent, type ReactNode, useEffect, useRef, useState } from "react";
 
 type CareUnitType = "residence" | "home_care";
 
@@ -42,16 +42,35 @@ async function readApiError(response: Response): Promise<string> {
   return "No se pudo completar la operación. Comprueba que la API esté disponible.";
 }
 
-export default function OrganizationsPanel() {
+export type OrganizationView = "organizations" | "people" | "users";
+
+export default function OrganizationsPanel({ view }: { view: OrganizationView }) {
   const [organizations, setOrganizations] = useState<Organization[]>([]);
-  const [unitsByOrganization, setUnitsByOrganization] = useState<
-    Record<string, CareUnit[]>
-  >({});
+  const [unitsByOrganization, setUnitsByOrganization] = useState<Record<string, CareUnit[]>>({});
   const [organizationName, setOrganizationName] = useState("");
+  const [showOrganizationModal, setShowOrganizationModal] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+
+  const copy: Record<OrganizationView, { eyebrow: string; title: string; description: string }> = {
+    organizations: {
+      eyebrow: "Administración",
+      title: "Organizaciones y servicios",
+      description: "Organizá prestadores, residencias y servicios de cuidado domiciliario.",
+    },
+    people: {
+      eyebrow: "Directorio",
+      title: "Personas cuidadas",
+      description: "Consultá fichas mínimas asociadas a cada residencia o servicio.",
+    },
+    users: {
+      eyebrow: "Acceso y vínculos",
+      title: "Usuarios",
+      description: "Administrá cuentas de prueba y el ámbito en el que se vinculan.",
+    },
+  };
 
   async function loadOrganizations() {
     setLoading(true);
@@ -61,26 +80,16 @@ export default function OrganizationsPanel() {
       if (!response.ok) throw new Error(await readApiError(response));
       const items = (await response.json()) as Organization[];
       setOrganizations(items);
-
       const unitEntries = await Promise.all(
         items.map(async (organization) => {
-          const unitResponse = await fetch(
-            `/api/organizations/${organization.id}/care-units`,
-          );
+          const unitResponse = await fetch(`/api/organizations/${organization.id}/care-units`);
           if (!unitResponse.ok) throw new Error(await readApiError(unitResponse));
-          return [
-            organization.id,
-            (await unitResponse.json()) as CareUnit[],
-          ] as const;
+          return [organization.id, (await unitResponse.json()) as CareUnit[]] as const;
         }),
       );
       setUnitsByOrganization(Object.fromEntries(unitEntries));
     } catch (caught) {
-      setError(
-        caught instanceof Error
-          ? caught.message
-          : "No se pudieron cargar las organizaciones.",
-      );
+      setError(caught instanceof Error ? caught.message : "No se pudieron cargar los datos.");
     } finally {
       setLoading(false);
     }
@@ -103,14 +112,11 @@ export default function OrganizationsPanel() {
       });
       if (!response.ok) throw new Error(await readApiError(response));
       setOrganizationName("");
+      setShowOrganizationModal(false);
       setNotice("La organización se guardó.");
       await loadOrganizations();
     } catch (caught) {
-      setError(
-        caught instanceof Error
-          ? caught.message
-          : "No se pudo guardar la organización.",
-      );
+      setError(caught instanceof Error ? caught.message : "No se pudo guardar la organización.");
     } finally {
       setSaving(false);
     }
@@ -118,115 +124,142 @@ export default function OrganizationsPanel() {
 
   async function createCareUnit(
     organizationId: string,
-    payload: {
-      name: string;
-      service_type: CareUnitType;
-      country_code: "AR" | "UY";
-    },
+    payload: { name: string; service_type: CareUnitType; country_code: "AR" | "UY" },
   ) {
     setError("");
     setNotice("");
-    const response = await fetch(
-      `/api/organizations/${organizationId}/care-units`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      },
-    );
+    const response = await fetch(`/api/organizations/${organizationId}/care-units`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
     if (!response.ok) throw new Error(await readApiError(response));
     setNotice("El servicio se guardó.");
-    const unitResponse = await fetch(
-      `/api/organizations/${organizationId}/care-units`,
-    );
+    const unitResponse = await fetch(`/api/organizations/${organizationId}/care-units`);
     if (!unitResponse.ok) throw new Error(await readApiError(unitResponse));
     const units = (await unitResponse.json()) as CareUnit[];
-    setUnitsByOrganization((current) => ({
-      ...current,
-      [organizationId]: units,
-    }));
+    setUnitsByOrganization((current) => ({ ...current, [organizationId]: units }));
   }
 
-  return (
-    <section className="organization-section" aria-labelledby="organization-title">
-      <div className="organization-heading">
-        <div>
-          <p className="eyebrow">Fase 2 · estructura</p>
-          <h2 id="organization-title">Organizaciones y servicios</h2>
-          <p>
-            Registra la organización prestadora y las residencias o servicios
-            domiciliarios que dependen de ella.
-          </p>
-        </div>
-        <span className="local-only-badge">Prueba local · datos ficticios</span>
-      </div>
+  const heading = copy[view];
 
-      <form className="organization-create-form" onSubmit={createOrganization}>
-        <label htmlFor="organization-name">Nombre de la organización</label>
-        <div className="organization-form-row">
-          <input
-            id="organization-name"
-            value={organizationName}
-            onChange={(event) => setOrganizationName(event.target.value)}
-            maxLength={160}
-            placeholder="Ej.: Organización de cuidado"
-            required
-          />
-          <button type="submit" disabled={saving}>
-            {saving ? "Guardando..." : "Agregar organización"}
-          </button>
+  return (
+    <section className="management-view" aria-labelledby="management-title">
+      <header className="view-heading">
+        <div>
+          <p className="eyebrow">{heading.eyebrow}</p>
+          <h2 id="management-title">{heading.title}</h2>
+          <p>{heading.description}</p>
         </div>
-      </form>
+        {view === "organizations" && (
+          <button className="primary-action" type="button" onClick={() => setShowOrganizationModal(true)}>
+            Nueva organización
+          </button>
+        )}
+      </header>
+
+      <div className="view-meta">
+        <span className="local-only-badge">Entorno local · datos ficticios</span>
+        {view === "organizations" && <span>{organizations.length} organizaciones</span>}
+      </div>
 
       {error && <p className="form-message error-message" role="alert">{error}</p>}
       {notice && <p className="form-message success-message" role="status">{notice}</p>}
 
       {loading ? (
-        <p className="empty-state" role="status">Cargando organizaciones…</p>
+        <p className="empty-state" role="status">Cargando…</p>
       ) : organizations.length === 0 ? (
-        <p className="empty-state">
-          Todavía no hay organizaciones. Puedes crear una con datos de prueba.
-        </p>
-      ) : (
-        <div className="organization-list">
+        <div className="empty-panel">
+          <span className="empty-panel-mark">00</span>
+          <h3>{view === "organizations" ? "Todavía no hay organizaciones" : "No hay información para mostrar"}</h3>
+          <p>{view === "organizations" ? "Creá una organización para empezar a configurar servicios y usuarios." : "Primero creá una organización y agregá un servicio."}</p>
+          {view === "organizations" && (
+            <button className="primary-action" type="button" onClick={() => setShowOrganizationModal(true)}>Crear organización</button>
+          )}
+        </div>
+      ) : view === "organizations" ? (
+        <div className="management-list">
           {organizations.map((organization) => (
-            <article className="organization-card" key={organization.id}>
-              <h3>{organization.name}</h3>
-              <div className="unit-list">
+            <article className="management-card" key={organization.id}>
+              <div className="management-card-heading">
+                <div>
+                  <span className="card-kicker">ORGANIZACIÓN</span>
+                  <h3>{organization.name}</h3>
+                </div>
+                <span className="item-count">{(unitsByOrganization[organization.id] ?? []).length} servicios</span>
+              </div>
+              <div className="service-list">
                 {(unitsByOrganization[organization.id] ?? []).length === 0 ? (
-                  <p className="unit-empty">Aún no tiene sedes o servicios.</p>
+                  <p className="list-empty">Todavía no tiene servicios.</p>
                 ) : (
                   (unitsByOrganization[organization.id] ?? []).map((unit) => (
-                    <div className="unit-item" key={unit.id}>
-                      <div className="unit-row">
-                        <span className="unit-type-mark" aria-hidden="true" />
-                        <span className="unit-name">{unit.name}</span>
-                        <span className="unit-description">
-                          {unit.service_type === "residence"
-                            ? "Residencia"
-                            : "Cuidado domiciliario"}{" "}
-                          · {unit.country_code === "AR" ? "Argentina" : "Uruguay"}
-                        </span>
+                    <div className="service-card" key={unit.id}>
+                      <div className="service-card-heading">
+                        <div>
+                          <span className="service-type-label">{unit.service_type === "residence" ? "RESIDENCIA" : "CUIDADO DOMICILIARIO"}</span>
+                          <h4>{unit.name}</h4>
+                        </div>
+                        <span className="country-label">{unit.country_code === "AR" ? "Argentina" : "Uruguay"}</span>
                       </div>
-                      <WorkflowStatusEditor
-                        organizationId={organization.id}
-                        careUnitId={unit.id}
-                      />
-                      <CareRecipientPanel careUnitId={unit.id} />
+                      <WorkflowStatusEditor organizationId={organization.id} careUnitId={unit.id} />
                     </div>
                   ))
                 )}
               </div>
-              <CareUnitForm
-                onSubmit={(payload) => createCareUnit(organization.id, payload)}
-              />
-              <MembershipsPanel
-                organizationId={organization.id}
-                careUnits={unitsByOrganization[organization.id] ?? []}
-              />
+              <CareUnitForm onSubmit={(payload) => createCareUnit(organization.id, payload)} />
             </article>
           ))}
         </div>
+      ) : view === "people" ? (
+        <div className="management-list">
+          {organizations.map((organization) => (
+            <article className="management-card" key={organization.id}>
+              <div className="management-card-heading">
+                <div><span className="card-kicker">ORGANIZACIÓN</span><h3>{organization.name}</h3></div>
+              </div>
+              {(unitsByOrganization[organization.id] ?? []).length === 0 ? (
+                <p className="list-empty">Agregá un servicio para asociar fichas.</p>
+              ) : (
+                <div className="service-list">
+                  {(unitsByOrganization[organization.id] ?? []).map((unit) => (
+                    <section className="service-card" key={unit.id}>
+                      <div className="service-card-heading">
+                        <div><span className="service-type-label">{unit.service_type === "residence" ? "RESIDENCIA" : "CUIDADO DOMICILIARIO"}</span><h4>{unit.name}</h4></div>
+                        <span className="country-label">{unit.country_code === "AR" ? "Argentina" : "Uruguay"}</span>
+                      </div>
+                      <CareRecipientPanel careUnitId={unit.id} />
+                    </section>
+                  ))}
+                </div>
+              )}
+            </article>
+          ))}
+        </div>
+      ) : (
+        <div className="management-list">
+          {organizations.map((organization) => (
+            <article className="management-card" key={organization.id}>
+              <div className="management-card-heading">
+                <div><span className="card-kicker">ORGANIZACIÓN</span><h3>{organization.name}</h3></div>
+              </div>
+              <MembershipsPanel organizationId={organization.id} careUnits={unitsByOrganization[organization.id] ?? []} />
+            </article>
+          ))}
+        </div>
+      )}
+
+      {showOrganizationModal && (
+        <Modal title="Nueva organización" onClose={() => setShowOrganizationModal(false)}>
+          <form className="modal-form" onSubmit={createOrganization}>
+            <label>Nombre de la organización
+              <input value={organizationName} onChange={(event) => setOrganizationName(event.target.value)} maxLength={160} required autoFocus />
+            </label>
+            <div className="modal-actions">
+              <button className="secondary-action" type="button" onClick={() => setShowOrganizationModal(false)}>Cancelar</button>
+              <button className="primary-action" type="submit" disabled={saving}>{saving ? "Guardando…" : "Crear organización"}</button>
+            </div>
+          </form>
+        </Modal>
       )}
     </section>
   );
@@ -235,85 +268,64 @@ export default function OrganizationsPanel() {
 function CareUnitForm({
   onSubmit,
 }: {
-  onSubmit: (payload: {
-    name: string;
-    service_type: CareUnitType;
-    country_code: "AR" | "UY";
-  }) => Promise<void>;
+  onSubmit: (payload: { name: string; service_type: CareUnitType; country_code: "AR" | "UY" }) => Promise<void>;
 }) {
   const [name, setName] = useState("");
   const [serviceType, setServiceType] = useState<CareUnitType>("residence");
   const [countryCode, setCountryCode] = useState<"AR" | "UY">("AR");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [open, setOpen] = useState(false);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setSaving(true);
     setError("");
     try {
-      await onSubmit({
-        name,
-        service_type: serviceType,
-        country_code: countryCode,
-      });
+      await onSubmit({ name, service_type: serviceType, country_code: countryCode });
       setName("");
+      setOpen(false);
     } catch (caught) {
-      setError(
-        caught instanceof Error ? caught.message : "No se pudo guardar el servicio.",
-      );
+      setError(caught instanceof Error ? caught.message : "No se pudo guardar el servicio.");
     } finally {
       setSaving(false);
     }
   }
 
   return (
-    <form className="unit-create-form" onSubmit={submit}>
-      <p className="unit-form-title">Agregar sede o servicio</p>
-      <div className="unit-form-grid">
-        <label>
-          Nombre
-          <input
-            value={name}
-            onChange={(event) => setName(event.target.value)}
-            maxLength={160}
-            placeholder="Ej.: Residencia Centro"
-            required
-          />
-        </label>
-        <label>
-          Tipo
-          <select
-            value={serviceType}
-            onChange={(event) =>
-              setServiceType(event.target.value as CareUnitType)
-            }
-          >
-            <option value="residence">Residencia</option>
-            <option value="home_care">Cuidado domiciliario</option>
-          </select>
-        </label>
-        <label>
-          País
-          <select
-            value={countryCode}
-            onChange={(event) =>
-              setCountryCode(event.target.value as "AR" | "UY")
-            }
-          >
-            <option value="AR">Argentina</option>
-            <option value="UY">Uruguay</option>
-          </select>
-        </label>
-        <button type="submit" disabled={saving}>
-          {saving ? "Guardando..." : "Agregar"}
-        </button>
-      </div>
-      {error && <p className="form-message error-message" role="alert">{error}</p>}
-    </form>
+    <>
+      <button className="secondary-action add-service-button" type="button" onClick={() => setOpen(true)}>Agregar servicio</button>
+      {open && (
+        <Modal title="Agregar sede o servicio" onClose={() => setOpen(false)}>
+          <form className="modal-form" onSubmit={submit}>
+            <label>Nombre
+              <input value={name} onChange={(event) => setName(event.target.value)} maxLength={160} placeholder="Ej.: Residencia Centro" required autoFocus />
+            </label>
+            <div className="modal-form-grid">
+              <label>Tipo
+                <select value={serviceType} onChange={(event) => setServiceType(event.target.value as CareUnitType)}>
+                  <option value="residence">Residencia</option>
+                  <option value="home_care">Cuidado domiciliario</option>
+                </select>
+              </label>
+              <label>País
+                <select value={countryCode} onChange={(event) => setCountryCode(event.target.value as "AR" | "UY")}>
+                  <option value="AR">Argentina</option>
+                  <option value="UY">Uruguay</option>
+                </select>
+              </label>
+            </div>
+            {error && <p className="form-message error-message" role="alert">{error}</p>}
+            <div className="modal-actions">
+              <button className="secondary-action" type="button" onClick={() => setOpen(false)}>Cancelar</button>
+              <button className="primary-action" type="submit" disabled={saving}>{saving ? "Guardando…" : "Guardar servicio"}</button>
+            </div>
+          </form>
+        </Modal>
+      )}
+    </>
   );
 }
-
 
 function WorkflowStatusEditor({
   organizationId,
@@ -520,6 +532,7 @@ function CareRecipientPanel({ careUnitId }: { careUnitId: string }) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  const [open, setOpen] = useState(false);
   const path = `/api/care-units/${careUnitId}/care-recipients`;
 
   async function loadRecipients() {
@@ -529,11 +542,7 @@ function CareRecipientPanel({ careUnitId }: { careUnitId: string }) {
       if (!response.ok) throw new Error(await readApiError(response));
       setRecipients((await response.json()) as CareRecipient[]);
     } catch (caught) {
-      setError(
-        caught instanceof Error
-          ? caught.message
-          : "No se pudieron cargar las personas cuidadas.",
-      );
+      setError(caught instanceof Error ? caught.message : "No se pudieron cargar las personas cuidadas.");
     } finally {
       setLoading(false);
     }
@@ -556,56 +565,48 @@ function CareRecipientPanel({ careUnitId }: { careUnitId: string }) {
       });
       if (!response.ok) throw new Error(await readApiError(response));
       setDisplayName("");
+      setOpen(false);
       setNotice("La ficha de prueba se guardó.");
       await loadRecipients();
     } catch (caught) {
-      setError(
-        caught instanceof Error
-          ? caught.message
-          : "No se pudo guardar la ficha.",
-      );
+      setError(caught instanceof Error ? caught.message : "No se pudo guardar la ficha.");
     } finally {
       setSaving(false);
     }
   }
 
   return (
-    <section className="care-recipient-panel" aria-label="Personas cuidadas">
-      <div className="care-recipient-heading">
+    <section className="directory-panel" aria-label="Personas cuidadas">
+      <div className="directory-heading">
         <div>
           <h4>Personas cuidadas</h4>
-          <p>Ficha mínima para pruebas. El acceso familiar no está habilitado.</p>
+          <p>Fichas mínimas sin información clínica.</p>
         </div>
-        <span className="care-recipient-count">{recipients.length}</span>
+        <button className="secondary-action" type="button" onClick={() => setOpen(true)}>Nueva ficha</button>
       </div>
-      <form className="care-recipient-form" onSubmit={createRecipient}>
-        <label htmlFor={`recipient-name-${careUnitId}`}>Nombre visible</label>
-        <div className="care-recipient-form-row">
-          <input
-            id={`recipient-name-${careUnitId}`}
-            value={displayName}
-            onChange={(event) => setDisplayName(event.target.value)}
-            maxLength={160}
-            placeholder="Ej.: Persona de prueba"
-            required
-          />
-          <button type="submit" disabled={saving}>
-            {saving ? "Guardando…" : "Agregar ficha"}
-          </button>
-        </div>
-      </form>
       {error && <p className="form-message error-message" role="alert">{error}</p>}
       {notice && <p className="form-message success-message" role="status">{notice}</p>}
       {loading ? (
-        <p className="care-recipient-empty" role="status">Cargando fichas…</p>
+        <p className="list-empty" role="status">Cargando fichas…</p>
       ) : recipients.length === 0 ? (
-        <p className="care-recipient-empty">Todavía no hay fichas de prueba.</p>
+        <p className="list-empty">Todavía no hay fichas para este servicio.</p>
       ) : (
-        <ul className="care-recipient-list">
-          {recipients.map((recipient) => (
-            <li key={recipient.id}>{recipient.display_name}</li>
-          ))}
-        </ul>
+        <ul className="record-list">{recipients.map((recipient) => <li key={recipient.id}>{recipient.display_name}</li>)}</ul>
+      )}
+      {open && (
+        <Modal title="Nueva ficha de persona cuidada" onClose={() => setOpen(false)}>
+          <form className="modal-form" onSubmit={createRecipient}>
+            <label>Nombre visible
+              <input value={displayName} onChange={(event) => setDisplayName(event.target.value)} maxLength={160} required autoFocus />
+            </label>
+            <p className="modal-help">Usá datos ficticios mientras el acceso no tenga autenticación.</p>
+            <div className="modal-actions">
+              <button className="secondary-action" type="button" onClick={() => setOpen(false)}>Cancelar</button>
+              <button className="primary-action" type="submit" disabled={saving}>{saving ? "Guardando…" : "Guardar ficha"}</button>
+            </div>
+            {error && <p className="form-message error-message" role="alert">{error}</p>}
+          </form>
+        </Modal>
       )}
     </section>
   );
@@ -642,6 +643,7 @@ function MembershipsPanel({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  const [open, setOpen] = useState(false);
   const path = `/api/organizations/${organizationId}/memberships`;
 
   async function loadMemberships() {
@@ -651,11 +653,7 @@ function MembershipsPanel({
       if (!response.ok) throw new Error(await readApiError(response));
       setMemberships((await response.json()) as Membership[]);
     } catch (caught) {
-      setError(
-        caught instanceof Error
-          ? caught.message
-          : "No se pudieron cargar los usuarios.",
-      );
+      setError(caught instanceof Error ? caught.message : "No se pudieron cargar los usuarios.");
     } finally {
       setLoading(false);
     }
@@ -688,119 +686,42 @@ function MembershipsPanel({
       setEmail("");
       setPhone("");
       setRoleLabel("");
+      setOpen(false);
       setNotice("La cuenta de prueba se vinculó a la organización.");
       await loadMemberships();
     } catch (caught) {
-      setError(
-        caught instanceof Error
-          ? caught.message
-          : "No se pudo guardar la cuenta.",
-      );
+      setError(caught instanceof Error ? caught.message : "No se pudo guardar la cuenta.");
     } finally {
       setSaving(false);
     }
   }
 
   const groupLabel = (value: Membership["user_group"]) =>
-    value === "staff"
-      ? "Personal"
-      : value === "family"
-        ? "Familia / persona de confianza"
-        : "Persona mayor";
+    value === "staff" ? "Personal" : value === "family" ? "Familia / persona de confianza" : "Persona mayor";
 
   return (
-    <section className="membership-panel" aria-label="Usuarios de la organización">
-      <div className="membership-heading">
+    <section className="directory-panel" aria-label="Usuarios de la organización">
+      <div className="directory-heading">
         <div>
           <h4>Usuarios y vínculos</h4>
-          <p>Registro local de cuentas de prueba; no crea credenciales ni permisos.</p>
+          <p>Las funciones registradas no conceden permisos.</p>
         </div>
-        <span className="membership-count">{memberships.length}</span>
+        <button className="secondary-action" type="button" onClick={() => setOpen(true)}>Agregar usuario</button>
       </div>
-      <form className="membership-form" onSubmit={createMembership}>
-        <div className="membership-form-grid">
-          <label>
-            Nombre visible
-            <input
-              value={name}
-              onChange={(event) => setName(event.target.value)}
-              maxLength={160}
-              required
-            />
-          </label>
-          <label>
-            Grupo
-            <select
-              value={group}
-              onChange={(event) => setGroup(event.target.value as Membership["user_group"])}
-            >
-              <option value="staff">Personal</option>
-              <option value="family">Familia / persona de confianza</option>
-              <option value="older_adult">Persona mayor</option>
-            </select>
-          </label>
-          <label>
-            Servicio
-            <select
-              value={careUnitId}
-              onChange={(event) => setCareUnitId(event.target.value)}
-            >
-              <option value="">Toda la organización</option>
-              {careUnits.map((unit) => (
-                <option value={unit.id} key={unit.id}>{unit.name}</option>
-              ))}
-            </select>
-          </label>
-          <label>
-            Función del personal (descriptiva)
-            <input
-              value={roleLabel}
-              onChange={(event) => setRoleLabel(event.target.value)}
-              maxLength={80}
-              placeholder="Ej.: Encargado"
-              disabled={group !== "staff"}
-            />
-          </label>
-          <label>
-            Correo electrónico (opcional)
-            <input
-              type="email"
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              maxLength={254}
-            />
-          </label>
-          <label>
-            Teléfono (opcional)
-            <input
-              type="tel"
-              value={phone}
-              onChange={(event) => setPhone(event.target.value)}
-              maxLength={32}
-            />
-          </label>
-          <button type="submit" disabled={saving}>
-            {saving ? "Guardando…" : "Agregar usuario"}
-          </button>
-        </div>
-      </form>
       {error && <p className="form-message error-message" role="alert">{error}</p>}
       {notice && <p className="form-message success-message" role="status">{notice}</p>}
       {loading ? (
-        <p className="membership-empty" role="status">Cargando usuarios…</p>
+        <p className="list-empty" role="status">Cargando usuarios…</p>
       ) : memberships.length === 0 ? (
-        <p className="membership-empty">Todavía no hay cuentas vinculadas.</p>
+        <p className="list-empty">Todavía no hay cuentas vinculadas a esta organización.</p>
       ) : (
-        <ul className="membership-list">
+        <ul className="record-list">
           {memberships.map((membership) => {
             const unit = careUnits.find((item) => item.id === membership.care_unit_id);
             return (
               <li key={membership.id}>
-                <div>
-                  <strong>{membership.user.display_name}</strong>
-                  <span>{groupLabel(membership.user_group)}</span>
-                </div>
-                <div className="membership-details">
+                <div><strong>{membership.user.display_name}</strong><span>{groupLabel(membership.user_group)}</span></div>
+                <div className="record-meta">
                   {membership.role_label && <span>{membership.role_label}</span>}
                   <span>{unit?.name ?? "Toda la organización"}</span>
                   {membership.user.email && <span>{membership.user.email}</span>}
@@ -810,6 +731,85 @@ function MembershipsPanel({
           })}
         </ul>
       )}
+      {open && (
+        <Modal title="Agregar usuario" onClose={() => setOpen(false)}>
+          <form className="modal-form" onSubmit={createMembership}>
+            <label>Nombre visible
+              <input value={name} onChange={(event) => setName(event.target.value)} maxLength={160} required autoFocus />
+            </label>
+            <div className="modal-form-grid">
+              <label>Grupo
+                <select value={group} onChange={(event) => setGroup(event.target.value as Membership["user_group"])}>
+                  <option value="staff">Personal</option>
+                  <option value="family">Familia / persona de confianza</option>
+                  <option value="older_adult">Persona mayor</option>
+                </select>
+              </label>
+              <label>Servicio
+                <select value={careUnitId} onChange={(event) => setCareUnitId(event.target.value)}>
+                  <option value="">Toda la organización</option>
+                  {careUnits.map((unit) => <option value={unit.id} key={unit.id}>{unit.name}</option>)}
+                </select>
+              </label>
+            </div>
+            {group === "staff" && (
+              <label>Función descriptiva
+                <input value={roleLabel} onChange={(event) => setRoleLabel(event.target.value)} maxLength={80} placeholder="Ej.: Encargado" />
+              </label>
+            )}
+            <div className="modal-form-grid">
+              <label>Correo electrónico (opcional)
+                <input type="email" autoComplete="off" value={email} onChange={(event) => setEmail(event.target.value)} maxLength={254} />
+              </label>
+              <label>Teléfono (opcional)
+                <input type="tel" autoComplete="off" value={phone} onChange={(event) => setPhone(event.target.value)} maxLength={32} />
+              </label>
+            </div>
+            <p className="modal-help">Registro local de prueba. No crea credenciales ni habilita el inicio de sesión.</p>
+            {error && <p className="form-message error-message" role="alert">{error}</p>}
+            <div className="modal-actions">
+              <button className="secondary-action" type="button" onClick={() => setOpen(false)}>Cancelar</button>
+              <button className="primary-action" type="submit" disabled={saving}>{saving ? "Guardando…" : "Guardar usuario"}</button>
+            </div>
+          </form>
+        </Modal>
+      )}
     </section>
+  );
+}
+
+function Modal({
+  title,
+  onClose,
+  children,
+}: {
+  title: string;
+  onClose: () => void;
+  children: ReactNode;
+}) {
+  const dialogRef = useRef<HTMLDialogElement>(null);
+
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    if (dialog && !dialog.open) dialog.showModal();
+    return () => {
+      if (dialog?.open) dialog.close();
+    };
+  }, []);
+
+  return (
+    <dialog
+      ref={dialogRef}
+      className="moment-modal"
+      aria-labelledby="modal-title"
+      onCancel={(event) => { event.preventDefault(); onClose(); }}
+      onClick={(event) => { if (event.target === event.currentTarget) onClose(); }}
+    >
+      <div className="modal-heading">
+        <h2 id="modal-title">{title}</h2>
+        <button className="modal-close" type="button" aria-label="Cerrar" onClick={onClose}>×</button>
+      </div>
+      {children}
+    </dialog>
   );
 }
