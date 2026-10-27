@@ -15,6 +15,13 @@ type CareUnit = {
   country_code: "AR" | "UY";
 };
 
+type CareRecipient = {
+  id: string;
+  care_unit_id: string;
+  display_name: string;
+  is_active: boolean;
+};
+
 type WorkflowStatus = {
   id: string;
   care_unit_id: string;
@@ -205,6 +212,7 @@ export default function OrganizationsPanel() {
                         organizationId={organization.id}
                         careUnitId={unit.id}
                       />
+                      <CareRecipientPanel careUnitId={unit.id} />
                     </div>
                   ))
                 )}
@@ -497,6 +505,104 @@ function WorkflowStatusEditor({
       <p className="workflow-message">
         Desactivar un estado lo conserva en el historial; no borra registros.
       </p>
+    </section>
+  );
+}
+
+function CareRecipientPanel({ careUnitId }: { careUnitId: string }) {
+  const [recipients, setRecipients] = useState<CareRecipient[]>([]);
+  const [displayName, setDisplayName] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
+  const path = `/api/care-units/${careUnitId}/care-recipients`;
+
+  async function loadRecipients() {
+    setError("");
+    try {
+      const response = await fetch(path);
+      if (!response.ok) throw new Error(await readApiError(response));
+      setRecipients((await response.json()) as CareRecipient[]);
+    } catch (caught) {
+      setError(
+        caught instanceof Error
+          ? caught.message
+          : "No se pudieron cargar las personas cuidadas.",
+      );
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    void loadRecipients();
+  }, [path]);
+
+  async function createRecipient(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setSaving(true);
+    setError("");
+    setNotice("");
+    try {
+      const response = await fetch(path, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ display_name: displayName }),
+      });
+      if (!response.ok) throw new Error(await readApiError(response));
+      setDisplayName("");
+      setNotice("La ficha de prueba se guardó.");
+      await loadRecipients();
+    } catch (caught) {
+      setError(
+        caught instanceof Error
+          ? caught.message
+          : "No se pudo guardar la ficha.",
+      );
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <section className="care-recipient-panel" aria-label="Personas cuidadas">
+      <div className="care-recipient-heading">
+        <div>
+          <h4>Personas cuidadas</h4>
+          <p>Ficha mínima para pruebas. El acceso familiar no está habilitado.</p>
+        </div>
+        <span className="care-recipient-count">{recipients.length}</span>
+      </div>
+      <form className="care-recipient-form" onSubmit={createRecipient}>
+        <label htmlFor={`recipient-name-${careUnitId}`}>Nombre visible</label>
+        <div className="care-recipient-form-row">
+          <input
+            id={`recipient-name-${careUnitId}`}
+            value={displayName}
+            onChange={(event) => setDisplayName(event.target.value)}
+            maxLength={160}
+            placeholder="Ej.: Persona de prueba"
+            required
+          />
+          <button type="submit" disabled={saving}>
+            {saving ? "Guardando…" : "Agregar ficha"}
+          </button>
+        </div>
+      </form>
+      {error && <p className="form-message error-message" role="alert">{error}</p>}
+      {notice && <p className="form-message success-message" role="status">{notice}</p>}
+      {loading ? (
+        <p className="care-recipient-empty" role="status">Cargando fichas…</p>
+      ) : recipients.length === 0 ? (
+        <p className="care-recipient-empty">Todavía no hay fichas de prueba.</p>
+      ) : (
+        <ul className="care-recipient-list">
+          {recipients.map((recipient) => (
+            <li key={recipient.id}>{recipient.display_name}</li>
+          ))}
+        </ul>
+      )}
     </section>
   );
 }

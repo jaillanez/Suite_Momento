@@ -638,6 +638,123 @@ a:focus-visible {
   accent-color: var(--plum-dark);
 }
 
+
+.care-recipient-panel {
+  margin-top: 12px;
+  padding: 16px;
+  border: 1px solid #d9e9e5;
+  border-radius: 13px;
+  background: #f7fbfa;
+}
+
+.care-recipient-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.care-recipient-heading h4 {
+  margin: 0;
+  font-size: 0.92rem;
+}
+
+.care-recipient-heading p {
+  margin: 5px 0 0;
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.5;
+}
+
+.care-recipient-count {
+  display: grid;
+  flex: 0 0 30px;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  border-radius: 10px;
+  color: #286646;
+  background: #e3f3ec;
+  font-size: 0.8rem;
+  font-weight: 800;
+}
+
+.care-recipient-form {
+  margin-top: 13px;
+}
+
+.care-recipient-form > label {
+  display: block;
+  margin-bottom: 6px;
+  color: #41485b;
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.care-recipient-form-row {
+  display: flex;
+  gap: 8px;
+}
+
+.care-recipient-form-row input {
+  flex: 1;
+  min-width: 0;
+  min-height: 40px;
+  padding: 9px 11px;
+  border: 1px solid #cfd3df;
+  border-radius: 9px;
+  color: var(--ink);
+  background: #fff;
+  font: inherit;
+}
+
+.care-recipient-form-row input:focus {
+  outline: 3px solid rgb(135 92 255 / 25%);
+  border-color: var(--plum);
+}
+
+.care-recipient-form-row button {
+  min-height: 40px;
+  padding: 0 13px;
+  border: 0;
+  border-radius: 9px;
+  color: #fff;
+  background: #286646;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.care-recipient-form-row button:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.care-recipient-empty {
+  margin: 12px 0 0;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.care-recipient-list {
+  display: grid;
+  gap: 6px;
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.care-recipient-list li {
+  padding: 9px 11px;
+  border: 1px solid #e5eeeb;
+  border-radius: 9px;
+  background: #fff;
+  font-size: 0.86rem;
+  font-weight: 650;
+}
+
 @media (max-width: 760px) {
   .workflow-editor-heading {
     flex-direction: column;
@@ -706,6 +823,14 @@ a:focus-visible {
   }
 
   .unit-form-grid button {
+    width: 100%;
+  }
+
+  .care-recipient-form-row {
+    flex-direction: column;
+  }
+
+  .care-recipient-form-row button {
     width: 100%;
   }
 }
