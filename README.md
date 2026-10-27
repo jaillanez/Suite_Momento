@@ -6,7 +6,7 @@ Este repositorio comienza como un proyecto nuevo. El sistema anterior de 2014 es
 
 ## Estado actual
 
-Base técnica local: API Python, PostgreSQL y React. La landing pública ofrece un único acceso; después aparece el menú de gestión y un dashboard de prueba con indicadores por organización. Las altas usan formularios modales. El acceso no valida credenciales todavía. No cargues datos reales: autenticación y permisos no están implementados.
+La landing pública muestra el acceso. La aplicación de gestión valida la cuenta en la API, usa una sesión de servidor revocable y ofrece un escenario local con datos ficticios de una residencia para recorrer el dashboard y los módulos.
 
 ## Tecnologías
 
@@ -24,7 +24,7 @@ Después de actualizar el repositorio, desde su carpeta ejecuta:
 
 El script crea el entorno virtual dentro del proyecto, prepara dependencias y arranca API y web. No instala ni actualiza Python, Homebrew, Xcode o Command Line Tools. Presiona Control+C para detener ambos servicios.
 
-Abre http://127.0.0.1:5173. La API estará en http://127.0.0.1:8020. PostgreSQL aparecerá pendiente hasta configurar una base local.
+Abre http://127.0.0.1:5173. La API estará en http://127.0.0.1:8020. Configurá PostgreSQL según backend/README.md y creá el escenario local siguiendo docs/entorno-demostracion-local.md.
 
 ## Documentación
 
@@ -32,7 +32,9 @@ Abre http://127.0.0.1:5173. La API estará en http://127.0.0.1:8020. PostgreSQL 
 - docs/fase-0-descubrimiento.md
 - docs/revision-materiales-compartidos.md
 - docs/criterios-iniciales-experiencia.md
-- docs/plan-de-fases.md\n- docs/fase-2-organizaciones-usuarios-acceso.md
+- docs/plan-de-fases.md
+- docs/fase-2-organizaciones-usuarios-acceso.md
+- docs/entorno-demostracion-local.md
 - backend/README.md
 - frontend/README.md
 - AGENTS.md

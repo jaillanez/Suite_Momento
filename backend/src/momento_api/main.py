@@ -1,7 +1,8 @@
 """Punto de entrada de la API de Momento."""
 
-from fastapi import FastAPI, HTTPException
+from fastapi import Depends, FastAPI, HTTPException
 
+from momento_api.auth import get_management_account, router as auth_router
 from momento_api.care_recipients import router as care_recipients_router
 from momento_api.database import database_is_ready
 from momento_api.memberships import router as memberships_router
@@ -13,10 +14,12 @@ app = FastAPI(
     description="Base técnica inicial de Momento.",
     version="0.1.0",
 )
-app.include_router(organizations_router)
-app.include_router(memberships_router)
-app.include_router(care_recipients_router)
-app.include_router(workflow_config_router)
+app.include_router(auth_router)
+authenticated = [Depends(get_management_account)]
+app.include_router(organizations_router, dependencies=authenticated)
+app.include_router(memberships_router, dependencies=authenticated)
+app.include_router(care_recipients_router, dependencies=authenticated)
+app.include_router(workflow_config_router, dependencies=authenticated)
 
 
 @app.get("/api/health", tags=["Sistema"])

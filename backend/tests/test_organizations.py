@@ -6,6 +6,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
+from momento_api.auth import hash_password
 from momento_api.main import app
 from momento_api.models import (
     Base,
@@ -72,8 +73,25 @@ def api_client() -> Generator[TestClient, None, None]:
             yield session
 
     app.dependency_overrides[get_session] = override_get_session
+    with sessions() as session:
+        organization = Organization(name="Organización autenticada")
+        account = UserAccount(display_name="Encargada de prueba", email="encargada@example.test")
+        account.memberships.append(OrganizationMembership(
+            organization=organization,
+            user_group=UserGroup.STAFF,
+            role_label="Encargada",
+        ))
+        session.add_all([organization, account])
+        session.flush()
+        session.add(UserCredential(user_account_id=account.id, password_hash=hash_password("ClaveSegura2026!")))
+        session.commit()
     try:
         with TestClient(app) as client:
+            login = client.post("/api/auth/login", json={
+                "email": "encargada@example.test",
+                "password": "ClaveSegura2026!",
+            })
+            assert login.status_code == 200
             yield client
     finally:
         app.dependency_overrides.pop(get_session, None)
@@ -89,7 +107,7 @@ def test_api_creates_and_lists_organization(api_client: TestClient) -> None:
 
     listed = api_client.get("/api/organizations")
     assert listed.status_code == 200
-    assert [item["id"] for item in listed.json()] == [created.json()["id"]]
+    assert created.json()["id"] in [item["id"] for item in listed.json()]
 
 
 def test_api_creates_care_unit_and_rejects_unknown_country(api_client: TestClient) -> None:

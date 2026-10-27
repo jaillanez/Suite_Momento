@@ -1,6 +1,6 @@
 # Backend de Momento
 
-API inicial con FastAPI. Incluye una comprobación de salud de la API y otra de conexión a PostgreSQL. Todavía no contiene procesos de cuidado ni datos de residentes.
+API con FastAPI, PostgreSQL y migraciones Alembic. Incluye autenticación local con clave derivada por scrypt y sesión de servidor en cookie HttpOnly. El escenario ficticio se crea a pedido con el asistente de demostración.
 
 ## Preparar el entorno local
 
@@ -25,13 +25,13 @@ Documentación interactiva: http://127.0.0.1:8020/docs
 
 ## Esquema inicial de organizaciones y servicios
 
-La primera migración crea solamente `organizations` y `care_units` (residencia o cuidado domiciliario). No crea usuarios, roles ni datos de personas mayores; esos accesos siguen en definición. La migración agrega tablas y no modifica datos existentes.
+Las migraciones versionan organizaciones, servicios, membresías, personas cuidadas, autorizaciones familiares, credenciales protegidas y sesiones. Las credenciales existentes no se convierten automáticamente; la cuenta local se configura con el asistente.
 
 Después de actualizar dependencias y configurar `backend/.env`, desde esta carpeta ejecuta:
 
     .venv/bin/alembic upgrade head
 
-Para consultar la revisión aplicada:
+Para preparar una cuenta y un escenario local de ejemplo, seguí [la guía del entorno de demostración](../docs/entorno-demostracion-local.md). Para consultar la revisión aplicada:
 
     .venv/bin/alembic current
 
