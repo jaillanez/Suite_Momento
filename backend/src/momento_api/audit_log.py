@@ -5,11 +5,11 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel
-from sqlalchemy import and_, or_, select
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from momento_api.auth import get_organization_admin_account
-from momento_api.models import AuditEvent, OrganizationMembership, UserAccount
+from momento_api.models import AuditEvent, UserAccount
 from momento_api.session import get_session
 
 router = APIRouter(prefix="/api/organizations/{organization_id}/audit-events", tags=["Auditoría"])
@@ -33,22 +33,11 @@ def list_audit_events(
     session: Session = Depends(get_session),
     _: UserAccount = Depends(get_organization_admin_account),
 ) -> list[AuditEventRead]:
-    """Eventos de la organización e inicios de sesión de sus integrantes."""
-    members = select(OrganizationMembership.user_account_id).where(
-        OrganizationMembership.organization_id == organization_id
-    )
+    """Solo eventos registrados para esta organización."""
     statement = (
         select(AuditEvent, UserAccount.display_name)
         .outerjoin(UserAccount, UserAccount.id == AuditEvent.actor_account_id)
-        .where(
-            or_(
-                AuditEvent.organization_id == organization_id,
-                and_(
-                    AuditEvent.organization_id.is_(None),
-                    AuditEvent.actor_account_id.in_(members),
-                ),
-            )
-        )
+        .where(AuditEvent.organization_id == organization_id)
         .order_by(AuditEvent.occurred_at.desc(), AuditEvent.id)
         .limit(limit)
     )

@@ -468,14 +468,29 @@ def list_family_requests(
     session: Session = Depends(get_session),
     memberships: list[OrganizationMembership] = Depends(get_family_memberships),
 ) -> list[FamilyRequestRead]:
-    """Solicitudes enviadas por esta cuenta familiar."""
-    requests = session.scalars(
+    """Solicitudes de esta cuenta sobre personas y temas que sigue teniendo autorizados.
+
+    Si se revoca una autorización, la familia deja de ver también las
+    solicitudes y respuestas anteriores de ese tema.
+    """
+    allowed = {
+        (item.family_membership_id, item.care_recipient_id, item.category)
+        for item in _active_authorizations(session, memberships)
+        if item.can_view
+    }
+    if not allowed:
+        return []
+    candidates = session.scalars(
         select(FamilyRequest)
         .options(joinedload(FamilyRequest.care_recipient))
         .where(FamilyRequest.family_membership_id.in_([m.id for m in memberships]))
         .order_by(FamilyRequest.created_at.desc(), FamilyRequest.id)
-        .limit(100)
+        .limit(500)
     ).all()
+    requests = [
+        item for item in candidates
+        if (item.family_membership_id, item.care_recipient_id, item.category) in allowed
+    ][:100]
     status_cache: dict[UUID, list[CareUnitWorkflowStatus]] = {}
     result = []
     for item in requests:
@@ -503,12 +518,22 @@ def create_family_request(
         None,
     )
     if authorization is None:
+        # Solo se registra la persona si pertenece a una organización de la familia;
+        # así un intento sobre otra organización no aparece en su registro.
+        recipient_organization = session.scalar(
+            select(CareUnit.organization_id)
+            .join(CareRecipient, CareRecipient.care_unit_id == CareUnit.id)
+            .where(CareRecipient.id == payload.care_recipient_id)
+        )
+        family_organizations = {m.organization_id for m in memberships}
+        own = recipient_organization in family_organizations
         record_denied(
             session,
             action="request.created",
             actor_account_id=account.id,
-            target_type="care_recipient",
-            target_id=payload.care_recipient_id,
+            organization_id=recipient_organization if own else memberships[0].organization_id,
+            target_type="care_recipient" if own else None,
+            target_id=payload.care_recipient_id if own else None,
         )
         raise HTTPException(
             status_code=403,

@@ -156,6 +156,37 @@ def _cookie_secure() -> bool:
     }
 
 
+def _record_for_each_organization(
+    session: Session,
+    *,
+    action: str,
+    account_id: UUID | None,
+    outcome: str = "success",
+) -> None:
+    """Registra el evento una vez por organización de la cuenta.
+
+    Así cada encargado ve solo los eventos de su organización. Sin cuenta
+    conocida, el evento queda sin organización y no aparece en ningún listado.
+    """
+    organization_ids = (
+        session.scalars(
+            select(OrganizationMembership.organization_id)
+            .where(OrganizationMembership.user_account_id == account_id)
+            .distinct()
+        ).all()
+        if account_id is not None
+        else []
+    )
+    for organization_id in organization_ids or [None]:
+        record_event(
+            session,
+            action=action,
+            actor_account_id=account_id,
+            organization_id=organization_id,
+            outcome=outcome,
+        )
+
+
 def _portal_membership_filter(portal: UserGroup):
     """Condición de acceso de cada portal; gestión y familia están separados."""
     conditions = [
@@ -207,10 +238,10 @@ def _login(
         or not password_valid
     ):
         # No se registra el correo ingresado para no guardar datos de terceros.
-        record_event(
+        _record_for_each_organization(
             session,
             action=action,
-            actor_account_id=account.id if account is not None else None,
+            account_id=account.id if account is not None else None,
             outcome="denied",
         )
         session.commit()
@@ -225,7 +256,7 @@ def _login(
             expires_at=datetime.now(timezone.utc) + timedelta(hours=SESSION_HOURS),
         )
     )
-    record_event(session, action=action, actor_account_id=account.id)
+    _record_for_each_organization(session, action=action, account_id=account.id)
     session.commit()
     _attempts.pop(_ip_key(request), None)
     response.set_cookie(
@@ -317,10 +348,10 @@ def logout(
         )
         if auth_session is not None and auth_session.revoked_at is None:
             auth_session.revoked_at = datetime.now(timezone.utc)
-            record_event(
+            _record_for_each_organization(
                 session,
                 action="auth.logout",
-                actor_account_id=auth_session.user_account_id,
+                account_id=auth_session.user_account_id,
             )
             session.commit()
     response.delete_cookie(

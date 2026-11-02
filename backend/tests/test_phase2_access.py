@@ -377,3 +377,75 @@ def test_manager_renames_organization(client: TestClient, scenario: Scenario) ->
     assert renamed.json()["name"] == "Residencia Renombrada"
     as_user(client, "medica@test.example")
     assert client.patch(path, json={"name": "X"}).status_code == 403
+
+
+# --- Correcciones de la revisión de seguridad --------------------------------
+
+
+def test_revoked_family_no_longer_sees_past_requests_of_that_topic(
+    client: TestClient, scenario: Scenario
+) -> None:
+    request_id = _create_family_request(client, scenario)  # tema: actividades
+    as_user(client, "jefa@test.example")
+    grant(client, scenario, ["diet"])
+    base = f"/api/organizations/{scenario.organization_id}/family-authorizations"
+    activities = next(
+        item for item in client.get(f"{base}?family_membership_id={scenario.memberships['family']}").json()
+        if item["category"] == "activities"
+    )
+    inbox = f"/api/organizations/{scenario.organization_id}/care-units/{scenario.unit_id}/requests"
+    client.post(f"{inbox}/{request_id}/respond", json={"shared_response": "Respuesta posterior"})
+    client.post(f"{base}/{activities['id']}/revoke")
+
+    as_user(client, "familia@test.example", family=True)
+    assert client.get("/api/family/requests").json() == []
+
+
+def test_audit_log_excludes_activity_from_other_organizations(
+    client: TestClient, scenario: Scenario, db_sessions: sessionmaker[Session]
+) -> None:
+    from momento_api.models import Organization, OrganizationMembership, StaffRole, UserAccount, UserGroup
+
+    # La médica también pertenece a otra organización.
+    with db_sessions() as session:
+        other = Organization(name="Otra residencia")
+        session.add(other)
+        session.flush()
+        medic = session.scalar(select(UserAccount).where(UserAccount.email == "medica@test.example"))
+        session.add(OrganizationMembership(
+            user_account_id=medic.id,
+            organization_id=other.id,
+            user_group=UserGroup.STAFF,
+            staff_role=StaffRole.PHYSICIAN,
+        ))
+        session.commit()
+        other_id = str(other.id)
+        medic_id = medic.id
+
+    as_user(client, "medica@test.example")
+    client.post("/api/auth/logout")
+
+    with db_sessions() as session:
+        logins = session.scalars(select(AuditEvent).where(AuditEvent.action == "auth.login")).all()
+        assert {str(e.organization_id) for e in logins if e.actor_account_id == medic_id} == {
+            scenario.organization_id, other_id,
+        }
+        assert all(e.organization_id is not None for e in session.scalars(select(AuditEvent)).all())
+
+
+def test_family_denied_request_on_foreign_recipient_is_not_linked(
+    client: TestClient, scenario: Scenario, db_sessions: sessionmaker[Session]
+) -> None:
+    as_user(client, "familia@test.example", family=True)
+    response = client.post("/api/family/requests", json={
+        "care_recipient_id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+        "category": "diet",
+        "subject": "x",
+        "message": "y",
+    })
+    assert response.status_code == 403
+    with db_sessions() as session:
+        event = session.scalar(select(AuditEvent).where(AuditEvent.action == "request.created"))
+        assert event.outcome == "denied"
+        assert event.target_id is None
+        assert str(event.organization_id) == scenario.organization_id
