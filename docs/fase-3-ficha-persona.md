@@ -1,6 +1,6 @@
 # Fase 3 — Ficha de la persona mayor
 
-**Estado:** implementada el 02/11/2026 en el entorno local. Los campos y permisos son una propuesta de trabajo: deben revisarse con los profesionales y el equipo piloto antes de usar datos reales.
+**Estado:** implementada el 02/11/2026 en el entorno local, con datos obligatorios, notas del equipo y documentos adjuntos. Los campos y permisos son una propuesta de trabajo: deben revisarse con los profesionales y el equipo piloto antes de usar datos reales.
 
 ## Decisión de Jorge
 
@@ -18,26 +18,41 @@ El 02/11/2026 Jorge pidió que la ficha esté completa. Se implementaron todos l
 
 La sección de salud es **información de referencia**: no reemplaza la historia clínica, no son indicaciones y Momento no aplica reglas clínicas sobre esos datos.
 
+## Datos obligatorios (confirmado por Jorge el 02/11/2026)
+
+Nombre, fecha de nacimiento, documento, fecha de ingreso, habitación (o domicilio en cuidado domiciliario) y al menos un contacto de emergencia.
+
+No bloquean el guardado: se puede dar de alta a una persona con datos parciales. La ficha muestra "Ficha incompleta" con la lista de lo que falta, y el listado marca a las personas con ficha incompleta.
+
 ## Permisos aplicados
 
 | Acción | Encargado | Administrativo | Médico | Cuidador | Familia |
 |---|---|---|---|---|---|
 | Ver la ficha completa | Sí | Sí | Sí | Sí | No |
 | Dar de alta una persona | Sí | Sí | No | No | No |
-| Editar identificación, cobertura, historia y contactos | Sí | Sí | Sí | No | No |
+| Editar identificación, cobertura y contactos | Sí | Sí | Sí | No | No |
+| Editar historia de vida y preferencias | Sí | Sí | Sí | Sí | No |
 | Editar salud y apoyos | Sí | No | Sí | No | No |
 | Dar de baja (deja de aparecer; la ficha se conserva) | Sí | No | No | No | No |
+| Ver y descargar documentos | Sí | Sí | Sí | Sí | No |
+| Subir y borrar documentos | Sí | Sí | No | No | No |
 
 Todo el personal ve solo las personas de los servicios que alcanza su vínculo. La familia no ve la ficha: su acceso sigue limitado a medicación, actividades y dietas según lo autorizado en Fase 2.
 
 Cada consulta de la ficha, cada cambio (con los nombres de los campos modificados, nunca sus valores) y cada cambio de contactos queda en el registro de control.
 
+## Documentos adjuntos
+
+- Tipos: documento de identidad, consentimiento, estudio o informe, otro.
+- Formatos: PDF, JPG o PNG, hasta 10 MB. Se verifica que el contenido coincida con el formato declarado.
+- Se guardan en el disco de la Mac (`backend/storage/documents`, excluido de Git; se puede cambiar con `MOMENTO_DOCUMENTS_DIR`). El nombre interno lo genera el sistema; el nombre original solo se muestra.
+- Subida, descarga y borrado quedan en el registro de control.
+- No se agregó ninguna dependencia ni servicio externo: el archivo se envía directo en la solicitud.
+
 ## Pendiente de validar
 
-- Qué campos son obligatorios y en qué momento (al ingreso o después).
-- Si el cuidador debe poder agregar observaciones de historia y preferencias.
 - Si algún campo de salud debe ocultarse a ciertos puestos.
-- Carga de documentos (DNI escaneado, consentimientos, estudios): requiere definir almacenamiento de archivos y su protección.
+- Dónde se guardarán los documentos fuera del entorno local (copias de respaldo, cifrado) y cuánto tiempo se conservan.
 - Requisitos legales de Argentina y Uruguay sobre datos de salud y consentimiento.
 
 ## Datos de demostración

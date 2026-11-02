@@ -156,6 +156,7 @@ class CareRecipientRead(BaseModel):
     display_name: str
     room: str | None = None
     birth_date: date | None = None
+    missing_count: int = 0
     is_active: bool
     created_at: datetime
     updated_at: datetime
@@ -469,6 +470,28 @@ class CareRecipientProfileRead(BaseModel):
     is_active: bool
     updated_at: datetime
     contacts: list[CareRecipientContactRead]
+    documents: list["CareRecipientDocumentRead"] = []
+    missing_fields: list[str] = []
     can_edit: bool = False
     can_edit_health: bool = False
+    can_edit_story: bool = False
+    can_manage_documents: bool = False
     can_deactivate: bool = False
+
+
+DOCUMENT_CATEGORIES = ("identity", "consent", "study", "other")
+
+
+class CareRecipientDocumentRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    title: str
+    category: Literal["identity", "consent", "study", "other"]
+    original_filename: str
+    content_type: str
+    size_bytes: int
+    created_at: datetime
+
+
+CareRecipientProfileRead.model_rebuild()

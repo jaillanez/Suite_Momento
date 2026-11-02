@@ -12,25 +12,40 @@ type Contact = {
   notes: string | null;
 };
 
-type Profile = Record<string, string | boolean | null | Contact[]> & {
+type DocumentItem = {
+  id: string;
+  title: string;
+  category: "identity" | "consent" | "study" | "other";
+  original_filename: string;
+  content_type: string;
+  size_bytes: number;
+  created_at: string;
+};
+
+type Profile = Record<string, string | boolean | null | Contact[] | DocumentItem[] | string[]> & {
   id: string;
   display_name: string;
   birth_date: string | null;
   room: string | null;
   is_active: boolean;
   contacts: Contact[];
+  documents: DocumentItem[];
+  missing_fields: string[];
   can_edit: boolean;
   can_edit_health: boolean;
+  can_edit_story: boolean;
+  can_manage_documents: boolean;
   can_deactivate: boolean;
 };
 
 type Field = { key: string; label: string; type?: "date" | "textarea" | "select"; options?: string[]; wide?: boolean };
-type Section = { id: string; title: string; note?: string; health?: boolean; fields: Field[] };
+type Section = { id: string; title: string; note?: string; editableBy: "general" | "health" | "story"; fields: Field[] };
 
 const sections: Section[] = [
   {
     id: "identity",
     title: "Identificación",
+    editableBy: "general",
     fields: [
       { key: "display_name", label: "Nombre visible" },
       { key: "preferred_name", label: "Cómo prefiere que le digan" },
@@ -50,6 +65,7 @@ const sections: Section[] = [
   {
     id: "coverage",
     title: "Cobertura y médico de cabecera",
+    editableBy: "general",
     fields: [
       { key: "health_coverage", label: "Obra social, prepaga o mutualista" },
       { key: "coverage_member_number", label: "Número de afiliado" },
@@ -61,7 +77,7 @@ const sections: Section[] = [
     id: "health",
     title: "Salud y apoyos",
     note: "Información de referencia cargada por el encargado o el médico. No reemplaza la historia clínica ni son indicaciones.",
-    health: true,
+    editableBy: "health",
     fields: [
       { key: "allergies", label: "Alergias", type: "textarea" },
       { key: "relevant_conditions", label: "Antecedentes relevantes", type: "textarea" },
@@ -74,6 +90,8 @@ const sections: Section[] = [
   {
     id: "story",
     title: "Historia de vida y preferencias",
+    note: "Todo el equipo puede sumar lo que conoce de la persona.",
+    editableBy: "story",
     fields: [
       { key: "life_history", label: "Historia de vida", type: "textarea", wide: true },
       { key: "preferences", label: "Gustos y preferencias", type: "textarea" },
@@ -157,8 +175,14 @@ export default function RecipientProfile({ careUnitId, recipientId, onBack }: { 
         {profile.can_deactivate && <button className="link-action danger" type="button" onClick={() => void deactivate()}>Dar de baja</button>}
       </header>
       {error && <p className="form-message error-message" role="alert">{error}</p>}
+      {profile.missing_fields.length > 0 && (
+        <div className="profile-missing" role="status">
+          <strong>Ficha incompleta</strong>
+          <span>Falta: {profile.missing_fields.join(", ")}.</span>
+        </div>
+      )}
       {sections.map((section) => {
-        const canEdit = section.health ? profile.can_edit_health : profile.can_edit;
+        const canEdit = section.editableBy === "health" ? profile.can_edit_health : section.editableBy === "story" ? profile.can_edit_story : profile.can_edit;
         return (
           <article className="profile-section" key={section.id}>
             <div className="profile-section-heading">
@@ -181,7 +205,23 @@ export default function RecipientProfile({ careUnitId, recipientId, onBack }: { 
           </article>
         );
       })}
-      <ContactsSection path={`${path}/contacts`} contacts={profile.contacts} canEdit={profile.can_edit} onChanged={(contacts) => setProfile({ ...profile, contacts })} />
+      <ContactsSection
+        path={`${path}/contacts`}
+        contacts={profile.contacts}
+        canEdit={profile.can_edit}
+        onChanged={(contacts) => {
+          // El contacto de emergencia es el único faltante que depende de esta sección.
+          const label = "Contacto de emergencia";
+          const others = profile.missing_fields.filter((item) => item !== label);
+          setProfile({ ...profile, contacts, missing_fields: contacts.some((item) => item.is_emergency) ? others : [...others, label] });
+        }}
+      />
+      <DocumentsSection
+        path={`${path}/documents`}
+        documents={profile.documents}
+        canManage={profile.can_manage_documents}
+        onChanged={(documents) => setProfile({ ...profile, documents })}
+      />
     </section>
   );
 }
@@ -328,6 +368,100 @@ function ContactsSection({ path, contacts, canEdit, onChanged }: { path: string;
         </form>
       )}
       {error && editing === null && <p className="form-message error-message" role="alert">{error}</p>}
+    </article>
+  );
+}
+
+const documentCategories: Record<DocumentItem["category"], string> = {
+  identity: "Documento de identidad",
+  consent: "Consentimiento",
+  study: "Estudio o informe",
+  other: "Otro",
+};
+
+const acceptedTypes = ["application/pdf", "image/jpeg", "image/png"];
+
+function formatSize(bytes: number): string {
+  return bytes < 1024 * 1024 ? `${Math.max(1, Math.round(bytes / 1024))} KB` : `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+}
+
+function DocumentsSection({ path, documents, canManage, onChanged }: { path: string; documents: DocumentItem[]; canManage: boolean; onChanged: (documents: DocumentItem[]) => void }) {
+  const [open, setOpen] = useState(false);
+  const [file, setFile] = useState<File | null>(null);
+  const [title, setTitle] = useState("");
+  const [category, setCategory] = useState<DocumentItem["category"]>("identity");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+
+  async function upload(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!file) return;
+    setError("");
+    if (!acceptedTypes.includes(file.type)) { setError("Solo se aceptan archivos PDF, JPG o PNG."); return; }
+    if (file.size > 10 * 1024 * 1024) { setError("El archivo supera los 10 MB."); return; }
+    setSaving(true);
+    try {
+      const query = new URLSearchParams({ title: title || file.name, category, filename: file.name });
+      const response = await fetch(`${path}?${query}`, { method: "POST", headers: { "Content-Type": file.type }, body: file });
+      if (!response.ok) throw new Error(await readApiError(response));
+      onChanged([(await response.json()) as DocumentItem, ...documents]);
+      setOpen(false);
+      setFile(null);
+      setTitle("");
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "No se pudo subir el documento.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function remove(document: DocumentItem) {
+    if (!window.confirm(`¿Borrar «${document.title}»? No se puede deshacer.`)) return;
+    const response = await fetch(`${path}/${document.id}`, { method: "DELETE" });
+    if (!response.ok) { setError(await readApiError(response)); return; }
+    onChanged(documents.filter((item) => item.id !== document.id));
+  }
+
+  return (
+    <article className="profile-section">
+      <div className="profile-section-heading">
+        <h4>Documentos</h4>
+        {canManage && !open && <button className="link-action" type="button" onClick={() => setOpen(true)}>Subir documento</button>}
+      </div>
+      <p className="modal-help">PDF, JPG o PNG de hasta 10 MB. Cada descarga queda en el registro de control.</p>
+      {documents.length === 0 && !open && <p className="list-empty">Sin documentos adjuntos.</p>}
+      <ul className="record-list compact">
+        {documents.map((document) => (
+          <li key={document.id}>
+            <div>
+              <strong>{document.title}</strong>
+              <span>{documentCategories[document.category]} · {document.original_filename} · {formatSize(document.size_bytes)} · {new Date(document.created_at).toLocaleDateString("es-AR")}</span>
+            </div>
+            <div className="record-controls">
+              <a className="link-action" href={`${path}/${document.id}`} download={document.original_filename}>Descargar</a>
+              {canManage && <button className="link-action danger" type="button" onClick={() => void remove(document)}>Borrar</button>}
+            </div>
+          </li>
+        ))}
+      </ul>
+      {open && (
+        <form className="profile-form" onSubmit={upload}>
+          <div className="profile-form-grid">
+            <label>Archivo<input type="file" accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png" onChange={(event) => setFile(event.target.files?.[0] ?? null)} required /></label>
+            <label>Título<input value={title} onChange={(event) => setTitle(event.target.value)} maxLength={160} placeholder="Ej.: DNI frente y dorso" /></label>
+            <label>Tipo
+              <select value={category} onChange={(event) => setCategory(event.target.value as DocumentItem["category"])}>
+                {(Object.keys(documentCategories) as DocumentItem["category"][]).map((key) => <option key={key} value={key}>{documentCategories[key]}</option>)}
+              </select>
+            </label>
+          </div>
+          <div className="modal-actions">
+            <button className="secondary-action" type="button" onClick={() => setOpen(false)}>Cancelar</button>
+            <button className="primary-action" type="submit" disabled={saving || !file}>{saving ? "Subiendo…" : "Subir"}</button>
+          </div>
+        </form>
+      )}
+      {error && <p className="form-message error-message" role="alert">{error}</p>}
     </article>
   );
 }

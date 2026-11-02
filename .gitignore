@@ -15,3 +15,5 @@ node_modules/
 frontend/dist/
 frontend/.vite/
 *.egg-info/
+# Documentos adjuntos subidos en el entorno local
+backend/storage/

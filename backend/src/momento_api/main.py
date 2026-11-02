@@ -6,6 +6,7 @@ from momento_api.audit_log import router as audit_log_router
 from momento_api.auth import get_management_account, router as auth_router
 from momento_api.care_recipients import router as care_recipients_router
 from momento_api.database import database_is_ready
+from momento_api.documents import router as documents_router
 from momento_api.family_authorizations import router as family_authorizations_router
 from momento_api.family_requests import family_router, staff_router as requests_router
 from momento_api.memberships import router as memberships_router
@@ -22,6 +23,7 @@ authenticated = [Depends(get_management_account)]
 app.include_router(organizations_router, dependencies=authenticated)
 app.include_router(memberships_router, dependencies=authenticated)
 app.include_router(care_recipients_router, dependencies=authenticated)
+app.include_router(documents_router, dependencies=authenticated)
 app.include_router(workflow_config_router, dependencies=authenticated)
 app.include_router(family_authorizations_router, dependencies=authenticated)
 app.include_router(requests_router, dependencies=authenticated)

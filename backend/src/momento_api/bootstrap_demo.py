@@ -367,12 +367,12 @@ def complete_profiles(session: Session, unit: CareUnit, pairs: list) -> list[str
             continue
         recipient.first_name = first
         recipient.last_name = last
-        recipient.birth_date = date(1932 + (index * 7) % 18, index % 12 + 1, (index * 3) % 27 + 1)
+        recipient.birth_date = date(1930 + (index * 7) % 19, (index * 5) % 12 + 1, (index * 11) % 28 + 1)
         recipient.document_type = "DNI"
         recipient.document_number = f"{3_100_000 + index * 137_911:,}".replace(",", ".")
         recipient.nationality = "Argentina"
         recipient.languages = "Español"
-        recipient.admission_date = date(2023 + index % 3, index % 12 + 1, index % 27 + 1)
+        recipient.admission_date = date(2022 + index % 4, (index * 7) % 12 + 1, (index * 13) % 28 + 1)
         recipient.room = f"{101 + index // 2}{'AB'[index % 2]}"
         recipient.health_coverage = COVERAGES[index % len(COVERAGES)]
         recipient.coverage_member_number = f"DEMO-{index + 1:05d}"

@@ -36,7 +36,7 @@ def test_administrative_edits_identity_but_not_health(client: TestClient, scenar
     assert client.patch(path, json={"is_active": False}).status_code == 403
 
 
-def test_physician_edits_health_and_caregiver_only_reads(client: TestClient, scenario: Scenario) -> None:
+def test_physician_edits_health_and_caregiver_edits_only_story(client: TestClient, scenario: Scenario) -> None:
     path = _path(scenario)
     as_user(client, "medica@test.example")
     health = client.patch(path, json={"allergies": "Penicilina (dato ficticio)", "diet_notes": "Sin sal"})
@@ -48,7 +48,13 @@ def test_physician_edits_health_and_caregiver_only_reads(client: TestClient, sce
     assert read.status_code == 200
     assert read.json()["allergies"] == "Penicilina (dato ficticio)"
     assert read.json()["can_edit"] is False
-    assert client.patch(path, json={"preferences": "Tango"}).status_code == 403
+    assert read.json()["can_edit_story"] is True
+    story = client.patch(path, json={"preferences": "Tango", "routines": "Siesta"})
+    assert story.status_code == 200
+    assert story.json()["preferences"] == "Tango"
+    assert client.patch(path, json={"room": "9"}).status_code == 403
+    assert client.patch(path, json={"preferences": "Tango", "room": "9"}).status_code == 403
+    assert client.patch(path, json={"allergies": "x"}).status_code == 403
     assert client.post(f"/api/care-units/{scenario.unit_id}/care-recipients", json={"display_name": "X"}).status_code == 403
 
 
@@ -109,3 +115,18 @@ def test_manager_deactivates_person(client: TestClient, scenario: Scenario) -> N
     assert client.patch(_path(scenario), json={"is_active": False}).json()["is_active"] is False
     listed = client.get(f"/api/care-units/{scenario.unit_id}/care-recipients").json()
     assert scenario.recipient_id not in [item["id"] for item in listed]
+
+
+def test_missing_fields_warn_without_blocking(client: TestClient, scenario: Scenario) -> None:
+    as_user(client, "jefa@test.example")
+    profile = client.get(_path(scenario)).json()
+    assert profile["missing_fields"] == [
+        "Fecha de nacimiento", "Documento", "Fecha de ingreso", "Habitación", "Contacto de emergencia",
+    ]
+    client.patch(_path(scenario), json={
+        "birth_date": "1940-01-01", "document_number": "1", "admission_date": "2024-01-01", "room": "1",
+    })
+    client.post(f"{_path(scenario)}/contacts", json={"full_name": "Hija", "phone": "1", "is_emergency": True})
+    assert client.get(_path(scenario)).json()["missing_fields"] == []
+    listed = client.get(f"/api/care-units/{scenario.unit_id}/care-recipients").json()
+    assert listed[0]["missing_count"] == 0

@@ -1764,3 +1764,6 @@ button.filter-chip { cursor: pointer; font: inherit; font-size: 0.72rem; }
 .service-type-label { color: #8a8f9e; font-size: 0.62rem; font-weight: 800; letter-spacing: 0.1em; }
 .country-label { padding: 4px 8px; border-radius: 6px; color: var(--muted); background: #f0f2f6; font-size: 0.7rem; font-weight: 600; }
 .directory-panel { display: grid; gap: 10px; }
+.profile-missing { display: flex; flex-wrap: wrap; gap: 6px 10px; padding: 11px 14px; border: 1px solid #f1e2b5; border-radius: 10px; color: #6d5313; background: #fffaeb; font-size: 0.8rem; }
+.incomplete-badge { justify-self: start; margin-top: 4px; padding: 2px 7px; border-radius: 999px; color: #856316; background: #fff5d9; font-size: 0.64rem; font-style: normal; font-weight: 700; }
+a.link-action { text-decoration: none; }

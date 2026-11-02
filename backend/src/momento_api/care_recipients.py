@@ -12,13 +12,16 @@ from momento_api.auth import get_authenticated_account
 from momento_api.models import (
     CareRecipient,
     CareRecipientContact,
+    CareRecipientDocument,
     CareUnit,
+    CareUnitType,
     OrganizationMembership,
     StaffRole,
     UserAccount,
 )
 from momento_api.schemas import (
     HEALTH_FIELDS,
+    STORY_FIELDS,
     CareRecipientContactInput,
     CareRecipientContactRead,
     CareRecipientCreate,
@@ -30,9 +33,28 @@ from momento_api.session import get_session
 
 router = APIRouter(prefix="/api/care-units", tags=["Personas cuidadas"])
 
-# Quién edita la ficha. La salud la registran solo encargado y médico.
+# Quién edita cada parte de la ficha (confirmado por Jorge el 02/11/2026).
 PROFILE_EDITORS = (StaffRole.MANAGER, StaffRole.ADMINISTRATIVE, StaffRole.PHYSICIAN)
 HEALTH_EDITORS = (StaffRole.MANAGER, StaffRole.PHYSICIAN)
+STORY_EDITORS = (*PROFILE_EDITORS, StaffRole.CAREGIVER)
+DOCUMENT_MANAGERS = (StaffRole.MANAGER, StaffRole.ADMINISTRATIVE)
+
+
+def missing_fields(recipient: CareRecipient) -> list[str]:
+    """Datos que el piloto considera obligatorios; avisan, no bloquean el guardado."""
+    required = [
+        ("birth_date", "Fecha de nacimiento"),
+        ("document_number", "Documento"),
+        ("admission_date", "Fecha de ingreso"),
+    ]
+    if recipient.care_unit.service_type is CareUnitType.HOME_CARE:
+        required.append(("address", "Domicilio"))
+    else:
+        required.append(("room", "Habitación"))
+    missing = [label for field, label in required if not getattr(recipient, field)]
+    if not any(contact.is_emergency for contact in recipient.contacts):
+        missing.append("Contacto de emergencia")
+    return missing
 
 
 def _care_unit(session: Session, care_unit_id: UUID) -> CareUnit:
@@ -86,7 +108,11 @@ def _deny(session: Session, account: UserAccount, care_unit: CareUnit, action: s
 def _recipient(session: Session, care_unit_id: UUID, recipient_id: UUID) -> CareRecipient:
     recipient = session.scalar(
         select(CareRecipient)
-        .options(selectinload(CareRecipient.contacts))
+        .options(
+            selectinload(CareRecipient.contacts),
+            selectinload(CareRecipient.documents),
+            selectinload(CareRecipient.care_unit),
+        )
         .where(CareRecipient.id == recipient_id, CareRecipient.care_unit_id == care_unit_id)
     )
     if recipient is None:
@@ -96,8 +122,11 @@ def _recipient(session: Session, care_unit_id: UUID, recipient_id: UUID) -> Care
 
 def _profile(recipient: CareRecipient, roles: set[StaffRole]) -> CareRecipientProfileRead:
     profile = CareRecipientProfileRead.model_validate(recipient)
+    profile.missing_fields = missing_fields(recipient)
     profile.can_edit = bool(roles & set(PROFILE_EDITORS))
     profile.can_edit_health = bool(roles & set(HEALTH_EDITORS))
+    profile.can_edit_story = bool(roles & set(STORY_EDITORS))
+    profile.can_manage_documents = bool(roles & set(DOCUMENT_MANAGERS))
     profile.can_deactivate = StaffRole.MANAGER in roles
     return profile
 
@@ -141,16 +170,22 @@ def create_care_recipient(
 def list_care_recipients(
     care_unit_id: UUID,
     session: Session = Depends(get_session),
-) -> list[CareRecipient]:
-    """Lista las personas activas del servicio."""
+) -> list[CareRecipientRead]:
+    """Lista las personas activas del servicio e indica si su ficha está incompleta."""
     _care_unit(session, care_unit_id)
     statement = (
         select(CareRecipient)
+        .options(selectinload(CareRecipient.contacts), selectinload(CareRecipient.care_unit))
         .where(CareRecipient.care_unit_id == care_unit_id, CareRecipient.is_active.is_(True))
         .order_by(CareRecipient.display_name, CareRecipient.id)
         .limit(500)
     )
-    return list(session.scalars(statement).all())
+    result = []
+    for recipient in session.scalars(statement).all():
+        item = CareRecipientRead.model_validate(recipient)
+        item.missing_count = len(missing_fields(recipient))
+        result.append(item)
+    return result
 
 
 @router.get(
@@ -196,9 +231,14 @@ def update_care_recipient(
     roles = _roles(session, account, care_unit)
     changes = payload.model_dump(exclude_unset=True)
 
-    if not roles & set(PROFILE_EDITORS):
+    fields = set(changes) - {"is_active"}
+    general = fields - set(HEALTH_FIELDS) - set(STORY_FIELDS)
+    if fields & set(STORY_FIELDS) and not roles & set(STORY_EDITORS):
         raise _deny(session, account, care_unit, "care_recipient.updated", recipient.id,
-                    "Solo encargado, administrativo o médico pueden editar la ficha.")
+                    "No tenés permiso para editar esta ficha.")
+    if general and not roles & set(PROFILE_EDITORS):
+        raise _deny(session, account, care_unit, "care_recipient.updated", recipient.id,
+                    "Solo encargado, administrativo o médico pueden editar estos datos.")
     if set(changes) & set(HEALTH_FIELDS) and not roles & set(HEALTH_EDITORS):
         raise _deny(session, account, care_unit, "care_recipient.updated", recipient.id,
                     "La información de salud la registran el encargado o el médico.")

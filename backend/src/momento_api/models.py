@@ -411,6 +411,11 @@ class CareRecipient(Base):
         order_by="CareRecipientContact.created_at",
         cascade="all, delete-orphan",
     )
+    documents: Mapped[list[CareRecipientDocument]] = relationship(
+        order_by="CareRecipientDocument.created_at.desc()",
+        viewonly=True,
+    )
+    care_unit: Mapped[CareUnit] = relationship(viewonly=True)
 
 
 class CareRecipientContact(Base):
@@ -441,6 +446,43 @@ class CareRecipientContact(Base):
     )
 
     care_recipient: Mapped[CareRecipient] = relationship(back_populates="contacts")
+
+
+class CareRecipientDocument(Base):
+    """Archivo adjunto a la ficha; el contenido se guarda fuera de la base."""
+
+    __tablename__ = "care_recipient_documents"
+    __table_args__ = (
+        CheckConstraint(
+            "category IN ('identity', 'consent', 'study', 'other')",
+            name="ck_recipient_documents_category",
+        ),
+    )
+
+    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
+    care_recipient_id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("care_recipients.id", ondelete="RESTRICT"),
+        nullable=False,
+        index=True,
+    )
+    title: Mapped[str] = mapped_column(String(160), nullable=False)
+    category: Mapped[str] = mapped_column(String(20), nullable=False)
+    original_filename: Mapped[str] = mapped_column(String(200), nullable=False)
+    content_type: Mapped[str] = mapped_column(String(60), nullable=False)
+    size_bytes: Mapped[int] = mapped_column(Integer, nullable=False)
+    # Nombre interno generado por el sistema; nunca deriva del nombre original.
+    storage_key: Mapped[str] = mapped_column(String(80), nullable=False, unique=True)
+    uploaded_by_membership_id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("organization_memberships.id", ondelete="RESTRICT"),
+        nullable=False,
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+
+    uploaded_by: Mapped[OrganizationMembership] = relationship()
 
 
 class FamilyAuthorization(Base):

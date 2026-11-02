@@ -22,6 +22,7 @@ type CareRecipient = {
   display_name: string;
   room: string | null;
   birth_date: string | null;
+  missing_count: number;
   is_active: boolean;
 };
 
@@ -593,7 +594,7 @@ function CareRecipientPanel({ careUnitId, canCreate }: { careUnitId: string; can
       <div className="directory-heading">
         <div>
           <h4>Personas cuidadas</h4>
-          <p>{recipients.length} personas activas. Elegí una para ver su ficha.</p>
+          <p>{recipients.length} personas activas{recipients.some((item) => item.missing_count > 0) ? ` · ${recipients.filter((item) => item.missing_count > 0).length} con ficha incompleta` : ""}. Elegí una para ver su ficha.</p>
         </div>
         <div className="directory-actions">
           <input className="search-input" type="search" placeholder="Buscar por nombre" aria-label="Buscar por nombre" value={filter} onChange={(event) => setFilter(event.target.value)} />
@@ -613,6 +614,7 @@ function CareRecipientPanel({ careUnitId, canCreate }: { careUnitId: string; can
               <button type="button" onClick={() => setSelected(recipient.id)}>
                 <strong>{recipient.display_name}</strong>
                 <span>{recipient.room ? `Habitación ${recipient.room}` : "Sin habitación asignada"}</span>
+                {recipient.missing_count > 0 && <em className="incomplete-badge">Ficha incompleta</em>}
               </button>
             </li>
           ))}
