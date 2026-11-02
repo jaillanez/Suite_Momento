@@ -1,4 +1,5 @@
 import { type FormEvent, type ReactNode, useEffect, useRef, useState } from "react";
+import RecipientProfile from "./RecipientProfile";
 
 type CareUnitType = "residence" | "home_care";
 
@@ -19,6 +20,8 @@ type CareRecipient = {
   id: string;
   care_unit_id: string;
   display_name: string;
+  room: string | null;
+  birth_date: string | null;
   is_active: boolean;
 };
 
@@ -32,7 +35,7 @@ type WorkflowStatus = {
   family_visible: boolean;
 };
 
-async function readApiError(response: Response): Promise<string> {
+export async function readApiError(response: Response): Promise<string> {
   try {
     const body = (await response.json()) as { detail?: string };
     if (body.detail) return body.detail;
@@ -44,7 +47,7 @@ async function readApiError(response: Response): Promise<string> {
 
 export type OrganizationView = "organizations" | "people" | "users";
 
-export default function OrganizationsPanel({ view }: { view: OrganizationView }) {
+export default function OrganizationsPanel({ view, canManage, canCreatePeople }: { view: OrganizationView; canManage: boolean; canCreatePeople: boolean }) {
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [unitsByOrganization, setUnitsByOrganization] = useState<Record<string, CareUnit[]>>({});
   const [organizationName, setOrganizationName] = useState("");
@@ -63,7 +66,7 @@ export default function OrganizationsPanel({ view }: { view: OrganizationView })
     people: {
       eyebrow: "Directorio",
       title: "Personas cuidadas",
-      description: "Consultá fichas mínimas asociadas a cada residencia o servicio.",
+      description: "Abrí la ficha de cada persona: identificación, cobertura, salud, historia y contactos.",
     },
     users: {
       eyebrow: "Acceso y vínculos",
@@ -151,7 +154,7 @@ export default function OrganizationsPanel({ view }: { view: OrganizationView })
           <h2 id="management-title">{heading.title}</h2>
           <p>{heading.description}</p>
         </div>
-        {view === "organizations" && (
+        {view === "organizations" && canManage && (
           <button className="primary-action" type="button" onClick={() => setShowOrganizationModal(true)}>
             Nueva organización
           </button>
@@ -227,7 +230,7 @@ export default function OrganizationsPanel({ view }: { view: OrganizationView })
                         <div><span className="service-type-label">{unit.service_type === "residence" ? "RESIDENCIA" : "CUIDADO DOMICILIARIO"}</span><h4>{unit.name}</h4></div>
                         <span className="country-label">{unit.country_code === "AR" ? "Argentina" : "Uruguay"}</span>
                       </div>
-                      <CareRecipientPanel careUnitId={unit.id} />
+                      <CareRecipientPanel careUnitId={unit.id} canCreate={canCreatePeople} />
                     </section>
                   ))}
                 </div>
@@ -242,7 +245,7 @@ export default function OrganizationsPanel({ view }: { view: OrganizationView })
               <div className="management-card-heading">
                 <div><span className="card-kicker">ORGANIZACIÓN</span><h3>{organization.name}</h3></div>
               </div>
-              <MembershipsPanel organizationId={organization.id} careUnits={unitsByOrganization[organization.id] ?? []} />
+              <MembershipsPanel organizationId={organization.id} careUnits={unitsByOrganization[organization.id] ?? []} canManage={canManage} />
             </article>
           ))}
         </div>
@@ -525,7 +528,9 @@ function WorkflowStatusEditor({
   );
 }
 
-function CareRecipientPanel({ careUnitId }: { careUnitId: string }) {
+function CareRecipientPanel({ careUnitId, canCreate }: { careUnitId: string; canCreate: boolean }) {
+  const [selected, setSelected] = useState<string | null>(null);
+  const [filter, setFilter] = useState("");
   const [recipients, setRecipients] = useState<CareRecipient[]>([]);
   const [displayName, setDisplayName] = useState("");
   const [loading, setLoading] = useState(true);
@@ -566,8 +571,10 @@ function CareRecipientPanel({ careUnitId }: { careUnitId: string }) {
       if (!response.ok) throw new Error(await readApiError(response));
       setDisplayName("");
       setOpen(false);
-      setNotice("La ficha de prueba se guardó.");
+      setNotice("La persona se dio de alta. Completá su ficha.");
+      const created = (await response.json()) as CareRecipient;
       await loadRecipients();
+      setSelected(created.id);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "No se pudo guardar la ficha.");
     } finally {
@@ -575,14 +582,23 @@ function CareRecipientPanel({ careUnitId }: { careUnitId: string }) {
     }
   }
 
+  if (selected) {
+    return <RecipientProfile careUnitId={careUnitId} recipientId={selected} onBack={() => { setSelected(null); void loadRecipients(); }} />;
+  }
+
+  const visible = recipients.filter((item) => item.display_name.toLowerCase().includes(filter.trim().toLowerCase()));
+
   return (
     <section className="directory-panel" aria-label="Personas cuidadas">
       <div className="directory-heading">
         <div>
           <h4>Personas cuidadas</h4>
-          <p>Fichas mínimas sin información clínica.</p>
+          <p>{recipients.length} personas activas. Elegí una para ver su ficha.</p>
         </div>
-        <button className="secondary-action" type="button" onClick={() => setOpen(true)}>Nueva ficha</button>
+        <div className="directory-actions">
+          <input className="search-input" type="search" placeholder="Buscar por nombre" aria-label="Buscar por nombre" value={filter} onChange={(event) => setFilter(event.target.value)} />
+          {canCreate && <button className="secondary-action" type="button" onClick={() => setOpen(true)}>Nueva persona</button>}
+        </div>
       </div>
       {error && <p className="form-message error-message" role="alert">{error}</p>}
       {notice && <p className="form-message success-message" role="status">{notice}</p>}
@@ -591,15 +607,24 @@ function CareRecipientPanel({ careUnitId }: { careUnitId: string }) {
       ) : recipients.length === 0 ? (
         <p className="list-empty">Todavía no hay fichas para este servicio.</p>
       ) : (
-        <ul className="record-list">{recipients.map((recipient) => <li key={recipient.id}>{recipient.display_name}</li>)}</ul>
+        <ul className="person-grid">
+          {visible.map((recipient) => (
+            <li key={recipient.id}>
+              <button type="button" onClick={() => setSelected(recipient.id)}>
+                <strong>{recipient.display_name}</strong>
+                <span>{recipient.room ? `Habitación ${recipient.room}` : "Sin habitación asignada"}</span>
+              </button>
+            </li>
+          ))}
+        </ul>
       )}
       {open && (
-        <Modal title="Nueva ficha de persona cuidada" onClose={() => setOpen(false)}>
+        <Modal title="Nueva persona cuidada" onClose={() => setOpen(false)}>
           <form className="modal-form" onSubmit={createRecipient}>
             <label>Nombre visible
               <input value={displayName} onChange={(event) => setDisplayName(event.target.value)} maxLength={160} required autoFocus />
             </label>
-            <p className="modal-help">Usá datos ficticios mientras el acceso no tenga autenticación.</p>
+            <p className="modal-help">Después de guardar se abre la ficha para completar el resto de los datos. En este entorno usá solo datos ficticios.</p>
             <div className="modal-actions">
               <button className="secondary-action" type="button" onClick={() => setOpen(false)}>Cancelar</button>
               <button className="primary-action" type="submit" disabled={saving}>{saving ? "Guardando…" : "Guardar ficha"}</button>
@@ -612,25 +637,55 @@ function CareRecipientPanel({ careUnitId }: { careUnitId: string }) {
   );
 }
 
+export type StaffRole = "manager" | "administrative" | "physician" | "caregiver";
+export type Category = "medication" | "activities" | "diet";
+
+export const staffRoleLabels: Record<StaffRole, string> = {
+  manager: "Encargado/a",
+  administrative: "Administrativo/a",
+  physician: "Médico/a",
+  caregiver: "Cuidador/a",
+};
+
+export const categoryLabels: Record<Category, string> = {
+  medication: "Medicación",
+  activities: "Actividades",
+  diet: "Dietas",
+};
+
+type FamilyAuthorization = {
+  id: string;
+  care_recipient_id: string;
+  family_membership_id: string;
+  category: Category;
+  is_active: boolean;
+};
+
 type Membership = {
   id: string;
   user_account_id: string;
   care_unit_id: string | null;
   user_group: "staff" | "family" | "older_adult";
   role_label: string | null;
+  staff_role: StaffRole | null;
+  handles_inbox: boolean;
+  is_active: boolean;
   user: {
     display_name: string;
     email: string | null;
     phone: string | null;
+    can_sign_in: boolean;
   };
 };
 
 function MembershipsPanel({
   organizationId,
   careUnits,
+  canManage,
 }: {
   organizationId: string;
   careUnits: CareUnit[];
+  canManage: boolean;
 }) {
   const [memberships, setMemberships] = useState<Membership[]>([]);
   const [name, setName] = useState("");
@@ -638,7 +693,13 @@ function MembershipsPanel({
   const [phone, setPhone] = useState("");
   const [group, setGroup] = useState<Membership["user_group"]>("staff");
   const [roleLabel, setRoleLabel] = useState("");
+  const [staffRole, setStaffRole] = useState<StaffRole>("caregiver");
+  const [handlesInbox, setHandlesInbox] = useState(false);
   const [careUnitId, setCareUnitId] = useState("");
+  const [password, setPassword] = useState("");
+  const [authorizing, setAuthorizing] = useState<Membership | null>(null);
+  const [settingPassword, setSettingPassword] = useState<Membership | null>(null);
+  const [showInactive, setShowInactive] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -649,7 +710,7 @@ function MembershipsPanel({
   async function loadMemberships() {
     setError("");
     try {
-      const response = await fetch(path);
+      const response = await fetch(showInactive ? `${path}?include_inactive=true` : path);
       if (!response.ok) throw new Error(await readApiError(response));
       setMemberships((await response.json()) as Membership[]);
     } catch (caught) {
@@ -661,7 +722,7 @@ function MembershipsPanel({
 
   useEffect(() => {
     void loadMemberships();
-  }, [path]);
+  }, [path, showInactive]);
 
   async function createMembership(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -679,6 +740,9 @@ function MembershipsPanel({
           user_group: group,
           care_unit_id: careUnitId || null,
           role_label: roleLabel || null,
+          staff_role: group === "staff" ? staffRole : null,
+          handles_inbox: group === "staff" && handlesInbox,
+          password: password || null,
         }),
       });
       if (!response.ok) throw new Error(await readApiError(response));
@@ -686,13 +750,33 @@ function MembershipsPanel({
       setEmail("");
       setPhone("");
       setRoleLabel("");
+      setHandlesInbox(false);
+      setPassword("");
       setOpen(false);
-      setNotice("La cuenta de prueba se vinculó a la organización.");
+      setNotice(password ? "La cuenta se creó y ya puede ingresar." : "La cuenta se vinculó a la organización.");
       await loadMemberships();
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "No se pudo guardar la cuenta.");
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function updateMembership(membership: Membership, changes: { staff_role?: StaffRole; handles_inbox?: boolean; is_active?: boolean }) {
+    setError("");
+    setNotice("");
+    try {
+      const response = await fetch(`${path}/${membership.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(changes),
+      });
+      if (!response.ok) throw new Error(await readApiError(response));
+      const updated = (await response.json()) as Membership;
+      setMemberships((current) => current.map((item) => (item.id === updated.id ? updated : item)));
+      setNotice(`Se actualizó ${updated.user.display_name}.`);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "No se pudo actualizar el usuario.");
     }
   }
 
@@ -703,10 +787,18 @@ function MembershipsPanel({
     <section className="directory-panel" aria-label="Usuarios de la organización">
       <div className="directory-heading">
         <div>
-          <h4>Usuarios y vínculos</h4>
-          <p>Las funciones registradas no conceden permisos.</p>
+          <h4>{canManage ? "Usuarios y vínculos" : "Familias"}</h4>
+          <p>{canManage ? "El puesto define qué puede hacer cada persona del personal." : "Autorizá qué temas puede ver y consultar cada familia."}</p>
         </div>
-        <button className="secondary-action" type="button" onClick={() => setOpen(true)}>Agregar usuario</button>
+        {canManage && (
+          <div className="directory-actions">
+            <label className="inline-check">
+              <input type="checkbox" checked={showInactive} onChange={(event) => setShowInactive(event.target.checked)} />
+              Mostrar desactivadas
+            </label>
+            <button className="secondary-action" type="button" onClick={() => setOpen(true)}>Agregar usuario</button>
+          </div>
+        )}
       </div>
       {error && <p className="form-message error-message" role="alert">{error}</p>}
       {notice && <p className="form-message success-message" role="status">{notice}</p>}
@@ -719,12 +811,59 @@ function MembershipsPanel({
           {memberships.map((membership) => {
             const unit = careUnits.find((item) => item.id === membership.care_unit_id);
             return (
-              <li key={membership.id}>
-                <div><strong>{membership.user.display_name}</strong><span>{groupLabel(membership.user_group)}</span></div>
+              <li key={membership.id} className={membership.is_active ? undefined : "is-inactive"}>
+                <div>
+                  <strong>{membership.user.display_name}</strong>
+                  <span>
+                    {groupLabel(membership.user_group)}
+                    {!membership.is_active && " · Desactivada"}
+                    {membership.is_active && !membership.user.can_sign_in && " · Sin contraseña"}
+                  </span>
+                </div>
                 <div className="record-meta">
                   {membership.role_label && <span>{membership.role_label}</span>}
                   <span>{unit?.name ?? "Toda la organización"}</span>
                   {membership.user.email && <span>{membership.user.email}</span>}
+                </div>
+                <div className="record-controls">
+                  {canManage && membership.is_active && membership.user_group === "staff" && membership.staff_role && (
+                    <>
+                    <label>Puesto
+                      <select
+                        value={membership.staff_role}
+                        onChange={(event) => void updateMembership(membership, { staff_role: event.target.value as StaffRole })}
+                      >
+                        {(Object.keys(staffRoleLabels) as StaffRole[]).map((role) => <option value={role} key={role}>{staffRoleLabels[role]}</option>)}
+                      </select>
+                    </label>
+                    <label className="inline-check">
+                      <input
+                        type="checkbox"
+                        checked={membership.handles_inbox}
+                        onChange={(event) => void updateMembership(membership, { handles_inbox: event.target.checked })}
+                      />
+                      Atiende la bandeja
+                    </label>
+                  </>
+                  )}
+                  {membership.user_group === "family" && membership.is_active && (
+                    <button className="secondary-action" type="button" onClick={() => setAuthorizing(membership)}>Autorizaciones</button>
+                  )}
+                  {canManage && membership.user.email && (
+                    <button className="link-action" type="button" onClick={() => setSettingPassword(membership)}>{membership.user.can_sign_in ? "Cambiar contraseña" : "Dar acceso"}</button>
+                  )}
+                  {canManage && (
+                    <button
+                      className={"link-action" + (membership.is_active ? " danger" : "")}
+                      type="button"
+                      onClick={() => {
+                        if (membership.is_active && !window.confirm(`¿Desactivar a ${membership.user.display_name}? No podrá ingresar hasta que la reactives.`)) return;
+                        void updateMembership(membership, { is_active: !membership.is_active });
+                      }}
+                    >
+                      {membership.is_active ? "Desactivar" : "Reactivar"}
+                    </button>
+                  )}
                 </div>
               </li>
             );
@@ -753,9 +892,22 @@ function MembershipsPanel({
               </label>
             </div>
             {group === "staff" && (
-              <label>Función descriptiva
-                <input value={roleLabel} onChange={(event) => setRoleLabel(event.target.value)} maxLength={80} placeholder="Ej.: Encargado" />
-              </label>
+              <>
+                <div className="modal-form-grid">
+                  <label>Puesto
+                    <select value={staffRole} onChange={(event) => setStaffRole(event.target.value as StaffRole)}>
+                      {(Object.keys(staffRoleLabels) as StaffRole[]).map((role) => <option value={role} key={role}>{staffRoleLabels[role]}</option>)}
+                    </select>
+                  </label>
+                  <label>Descripción (opcional)
+                    <input value={roleLabel} onChange={(event) => setRoleLabel(event.target.value)} maxLength={80} placeholder="Ej.: Turno mañana" />
+                  </label>
+                </div>
+                <label className="inline-check">
+                  <input type="checkbox" checked={handlesInbox} onChange={(event) => setHandlesInbox(event.target.checked)} />
+                  Atiende la bandeja de solicitudes
+                </label>
+              </>
             )}
             <div className="modal-form-grid">
               <label>Correo electrónico (opcional)
@@ -765,7 +917,10 @@ function MembershipsPanel({
                 <input type="tel" autoComplete="off" value={phone} onChange={(event) => setPhone(event.target.value)} maxLength={32} />
               </label>
             </div>
-            <p className="modal-help">Registro local de prueba. No crea credenciales ni habilita el inicio de sesión.</p>
+            <label>Contraseña para ingresar (opcional)
+              <input type="text" autoComplete="new-password" value={password} onChange={(event) => setPassword(event.target.value)} minLength={8} maxLength={128} placeholder="Mínimo 8 caracteres" />
+            </label>
+            <p className="modal-help">{password ? "Necesita correo. Entregale la contraseña a la persona." : "Sin contraseña, la persona queda registrada pero no puede ingresar."}</p>
             {error && <p className="form-message error-message" role="alert">{error}</p>}
             <div className="modal-actions">
               <button className="secondary-action" type="button" onClick={() => setOpen(false)}>Cancelar</button>
@@ -774,11 +929,219 @@ function MembershipsPanel({
           </form>
         </Modal>
       )}
+      {settingPassword && (
+        <PasswordModal
+          path={`${path}/${settingPassword.id}/password`}
+          membership={settingPassword}
+          onClose={() => setSettingPassword(null)}
+          onSaved={() => {
+            setNotice(`Contraseña actualizada para ${settingPassword.user.display_name}. Sus sesiones abiertas se cerraron.`);
+            setSettingPassword(null);
+            void loadMemberships();
+          }}
+        />
+      )}
+      {authorizing && (
+        <FamilyAuthorizationModal
+          organizationId={organizationId}
+          family={authorizing}
+          careUnits={authorizing.care_unit_id ? careUnits.filter((unit) => unit.id === authorizing.care_unit_id) : careUnits}
+          onClose={() => setAuthorizing(null)}
+        />
+      )}
     </section>
   );
 }
 
-function Modal({
+function PasswordModal({
+  path,
+  membership,
+  onClose,
+  onSaved,
+}: {
+  path: string;
+  membership: Membership;
+  onClose: () => void;
+  onSaved: () => void;
+}) {
+  const [password, setPassword] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+
+  async function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setSaving(true);
+    setError("");
+    try {
+      const response = await fetch(path, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password }),
+      });
+      if (!response.ok) throw new Error(await readApiError(response));
+      onSaved();
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "No se pudo guardar la contraseña.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <Modal title={`Contraseña de ${membership.user.display_name}`} onClose={onClose}>
+      <form className="modal-form" onSubmit={submit}>
+        <p className="modal-help">Ingresa con {membership.user.email}. Entregale la contraseña en persona; si tenía sesiones abiertas, se cierran.</p>
+        <label>Contraseña nueva
+          <input type="text" autoComplete="new-password" value={password} onChange={(event) => setPassword(event.target.value)} minLength={8} maxLength={128} placeholder="Mínimo 8 caracteres" required autoFocus />
+        </label>
+        {error && <p className="form-message error-message" role="alert">{error}</p>}
+        <div className="modal-actions">
+          <button className="secondary-action" type="button" onClick={onClose}>Cancelar</button>
+          <button className="primary-action" type="submit" disabled={saving}>{saving ? "Guardando…" : "Guardar contraseña"}</button>
+        </div>
+      </form>
+    </Modal>
+  );
+}
+
+function FamilyAuthorizationModal({
+  organizationId,
+  family,
+  careUnits,
+  onClose,
+}: {
+  organizationId: string;
+  family: Membership;
+  careUnits: CareUnit[];
+  onClose: () => void;
+}) {
+  const [recipients, setRecipients] = useState<CareRecipient[]>([]);
+  const [authorizations, setAuthorizations] = useState<FamilyAuthorization[]>([]);
+  const [recipientId, setRecipientId] = useState("");
+  const [categories, setCategories] = useState<Category[]>(["medication", "activities", "diet"]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+  const basePath = `/api/organizations/${organizationId}/family-authorizations`;
+
+  async function loadAuthorizations() {
+    const response = await fetch(`${basePath}?family_membership_id=${family.id}`);
+    if (!response.ok) throw new Error(await readApiError(response));
+    setAuthorizations((await response.json()) as FamilyAuthorization[]);
+  }
+
+  useEffect(() => {
+    let active = true;
+    void (async () => {
+      try {
+        const lists = await Promise.all(careUnits.map(async (unit) => {
+          const response = await fetch(`/api/care-units/${unit.id}/care-recipients`);
+          if (!response.ok) throw new Error(await readApiError(response));
+          return (await response.json()) as CareRecipient[];
+        }));
+        if (!active) return;
+        const all = lists.flat();
+        setRecipients(all);
+        setRecipientId((current) => current || all[0]?.id || "");
+        await loadAuthorizations();
+      } catch (caught) {
+        if (active) setError(caught instanceof Error ? caught.message : "No se pudieron cargar las autorizaciones.");
+      } finally {
+        if (active) setLoading(false);
+      }
+    })();
+    return () => { active = false; };
+  }, [family.id]);
+
+  function toggleCategory(category: Category, checked: boolean) {
+    setCategories((current) => checked ? [...current, category] : current.filter((item) => item !== category));
+  }
+
+  async function grant(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setSaving(true);
+    setError("");
+    try {
+      const response = await fetch(basePath, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ family_membership_id: family.id, care_recipient_id: recipientId, categories }),
+      });
+      if (!response.ok) throw new Error(await readApiError(response));
+      await loadAuthorizations();
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "No se pudo autorizar.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function revoke(authorization: FamilyAuthorization) {
+    setError("");
+    try {
+      const response = await fetch(`${basePath}/${authorization.id}/revoke`, { method: "POST" });
+      if (!response.ok) throw new Error(await readApiError(response));
+      await loadAuthorizations();
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "No se pudo quitar la autorización.");
+    }
+  }
+
+  const recipientName = (id: string) => recipients.find((item) => item.id === id)?.display_name ?? "Persona cuidada";
+
+  return (
+    <Modal title={`Autorizaciones de ${family.user.display_name}`} onClose={onClose}>
+      <div className="modal-form">
+        <p className="modal-help">La familia podrá consultar, responder y enviar solicitudes solo sobre lo autorizado. No puede modificar indicaciones ni planes.</p>
+        {loading ? <p className="list-empty" role="status">Cargando…</p> : (
+          <>
+            <h3 className="modal-subtitle">Autorizaciones vigentes</h3>
+            {authorizations.length === 0 ? (
+              <p className="list-empty">Todavía no tiene ninguna autorización.</p>
+            ) : (
+              <ul className="record-list compact">
+                {authorizations.map((item) => (
+                  <li key={item.id}>
+                    <div><strong>{recipientName(item.care_recipient_id)}</strong><span>{categoryLabels[item.category]}</span></div>
+                    <div className="record-controls"><button className="link-action danger" type="button" onClick={() => void revoke(item)}>Quitar</button></div>
+                  </li>
+                ))}
+              </ul>
+            )}
+            <h3 className="modal-subtitle">Agregar autorización</h3>
+            {recipients.length === 0 ? (
+              <p className="list-empty">No hay personas cuidadas en el servicio de esta familia.</p>
+            ) : (
+              <form className="modal-form" onSubmit={grant}>
+                <label>Persona cuidada
+                  <select value={recipientId} onChange={(event) => setRecipientId(event.target.value)} required>
+                    {recipients.map((item) => <option value={item.id} key={item.id}>{item.display_name}</option>)}
+                  </select>
+                </label>
+                <fieldset className="check-group">
+                  <legend>Temas autorizados</legend>
+                  {(Object.keys(categoryLabels) as Category[]).map((category) => (
+                    <label className="inline-check" key={category}>
+                      <input type="checkbox" checked={categories.includes(category)} onChange={(event) => toggleCategory(category, event.target.checked)} />
+                      {categoryLabels[category]}
+                    </label>
+                  ))}
+                </fieldset>
+                <div className="modal-actions">
+                  <button className="secondary-action" type="button" onClick={onClose}>Cerrar</button>
+                  <button className="primary-action" type="submit" disabled={saving || categories.length === 0 || !recipientId}>{saving ? "Guardando…" : "Autorizar"}</button>
+                </div>
+              </form>
+            )}
+          </>
+        )}
+        {error && <p className="form-message error-message" role="alert">{error}</p>}
+      </div>
+    </Modal>
+  );
+}
+
+export function Modal({
   title,
   onClose,
   children,

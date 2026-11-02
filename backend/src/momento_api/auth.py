@@ -17,11 +17,13 @@ from pydantic import BaseModel, Field, field_validator
 from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
+from momento_api.audit import record_event
 from momento_api.models import (
     AuthSession,
     CareUnit,
     Organization,
     OrganizationMembership,
+    StaffRole,
     UserAccount,
     UserCredential,
     UserGroup,
@@ -31,7 +33,7 @@ from momento_api.session import get_session
 router = APIRouter(prefix="/api/auth", tags=["Autenticación"])
 COOKIE_NAME = "momento_session"
 SESSION_HOURS = 8
-PASSWORD_MIN_LENGTH = 12
+PASSWORD_MIN_LENGTH = 8
 _SCRYPT = {"n": 2**14, "r": 8, "p": 1}
 _attempts: dict[str, deque[float]] = defaultdict(deque)
 
@@ -136,6 +138,10 @@ def _session_payload(account: UserAccount, session: Session) -> dict[str, object
                 ),
                 "user_group": membership.user_group.value,
                 "role_label": membership.role_label,
+                "staff_role": (
+                    membership.staff_role.value if membership.staff_role else None
+                ),
+                "handles_inbox": membership.handles_inbox,
             }
             for membership in memberships
         ],
@@ -150,12 +156,21 @@ def _cookie_secure() -> bool:
     }
 
 
-@router.post("/login")
-def login(
+def _portal_membership_filter(portal: UserGroup):
+    """Condición de acceso de cada portal; gestión y familia están separados."""
+    conditions = [
+        OrganizationMembership.is_active.is_(True),
+        OrganizationMembership.user_group == portal,
+    ]
+    return conditions
+
+
+def _login(
     payload: LoginInput,
     request: Request,
     response: Response,
-    session: Session = Depends(get_session),
+    session: Session,
+    portal: UserGroup,
 ) -> dict[str, object]:
     _enforce_login_limit(request)
     accounts = session.scalars(
@@ -168,14 +183,12 @@ def login(
     ).all()
     account = accounts[0] if len(accounts) == 1 else None
     credential = session.get(UserCredential, account.id) if account is not None else None
-    has_staff_membership = (
+    has_portal_membership = (
         session.scalar(
             select(OrganizationMembership.id)
             .where(
                 OrganizationMembership.user_account_id == account.id,
-                OrganizationMembership.is_active.is_(True),
-                OrganizationMembership.user_group == UserGroup.STAFF,
-                OrganizationMembership.care_unit_id.is_(None),
+                *_portal_membership_filter(portal),
             )
             .limit(1)
         )
@@ -186,12 +199,21 @@ def login(
         payload.password,
         credential.password_hash if credential is not None else _DUMMY_HASH,
     )
+    action = "auth.login" if portal is UserGroup.STAFF else "auth.family_login"
     if (
         account is None
         or credential is None
-        or has_staff_membership is None
+        or has_portal_membership is None
         or not password_valid
     ):
+        # No se registra el correo ingresado para no guardar datos de terceros.
+        record_event(
+            session,
+            action=action,
+            actor_account_id=account.id if account is not None else None,
+            outcome="denied",
+        )
+        session.commit()
         raise _auth_error()
 
     token = secrets.token_urlsafe(32)
@@ -203,6 +225,7 @@ def login(
             expires_at=datetime.now(timezone.utc) + timedelta(hours=SESSION_HOURS),
         )
     )
+    record_event(session, action=action, actor_account_id=account.id)
     session.commit()
     _attempts.pop(_ip_key(request), None)
     response.set_cookie(
@@ -215,6 +238,28 @@ def login(
         path="/api",
     )
     return _session_payload(account, session)
+
+
+@router.post("/login")
+def login(
+    payload: LoginInput,
+    request: Request,
+    response: Response,
+    session: Session = Depends(get_session),
+) -> dict[str, object]:
+    """Acceso al panel de gestión: solo personal."""
+    return _login(payload, request, response, session, UserGroup.STAFF)
+
+
+@router.post("/family-login")
+def family_login(
+    payload: LoginInput,
+    request: Request,
+    response: Response,
+    session: Session = Depends(get_session),
+) -> dict[str, object]:
+    """Acceso familiar separado: solo cuentas con vínculo familiar activo."""
+    return _login(payload, request, response, session, UserGroup.FAMILY)
 
 
 def get_authenticated_account(
@@ -272,6 +317,11 @@ def logout(
         )
         if auth_session is not None and auth_session.revoked_at is None:
             auth_session.revoked_at = datetime.now(timezone.utc)
+            record_event(
+                session,
+                action="auth.logout",
+                actor_account_id=auth_session.user_account_id,
+            )
             session.commit()
     response.delete_cookie(
         key=COOKIE_NAME,
@@ -336,11 +386,12 @@ def get_organization_admin_account(
     account: UserAccount = Depends(get_authenticated_account),
     session: Session = Depends(get_session),
 ) -> UserAccount:
-    """Permite acciones de configuración solo a personal con alcance de organización."""
+    """Permite acciones de configuración solo al encargado con alcance de organización."""
     statement = select(OrganizationMembership.id).where(
         OrganizationMembership.user_account_id == account.id,
         OrganizationMembership.is_active.is_(True),
         OrganizationMembership.user_group == UserGroup.STAFF,
+        OrganizationMembership.staff_role == StaffRole.MANAGER,
         OrganizationMembership.care_unit_id.is_(None),
     )
     organization_id = request.path_params.get("organization_id")
@@ -352,5 +403,5 @@ def get_organization_admin_account(
         except ValueError:
             raise HTTPException(status_code=404, detail="Recurso no encontrado.") from None
     if session.scalar(statement.limit(1)) is None:
-        raise HTTPException(status_code=403, detail="La acción requiere permisos de gestión de la organización.")
+        raise HTTPException(status_code=403, detail="La acción requiere el puesto de encargado de la organización.")
     return account

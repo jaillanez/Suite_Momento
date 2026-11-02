@@ -6,7 +6,7 @@ Este repositorio comienza como un proyecto nuevo. El sistema anterior de 2014 es
 
 ## Estado actual
 
-La landing pública muestra el acceso. La aplicación de gestión valida la cuenta en la API, usa una sesión de servidor revocable y ofrece un escenario local con datos ficticios de una residencia para recorrer el dashboard y los módulos.
+La landing pública muestra el acceso, con ingreso separado para el equipo y para familias. La API aplica permisos por puesto (encargado, administrativo, médico y cuidador), gestiona autorizaciones familiares, guarda la bandeja de solicitudes en PostgreSQL y registra las acciones sensibles. El escenario local usa datos ficticios de una residencia.
 
 ## Tecnologías
 

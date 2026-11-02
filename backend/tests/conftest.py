@@ -12,6 +12,7 @@ from momento_api.models import (
     Base,
     Organization,
     OrganizationMembership,
+    StaffRole,
     UserAccount,
     UserCredential,
     UserGroup,
@@ -20,14 +21,22 @@ from momento_api.session import get_session
 
 
 @pytest.fixture
-def api_client() -> Generator[TestClient, None, None]:
+def db_sessions() -> Generator[sessionmaker[Session], None, None]:
     engine = create_engine(
         "sqlite://",
         connect_args={"check_same_thread": False},
         poolclass=StaticPool,
     )
     Base.metadata.create_all(engine)
-    sessions = sessionmaker(bind=engine)
+    try:
+        yield sessionmaker(bind=engine)
+    finally:
+        engine.dispose()
+
+
+@pytest.fixture
+def api_client(db_sessions: sessionmaker[Session]) -> Generator[TestClient, None, None]:
+    sessions = db_sessions
 
     def override_get_session() -> Generator[Session, None, None]:
         with sessions() as session:
@@ -46,6 +55,7 @@ def api_client() -> Generator[TestClient, None, None]:
                     organization=organization,
                     user_group=UserGroup.STAFF,
                     role_label="Encargada",
+                    staff_role=StaffRole.MANAGER,
                 )
             )
             family = UserAccount(
@@ -85,4 +95,3 @@ def api_client() -> Generator[TestClient, None, None]:
             yield client
     finally:
         app.dependency_overrides.pop(get_session, None)
-        engine.dispose()

@@ -11,6 +11,7 @@ from momento_api.models import (
     Organization,
     OrganizationMembership,
     SharedCareCategory,
+    StaffRole,
     UserAccount,
     UserGroup,
 )
@@ -234,6 +235,7 @@ def test_user_account_has_configurable_membership_scope() -> None:
                     care_unit=unit,
                     user_group=UserGroup.STAFF,
                     role_label="Personal designado",
+                    staff_role=StaffRole.CAREGIVER,
                 ),
                 OrganizationMembership(
                     organization=organization,
@@ -281,6 +283,7 @@ def test_family_authorization_tracks_category_actions_and_grantor() -> None:
             care_unit=unit,
             user_group=UserGroup.STAFF,
             role_label="Encargado",
+            staff_role=StaffRole.MANAGER,
         )
         family_account.memberships.append(family_membership)
         staff_account.memberships.append(authorizer_membership)
@@ -395,6 +398,7 @@ def test_membership_api_rejects_service_from_another_organization(
         json={
             "display_name": "Personal ficticio",
             "user_group": "staff",
+            "staff_role": "caregiver",
             "care_unit_id": other_care_unit_id,
         },
     )

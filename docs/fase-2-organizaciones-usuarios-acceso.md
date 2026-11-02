@@ -1,6 +1,6 @@
 # Fase 2 — Organizaciones, usuarios y acceso
 
-**Estado:** implementación en curso. Están acordados el modelo de organización, los grupos del piloto, las categorías de acceso familiar y el circuito general de solicitudes. El repositorio ya incluye autenticación de personal y protección inicial de rutas; todavía falta implementar la matriz completa de permisos, el acceso familiar y la bandeja persistente.  
+**Estado:** implementación completa al 02/11/2026; queda la validación con el equipo piloto. Están implementados los puestos del personal, las autorizaciones familiares, el acceso familiar separado, la bandeja persistente, la auditoría con su pantalla, la baja y reactivación de cuentas y el cambio de contraseña por el encargado, con pruebas automáticas. Quedan fuera de esta fase la invitación y recuperación de cuentas y la revisión con el equipo piloto.  
 **Propósito:** acordar cómo se organiza Momento y qué información puede consultar o modificar cada persona.
 
 ## Contexto confirmado
@@ -57,6 +57,32 @@ La siguiente estructura traduce las decisiones confirmadas a conceptos de sistem
 
 **Pendiente:** definir qué estados o confirmaciones de recepción y avance verá la familia. La autorización familiar y la gestión de la bandeja son responsabilidades distintas: pueden autorizar el acceso familiar el encargado, un administrativo habilitado o el médico; la designación de quienes gestionan la bandeja y la asignación de solicitudes corresponden al encargado.
 
+## Puestos y permisos confirmados (02/11/2026)
+
+Jorge confirmó cuatro puestos para el personal. El puesto se guarda como dato cerrado (`staff_role`); la descripción libre (`role_label`) es solo informativa.
+
+| Puesto | Qué puede hacer |
+|---|---|
+| Encargado | Todo: crea usuarios, cambia puestos, autoriza familias, designa a quién atiende la bandeja y asigna solicitudes |
+| Administrativo | Autoriza familias; atiende la bandeja si el encargado lo designa |
+| Médico | Autoriza familias; atiende la bandeja si el encargado lo designa |
+| Cuidador | Ve a las personas de su servicio; atiende la bandeja si el encargado lo designa |
+
+Reglas aplicadas en la API:
+
+- Un vínculo sin servicio alcanza a toda la organización; uno con servicio, solo a ese servicio.
+- Autorizar o revocar familias exige encargado, administrativo o médico con alcance sobre el servicio de la persona.
+- La bandeja solo la ven el encargado y el personal designado. Solo el encargado asigna, y solo a personal designado.
+- Cambiar el estado o responder una solicitud corresponde al encargado o a la persona asignada.
+- La familia ve el último estado visible según la configuración del servicio y la respuesta compartida, nunca a quién se asignó.
+- El encargado no puede quitarse su propio puesto ni desactivar su propia cuenta.
+
+Valores por defecto que tomó el agente, ajustables sin rediseño:
+
+- **Auditoría:** se registran inicios y cierres de sesión (también los rechazados), altas y cambios de usuarios, autorizaciones y revocaciones, accesos denegados, y creación, asignación, cambio de estado y respuesta de solicitudes. Se guardan identificadores y códigos, nunca contraseñas ni el texto de los mensajes. Por ahora no se borran; la retención queda por definir.
+- **Alta de cuentas:** el encargado da de alta a la persona y puede asignarle una contraseña inicial desde la misma pantalla. Mínimo 8 caracteres (pedido por Jorge el 02/11/2026). Invitaciones por correo o WhatsApp quedan para más adelante.
+- **Datos existentes:** la migración 0006 traduce la función descriptiva al puesto. Lo que no reconoce queda como cuidador, que es el puesto con menos acceso.
+
 ## Implementado en el repositorio
 
 - Organizaciones, residencias/servicios, fichas mínimas de personas cuidadas y membresías de cuentas.
@@ -68,23 +94,34 @@ La siguiente estructura traduce las decisiones confirmadas a conceptos de sistem
 - Dashboard con indicadores de personas cuidadas, cuidadores, médicos, familias y servicios consultados desde las APIs y la base local.
 - Datos locales ficticios de residencia para pruebas. El bootstrap persiste membresías con claves explícitas y ahora incluye una prueba de regresión para el campo organization_id requerido.
 - Vistas independientes de organizaciones, personas cuidadas, usuarios, bandeja y configuración.
+- Puestos del personal y designación para la bandeja, editables por el encargado desde "Usuarios y vínculos".
+- API y pantalla para otorgar y revocar autorizaciones familiares por persona y tema.
+- Ingreso familiar separado (`/api/auth/family-login`) y portal familiar: personas y temas autorizados, envío de consultas y seguimiento de estado y respuesta.
+- Bandeja persistente en PostgreSQL con asignación, estados configurables y respuesta compartida.
+- El encargado desactiva y reactiva cuentas, y asigna contraseñas nuevas; al hacerlo se cierran las sesiones abiertas de esa persona. No puede cambiar la contraseña de alguien que también pertenece a otra organización.
+- Pantalla "Registro de control" (solo encargado) y "Configuración" con los datos reales de la organización; el encargado puede corregir el nombre.
+- Tabla `audit_events` con las acciones sensibles.
+- Pruebas automáticas de acceso permitido y denegado, aislamiento entre organizaciones y servicios, revocación y auditoría (`backend/tests/test_phase2_access.py`).
 
 ## Límites actuales del código
 
-- La bandeja sigue siendo una demostración en el navegador: las solicitudes y sus cambios no se guardan en PostgreSQL.
-- La API y la pantalla para gestionar autorizaciones familiares aún no están conectadas; las cuentas familiares no pueden iniciar sesión.
-- La designación del personal que puede acceder a la bandeja y la asignación de solicitudes todavía no están aplicadas de extremo a extremo.
-- Agenda, guardias y actividad reciente contienen datos de muestra; no representan registros operativos guardados.
-- No se debe exponer ni desplegar el entorno local hasta completar y probar permisos, auditoría y aislamiento entre organizaciones.
+- Todo el personal ingresa al panel web y ve un menú según su puesto: el administrativo y el médico ven familias para autorizarlas; el cuidador no.
+- La familia ve qué temas tiene autorizados, pero todavía no hay información de medicación, actividades o dietas para mostrar: esos registros llegan en Fases 3 y 4.
+- No hay comunicaciones iniciadas por la residencia que la familia pueda responder; por ahora solo existen las consultas de la familia.
+- No hay envío de invitaciones ni "olvidé mi contraseña" por correo o WhatsApp: requieren un servicio externo que todavía no se eligió. Mientras tanto, el encargado asigna la contraseña desde "Usuarios y vínculos".
+- Agenda y equipo del turno del dashboard siguen con contenido de muestra (corresponden a la Fase 4).
+- No se debe exponer ni desplegar el entorno local hasta revisar los permisos con el equipo piloto.
 
 ## Trabajo pendiente para cerrar Fase 2
 
-1. Implementar permisos por organización y servicio, con pruebas de acceso permitido y denegado.
-2. Implementar autorización familiar por persona, categoría y acciones acordadas, con otorgamiento y revocación.
-3. Separar el acceso familiar del login de gestión y exponer solo información autorizada.
-4. Persistir solicitudes y respuestas; hacer que el encargado designe al personal y asigne cada caso. Solo el encargado y el personal designado podrán ver y gestionar la bandeja según su alcance.
-5. Registrar las acciones sensibles y comprobar el aislamiento entre organizaciones y servicios.
-6. Acordar invitación, recuperación, baja de cuentas y reglas de auditoría antes del piloto.
+1. ~~Permisos por organización y servicio con pruebas~~ — hecho.
+2. ~~Autorización familiar con otorgamiento y revocación~~ — hecho.
+3. ~~Acceso familiar separado que expone solo lo autorizado~~ — hecho.
+4. ~~Bandeja persistente con designación y asignación~~ — hecho.
+5. ~~Registro de acciones sensibles y aislamiento~~ — hecho, con pantalla "Registro de control" para el encargado.
+6. ~~Ingreso web con menú por puesto~~ — hecho.
+7. ~~Baja, reactivación y cambio de contraseña por el encargado~~ — hecho. Pendiente de decisión: canal de invitación y recuperación por correo o WhatsApp, y plazo de conservación de la auditoría.
+8. Revisar puestos, permisos y estados visibles con el equipo piloto.
 
 ## Grupos y roles candidatos
 

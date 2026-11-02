@@ -1,6 +1,6 @@
 # Momento — plan de trabajo por fases
 
-**Estado al 27/10/2026:** Fases 0 y 1 cerradas. Fase 2 en curso: organizaciones, servicios, fichas mínimas, cuentas y membresías están implementados; autenticación de personal, sesiones y protección de las rutas de gestión también. Quedan pendientes el acceso familiar, la gestión persistente de solicitudes y la matriz completa de permisos.  
+**Estado al 02/11/2026:** Fases 0 y 1 cerradas. Fase 2 implementada: puestos y permisos, autorizaciones familiares, acceso familiar separado, bandeja persistente, auditoría con pantalla de consulta y gestión de cuentas. Queda validarla con el equipo piloto y elegir el canal de invitaciones. Fase 3 implementada: ficha completa con contactos y permisos por puesto, pendiente de revisión profesional.  
 **Propósito:** orientar al agente de IA y al equipo para avanzar en orden, conservar las decisiones y evitar construir funciones no validadas.
 
 ## Acuerdos del proyecto
@@ -36,23 +36,25 @@ Documentos: [Fase 0 — Descubrimiento y definición de Momento](fase-0-descubri
 
 **Resultado alcanzado:** en la Mac de Jorge quedaron confirmados API y PostgreSQL con HTTP 200, 2 pruebas de backend aprobadas y compilación de React finalizada. El frontend estuvo activo y generó llamadas a las comprobaciones de salud. Se documentó la configuración reproducible. No se instalaron herramientas globales ni se modificaron Xcode/Command Line Tools.
 
-## Fase 2 — Organizaciones, usuarios y acceso (implementación en curso)
+## Fase 2 — Organizaciones, usuarios y acceso (implementada; validación con el piloto pendiente)
 
 **Objetivo:** controlar quién puede acceder a cada institución, servicio y dato. La definición funcional acordada y el avance verificable están documentados en [Fase 2 — Organizaciones, usuarios y acceso](fase-2-organizaciones-usuarios-acceso.md).
 
 **Avance técnico en el repositorio:** landing pública con un único botón de acceso; formulario de login conectado con la API; autenticación de personal con hash scrypt y sesión en cookie HttpOnly; cierre de sesión; rutas de gestión protegidas; cuentas familiares rechazadas en el login de gestión. Hay APIs y pantallas separadas para organizaciones, servicios, fichas mínimas y membresías. Los indicadores del dashboard consultan la base local. El bootstrap crea datos ficticios de la residencia, equipo, familias y personas cuidadas; no carga datos clínicos.
 
-**Límites actuales:** la bandeja todavía usa datos locales del navegador y no persiste solicitudes en PostgreSQL. El modelo de autorización familiar existe, pero falta su API y su flujo de acceso. Los permisos por puesto y la designación de personal de bandeja no están implementados de extremo a extremo. Agenda, guardias y actividad reciente aún contienen contenido de muestra.
+**Avance del 02/11/2026:** puestos confirmados (encargado, administrativo, médico y cuidador) aplicados en la API; autorizaciones familiares con otorgamiento y revocación; ingreso y portal familiar separados; bandeja guardada en PostgreSQL con designación, asignación, estados y respuesta; auditoría de acciones sensibles; pruebas de acceso permitido y denegado.
 
-**Trabajo pendiente de Fase 2:** implementar autorización familiar por persona y categoría; acceso familiar separado del panel de gestión; designación del personal autorizado para la bandeja; recepción, asignación y respuesta persistentes; permisos comprobados por API; auditoría de acciones sensibles.
+**Pendiente de Fase 2:** elegir el canal de invitación y recuperación (correo o WhatsApp), definir cuánto tiempo se conserva la auditoría y revisar todo con el equipo piloto.
 
 **Decisiones confirmadas por Jorge:** una organización prestadora puede contener varias sedes o servicios; el piloto contempla personal, familias/personas de confianza y personas mayores; el acceso familiar lo autoriza el encargado de la residencia, un administrativo habilitado o el médico, y se limita a información de la persona vinculada sobre medicación, actividades y dietas.
 
-**Pendiente de validar:** permisos concretos por rol, si la familia solo consulta o también interactúa, acceso individual de la persona mayor, pertenencia de usuarios a varias organizaciones o sedes, canales de invitación/recuperación, auditoría, acceso de emergencia y requisitos por país.
+**Pendiente de validar:** acceso individual de la persona mayor, pertenencia de usuarios a varias organizaciones o sedes, canales de invitación/recuperación, auditoría, acceso de emergencia y requisitos por país.
 
 **Resultado esperado:** matriz de permisos aplicada y comprobable, con separación entre panel de gestión y acceso familiar, solicitudes persistidas y trazabilidad antes del piloto.
 
-## Fase 3 — Perfil y contexto de la persona mayor
+## Fase 3 — Perfil y contexto de la persona mayor (implementada; revisión profesional pendiente)
+
+Detalle en [Fase 3 — Ficha de la persona mayor](fase-3-ficha-persona.md).
 
 **Objetivo:** reunir la información necesaria para personalizar y dar continuidad al cuidado.
 

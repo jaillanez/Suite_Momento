@@ -6,7 +6,16 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from momento_api.models import CareUnit, CareUnitWorkflowStatus, Organization, OrganizationMembership, UserAccount, UserGroup
+from momento_api.models import (
+    CareUnit,
+    CareUnitWorkflowStatus,
+    Organization,
+    OrganizationMembership,
+    StaffRole,
+    UserAccount,
+    UserGroup,
+)
+from momento_api.audit import record_event
 from momento_api.auth import get_management_account, get_organization_admin_account
 from momento_api.workflow_defaults import DEFAULT_WORKFLOW_STATUSES
 from momento_api.schemas import (
@@ -37,6 +46,7 @@ def create_organization(
         user_account_id=current_user.id,
         user_group=UserGroup.STAFF,
         role_label="Encargado/a",
+        staff_role=StaffRole.MANAGER,
     ))
     session.add(organization)
     session.commit()
@@ -104,14 +114,14 @@ def create_care_unit(
 @router.get(
     "/{organization_id}/care-units",
     response_model=list[CareUnitRead],
-    dependencies=[Depends(get_organization_admin_account)],
 )
 def list_care_units(
     organization_id: UUID,
     limit: int = Query(default=100, ge=1, le=100),
     session: Session = Depends(get_session),
+    current_user: UserAccount = Depends(get_management_account),
 ) -> list[CareUnit]:
-    """Lista los servicios de una organización activa."""
+    """Lista los servicios de la organización que alcanza el personal."""
     organization = session.get(Organization, organization_id)
     if organization is None or not organization.is_active:
         raise HTTPException(status_code=404, detail="Organización no encontrada.")
@@ -125,4 +135,40 @@ def list_care_units(
         .order_by(CareUnit.name, CareUnit.id)
         .limit(limit)
     )
+    scopes = session.scalars(
+        select(OrganizationMembership.care_unit_id).where(
+            OrganizationMembership.user_account_id == current_user.id,
+            OrganizationMembership.organization_id == organization_id,
+            OrganizationMembership.user_group == UserGroup.STAFF,
+            OrganizationMembership.is_active.is_(True),
+        )
+    ).all()
+    if None not in scopes:
+        statement = statement.where(CareUnit.id.in_(scopes))
     return list(session.scalars(statement).all())
+
+
+@router.patch("/{organization_id}", response_model=OrganizationRead)
+def rename_organization(
+    organization_id: UUID,
+    payload: OrganizationCreate,
+    session: Session = Depends(get_session),
+    current_user: UserAccount = Depends(get_organization_admin_account),
+) -> Organization:
+    """Corrige el nombre visible de la organización."""
+    organization = session.get(Organization, organization_id)
+    if organization is None or not organization.is_active:
+        raise HTTPException(status_code=404, detail="Organización no encontrada.")
+    if organization.name != payload.name:
+        record_event(
+            session,
+            action="organization.renamed",
+            actor_account_id=current_user.id,
+            organization_id=organization_id,
+            target_type="organization",
+            target_id=organization_id,
+        )
+        organization.name = payload.name
+        session.commit()
+        session.refresh(organization)
+    return organization

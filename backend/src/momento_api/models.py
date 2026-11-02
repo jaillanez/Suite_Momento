@@ -2,19 +2,22 @@
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import date, datetime
 from enum import Enum
 from uuid import UUID, uuid4
 
 from sqlalchemy import (
     Boolean,
     CheckConstraint,
+    Date,
     DateTime,
     Enum as SAEnum,
     ForeignKey,
     ForeignKeyConstraint,
     Integer,
+    JSON,
     String,
+    Text,
     UniqueConstraint,
     Uuid,
     func,
@@ -39,6 +42,21 @@ class UserGroup(str, Enum):
     STAFF = "staff"
     FAMILY = "family"
     OLDER_ADULT = "older_adult"
+
+
+class StaffRole(str, Enum):
+    """Puestos del personal confirmados para el piloto (02/11/2026)."""
+
+    MANAGER = "manager"
+    ADMINISTRATIVE = "administrative"
+    PHYSICIAN = "physician"
+    CAREGIVER = "caregiver"
+
+
+# Puestos que pueden otorgar y revocar acceso familiar.
+FAMILY_AUTHORIZER_ROLES = frozenset(
+    {StaffRole.MANAGER, StaffRole.ADMINISTRATIVE, StaffRole.PHYSICIAN}
+)
 
 
 class SharedCareCategory(str, Enum):
@@ -206,6 +224,12 @@ class UserAccount(Base):
     memberships: Mapped[list[OrganizationMembership]] = relationship(
         back_populates="user"
     )
+    credential: Mapped[UserCredential | None] = relationship(lazy="selectin", viewonly=True)
+
+    @property
+    def can_sign_in(self) -> bool:
+        """Indica si la cuenta tiene contraseña; nunca expone la clave."""
+        return self.credential is not None
 
 
 class OrganizationMembership(Base):
@@ -216,6 +240,20 @@ class OrganizationMembership(Base):
         CheckConstraint(
             "user_group IN ('staff', 'family', 'older_adult')",
             name="ck_membership_user_group",
+        ),
+        CheckConstraint(
+            "(user_group = 'staff' AND staff_role IS NOT NULL) "
+            "OR (user_group <> 'staff' AND staff_role IS NULL)",
+            name="ck_membership_staff_role",
+        ),
+        CheckConstraint(
+            "staff_role IS NULL OR staff_role IN "
+            "('manager', 'administrative', 'physician', 'caregiver')",
+            name="ck_membership_staff_role_value",
+        ),
+        CheckConstraint(
+            "handles_inbox = false OR user_group = 'staff'",
+            name="ck_membership_inbox_staff",
         ),
         ForeignKeyConstraint(
             ["organization_id", "care_unit_id"],
@@ -261,6 +299,20 @@ class OrganizationMembership(Base):
         nullable=False,
     )
     role_label: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    staff_role: Mapped[StaffRole | None] = mapped_column(
+        SAEnum(
+            StaffRole,
+            name="staff_role",
+            native_enum=False,
+            create_constraint=False,
+            length=20,
+            values_callable=lambda enum_type: [item.value for item in enum_type],
+        ),
+        nullable=True,
+    )
+    handles_inbox: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default="false"
+    )
     is_active: Mapped[bool] = mapped_column(
         Boolean, nullable=False, default=True, server_default="true"
     )
@@ -305,6 +357,42 @@ class CareRecipient(Base):
         index=True,
     )
     display_name: Mapped[str] = mapped_column(String(160), nullable=False)
+
+    # Identificación (Fase 3). Todo opcional hasta que el piloto defina obligatorios.
+    first_name: Mapped[str | None] = mapped_column(String(80))
+    last_name: Mapped[str | None] = mapped_column(String(80))
+    preferred_name: Mapped[str | None] = mapped_column(String(80))
+    birth_date: Mapped[date | None] = mapped_column(Date)
+    document_type: Mapped[str | None] = mapped_column(String(20))
+    document_number: Mapped[str | None] = mapped_column(String(30))
+    gender: Mapped[str | None] = mapped_column(String(40))
+    nationality: Mapped[str | None] = mapped_column(String(60))
+    languages: Mapped[str | None] = mapped_column(String(120))
+    admission_date: Mapped[date | None] = mapped_column(Date)
+    room: Mapped[str | None] = mapped_column(String(40))
+    address: Mapped[str | None] = mapped_column(String(200))
+
+    # Cobertura y profesional de referencia.
+    health_coverage: Mapped[str | None] = mapped_column(String(120))
+    coverage_member_number: Mapped[str | None] = mapped_column(String(60))
+    primary_physician: Mapped[str | None] = mapped_column(String(120))
+    primary_physician_phone: Mapped[str | None] = mapped_column(String(40))
+
+    # Salud: información de referencia registrada por profesionales. No son
+    # indicaciones ni reemplazan la historia clínica.
+    allergies: Mapped[str | None] = mapped_column(Text)
+    relevant_conditions: Mapped[str | None] = mapped_column(Text)
+    diet_notes: Mapped[str | None] = mapped_column(Text)
+    mobility_support: Mapped[str | None] = mapped_column(Text)
+    sensory_communication: Mapped[str | None] = mapped_column(Text)
+    support_needs: Mapped[str | None] = mapped_column(Text)
+
+    # Historia de vida y preferencias.
+    life_history: Mapped[str | None] = mapped_column(Text)
+    preferences: Mapped[str | None] = mapped_column(Text)
+    routines: Mapped[str | None] = mapped_column(Text)
+    beliefs: Mapped[str | None] = mapped_column(Text)
+
     is_active: Mapped[bool] = mapped_column(
         Boolean, nullable=False, default=True, server_default="true"
     )
@@ -317,6 +405,42 @@ class CareRecipient(Base):
         server_default=func.now(),
         onupdate=func.now(),
     )
+
+    contacts: Mapped[list[CareRecipientContact]] = relationship(
+        back_populates="care_recipient",
+        order_by="CareRecipientContact.created_at",
+        cascade="all, delete-orphan",
+    )
+
+
+class CareRecipientContact(Base):
+    """Contacto de la persona cuidada; no es una cuenta ni da acceso."""
+
+    __tablename__ = "care_recipient_contacts"
+
+    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
+    care_recipient_id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("care_recipients.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    full_name: Mapped[str] = mapped_column(String(160), nullable=False)
+    relationship_label: Mapped[str | None] = mapped_column(String(60))
+    phone: Mapped[str | None] = mapped_column(String(40))
+    email: Mapped[str | None] = mapped_column(String(254))
+    is_emergency: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default="false"
+    )
+    is_legal_representative: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default="false"
+    )
+    notes: Mapped[str | None] = mapped_column(String(200))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+
+    care_recipient: Mapped[CareRecipient] = relationship(back_populates="contacts")
 
 
 class FamilyAuthorization(Base):
@@ -383,6 +507,116 @@ class FamilyAuthorization(Base):
     revoked_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
+    revoked_by_membership_id: Mapped[UUID | None] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("organization_memberships.id", ondelete="RESTRICT"),
+        nullable=True,
+    )
+
+
+class FamilyRequest(Base):
+    """Solicitud iniciada por una familia; no modifica indicaciones ni planes."""
+
+    __tablename__ = "family_requests"
+    __table_args__ = (
+        CheckConstraint(
+            "category IN ('medication', 'activities', 'diet')",
+            name="ck_family_requests_category",
+        ),
+    )
+
+    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
+    care_unit_id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("care_units.id", ondelete="RESTRICT"),
+        nullable=False,
+        index=True,
+    )
+    care_recipient_id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("care_recipients.id", ondelete="RESTRICT"),
+        nullable=False,
+        index=True,
+    )
+    family_membership_id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("organization_memberships.id", ondelete="RESTRICT"),
+        nullable=False,
+        index=True,
+    )
+    category: Mapped[SharedCareCategory] = mapped_column(
+        SAEnum(
+            SharedCareCategory,
+            name="shared_care_category",
+            native_enum=False,
+            create_constraint=False,
+            values_callable=lambda enum_type: [item.value for item in enum_type],
+        ),
+        nullable=False,
+    )
+    subject: Mapped[str] = mapped_column(String(160), nullable=False)
+    message: Mapped[str] = mapped_column(Text, nullable=False)
+    status_code: Mapped[str] = mapped_column(String(40), nullable=False)
+    assigned_to_membership_id: Mapped[UUID | None] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("organization_memberships.id", ondelete="RESTRICT"),
+        nullable=True,
+        index=True,
+    )
+    shared_response: Mapped[str | None] = mapped_column(Text, nullable=True)
+    responded_by_membership_id: Mapped[UUID | None] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("organization_memberships.id", ondelete="RESTRICT"),
+        nullable=True,
+    )
+    responded_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+        onupdate=func.now(),
+    )
+
+    care_recipient: Mapped[CareRecipient] = relationship()
+    family_membership: Mapped[OrganizationMembership] = relationship(
+        foreign_keys=[family_membership_id]
+    )
+    assigned_to: Mapped[OrganizationMembership | None] = relationship(
+        foreign_keys=[assigned_to_membership_id]
+    )
+
+
+class AuditEvent(Base):
+    """Registro de acciones sensibles; no guarda contraseñas ni textos libres."""
+
+    __tablename__ = "audit_events"
+
+    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
+    occurred_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now(), index=True
+    )
+    actor_account_id: Mapped[UUID | None] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("user_accounts.id", ondelete="RESTRICT"),
+        nullable=True,
+        index=True,
+    )
+    organization_id: Mapped[UUID | None] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("organizations.id", ondelete="RESTRICT"),
+        nullable=True,
+        index=True,
+    )
+    action: Mapped[str] = mapped_column(String(60), nullable=False)
+    target_type: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    target_id: Mapped[UUID | None] = mapped_column(Uuid(as_uuid=True), nullable=True)
+    outcome: Mapped[str] = mapped_column(String(20), nullable=False)
+    details: Mapped[dict[str, object] | None] = mapped_column(JSON, nullable=True)
 
 
 class UserCredential(Base):
