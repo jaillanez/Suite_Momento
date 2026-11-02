@@ -288,7 +288,7 @@ def update_background(
                     "Los antecedentes los registran el encargado o el médico.")
     try:
         recipient.background = clean_background(payload.answers) or None
-    except ValueError as error:
+    except (ValueError, TypeError) as error:
         raise HTTPException(status_code=422, detail=str(error)) from None
     record_event(
         session,

@@ -198,3 +198,20 @@ def test_general_data_from_sheet(client: TestClient, scenario: Scenario) -> None
     assert updated.json()["education_level"] == "terciario"
     assert client.patch(_path(scenario), json={"sex": "x"}).status_code == 422
     assert client.patch(_path(scenario), json={"occupation": "astronauta"}).status_code == 422
+
+
+def test_duplicate_or_malformed_answers_cannot_inflate_or_crash(client: TestClient, scenario: Scenario) -> None:
+    answers = _ace_full()
+    answers["orient_time"] = ["Año"] * 20
+    assert score("ace3", answers)["subscores"]["Atención"]["score"] == 18 - 4
+    with pytest.raises(ValueError):
+        score("ace3", {**_ace_full(), "orient_time": [["Año"]]})
+    with pytest.raises(ValueError):
+        score("ace3", {**_ace_full(), "recognition": {"numero": ["420"]}})
+    with pytest.raises(ValueError):
+        score("barthel", {"comer": ["2"]}, require_complete=False)
+
+    as_user(client, "medica@test.example")
+    assert client.post("/api/scales/ace3/score", json={"answers": {"orient_time": [{"a": 1}]}}).status_code == 422
+    bad_background = {"answers": {"affected_domains": [["memoria"]], "vision": ["no"]}}
+    assert client.put(f"{_path(scenario)}/background", json=bad_background).status_code == 422

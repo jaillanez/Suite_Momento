@@ -321,8 +321,15 @@ def score(code: str, answers: dict[str, Any], *, require_complete: bool = True) 
             points = option["points"] if option else 0
         elif kind == "checks":
             selected = value or []
-            if not isinstance(selected, list) or not set(selected) <= set(item["items"]):
+            if (
+                not isinstance(selected, list)
+                or not all(isinstance(entry, str) for entry in selected)
+                or not set(selected) <= set(item["items"])
+            ):
                 raise ValueError(f"Respuesta inválida en «{item['label']}».")
+            # Sin repetidos y en el orden de la definición: cada casilla cuenta una vez.
+            selected = [label for label in item["items"] if label in set(selected)]
+            answers = {**answers, item["key"]: selected}
             points = _checks_points(item, selected)
         elif kind == "serial7":
             values = value or []
@@ -349,12 +356,15 @@ def score(code: str, answers: dict[str, Any], *, require_complete: bool = True) 
             if not isinstance(data, dict):
                 raise ValueError("Respuesta inválida en el reconocimiento.")
             for group in item["groups"]:
-                if data.get(group["key"]) not in (None, *group["options"]):
+                chosen = data.get(group["key"])
+                if chosen is not None and (not isinstance(chosen, str) or chosen not in group["options"]):
                     raise ValueError("Respuesta inválida en el reconocimiento.")
             points, credited = recognition_points(item, data, answers.get(item["recall_key"]) or [])
         else:  # pragma: no cover - definición interna
             raise ValueError("Tipo de ítem desconocido.")
 
+        # Defensa: ningún ítem puede superar su máximo aunque cambie una regla.
+        points = max(0, min(points, item_max(item)))
         total += points
         maximum += item_max(item)
         if item.get("domain"):
@@ -362,6 +372,8 @@ def score(code: str, answers: dict[str, Any], *, require_complete: bool = True) 
             bucket["score"] += points
             bucket["max"] += item_max(item)
 
+    if total > maximum:  # pragma: no cover - invariante
+        raise ValueError("El puntaje calculado supera el máximo de la escala.")
     if require_complete and missing:
         raise ValueError("Faltan respuestas: " + ", ".join(missing[:5]) + ("…" if len(missing) > 5 else "") + ".")
 
@@ -377,6 +389,7 @@ def score(code: str, answers: dict[str, Any], *, require_complete: bool = True) 
         "interpretation": interpretation,
         "missing": missing,
         "credited_by_recall": credited,
+        "answers": answers,
     }
 
 

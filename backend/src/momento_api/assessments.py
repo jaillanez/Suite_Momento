@@ -36,7 +36,7 @@ def preview_score(code: str, payload: ScorePreview) -> dict[str, object]:
     """Calcula el puntaje parcial mientras se completa; no guarda nada."""
     try:
         return score(code, payload.answers, require_complete=False)
-    except ValueError as error:
+    except (ValueError, TypeError) as error:
         raise HTTPException(status_code=422, detail=str(error)) from None
 
 
@@ -127,14 +127,14 @@ def create_assessment(
                     "Las escalas las aplican el encargado o el médico.")
     try:
         result = score(payload.scale_code, payload.answers)
-    except ValueError as error:
+    except (ValueError, TypeError) as error:
         raise HTTPException(status_code=422, detail=str(error)) from None
     performer = _viewer(session, account, care_unit)
     assessment = Assessment(
         care_recipient_id=recipient.id,
         scale_code=payload.scale_code,
         performed_on=payload.performed_on,
-        answers=payload.answers,
+        answers=result["answers"],  # normalizadas: sin repetidos
         total_score=result["total"],
         max_score=result["max"],
         subscores=result["subscores"],

@@ -188,12 +188,12 @@ def clean_background(raw: dict[str, Any]) -> dict[str, Any]:
                 raise ValueError(f"Revisá el número de «{field['label']}».")
             clean[key] = value
         elif field["type"] == "choice":
-            if value not in {option["value"] for option in field["options"]}:
+            if not isinstance(value, str) or value not in {option["value"] for option in field["options"]}:
                 raise ValueError(f"Opción inválida en «{field['label']}».")
             clean[key] = value
         elif field["type"] == "multi":
             allowed = {option["value"] for option in field["options"]}
-            if not isinstance(value, list) or not set(value) <= allowed:
+            if not isinstance(value, list) or not all(isinstance(v, str) for v in value) or not set(value) <= allowed:
                 raise ValueError(f"Opción inválida en «{field['label']}».")
             clean[key] = [option["value"] for option in field["options"] if option["value"] in value]
         elif field["type"] == "number":
