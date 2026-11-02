@@ -62,7 +62,7 @@ async def upload_document(
     recipient_id: UUID,
     request: Request,
     title: str = Query(min_length=1, max_length=160),
-    category: str = Query(pattern="^(identity|consent|study|other)$"),
+    category: str = Query(pattern="^(identity|consent|study|photo|other)$"),
     filename: str = Query(min_length=1, max_length=255),
     session: Session = Depends(get_session),
     account: UserAccount = Depends(get_authenticated_account),
@@ -90,6 +90,8 @@ async def upload_document(
         raise HTTPException(status_code=422, detail="El archivo está vacío.")
     if not bytes(content).startswith(ALLOWED_TYPES[content_type]):
         raise HTTPException(status_code=415, detail="El contenido no coincide con el tipo de archivo.")
+    if category == "photo" and content_type == "application/pdf":
+        raise HTTPException(status_code=415, detail="La foto debe ser JPG o PNG.")
 
     uploader = _viewer(session, account, care_unit)
     storage_key = uuid4().hex
@@ -141,10 +143,14 @@ def download_document(
     care_unit_id: UUID,
     recipient_id: UUID,
     document_id: UUID,
+    inline: bool = Query(default=False),
     session: Session = Depends(get_session),
     account: UserAccount = Depends(get_authenticated_account),
 ) -> Response:
-    """Todo el personal del servicio puede descargar; cada descarga queda registrada."""
+    """Todo el personal del servicio puede descargar; cada descarga queda registrada.
+
+    ``inline`` solo se acepta para la foto actual, que la ficha muestra como imagen.
+    """
     care_unit = _care_unit(session, care_unit_id)
     _viewer(session, account, care_unit)
     recipient = _recipient(session, care_unit_id, recipient_id)
@@ -152,9 +158,10 @@ def download_document(
     path = _file_path(document)
     if not path.is_file():
         raise HTTPException(status_code=404, detail="El archivo no está disponible.")
+    show_inline = inline and document.category == "photo"
     record_event(
         session,
-        action="care_recipient.document_downloaded",
+        action="care_recipient.photo_viewed" if show_inline else "care_recipient.document_downloaded",
         actor_account_id=account.id,
         organization_id=care_unit.organization_id,
         target_type="care_recipient",
@@ -166,7 +173,7 @@ def download_document(
         content=path.read_bytes(),
         media_type=document.content_type,
         headers={
-            "Content-Disposition": f"attachment; filename*=UTF-8''{quote(document.original_filename)}",
+            "Content-Disposition": f"{'inline' if show_inline else 'attachment'}; filename*=UTF-8''{quote(document.original_filename)}",
             "X-Content-Type-Options": "nosniff",
             "Cache-Control": "no-store",
         },

@@ -1767,3 +1767,67 @@ button.filter-chip { cursor: pointer; font: inherit; font-size: 0.72rem; }
 .profile-missing { display: flex; flex-wrap: wrap; gap: 6px 10px; padding: 11px 14px; border: 1px solid #f1e2b5; border-radius: 10px; color: #6d5313; background: #fffaeb; font-size: 0.8rem; }
 .incomplete-badge { justify-self: start; margin-top: 4px; padding: 2px 7px; border-radius: 999px; color: #856316; background: #fff5d9; font-size: 0.64rem; font-style: normal; font-weight: 700; }
 a.link-action { text-decoration: none; }
+
+/* Jerarquía de colores (revisión 03/09/2026): toda acción ejecutiva en violeta */
+.resolve-button { background: var(--plum-dark); }
+.resolve-button:hover { background: #452c8c; }
+.upload-action { gap: 6px; }
+.upload-action span { font-size: 0.95rem; line-height: 1; }
+
+/* Ficha: foto, nombre preferido, antecedentes y escalas */
+.profile-header { align-items: center; }
+.profile-title { flex: 1; }
+.profile-photo { flex: 0 0 72px; width: 72px; height: 72px; border-radius: 50%; object-fit: cover; border: 1px solid var(--line); }
+.profile-photo.empty { display: grid; place-items: center; color: var(--plum-dark); background: #f0ebff; font-size: 1.6rem; font-weight: 700; }
+.preferred-name { margin: 0 0 4px; color: var(--plum-dark); font-size: 0.86rem; }
+.profile-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.background-fields { display: grid; gap: 10px; }
+.background-field { display: grid; gap: 8px; margin: 0; padding: 10px 12px; border: 1px solid #edf0f4; border-radius: 10px; }
+.background-field legend { padding: 0 4px; color: var(--ink); font-size: 0.8rem; font-weight: 700; }
+.background-field textarea,
+.number-input input,
+.sub-input input,
+.serial-input input,
+.serial-input select,
+.scale-meta input,
+.scale-notes textarea { min-height: 36px; padding: 6px 9px; border: 1px solid #dfe2e9; border-radius: 8px; font: inherit; font-size: 0.84rem; }
+.option-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; }
+.number-input { display: inline-flex; align-items: center; gap: 8px; color: var(--muted); font-size: 0.8rem; }
+.number-input input { width: 120px; }
+.sub-input { display: grid; gap: 4px; color: var(--muted); font-size: 0.74rem; font-weight: 700; }
+.bmi-preview { margin: 0; color: var(--muted); font-size: 0.84rem; }
+.scale-launchers { display: flex; flex-wrap: wrap; gap: 8px; }
+.score-badge { padding: 4px 9px; border-radius: 8px; color: var(--plum-dark); background: #f0ebff; font-size: 0.8rem; font-weight: 800; }
+.subscores { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+.subscores span { display: grid; padding: 4px 8px; border-radius: 7px; background: #f6f7fa; }
+.subscores small { color: var(--muted); font-size: 0.62rem; }
+.subscores strong { font-size: 0.78rem; }
+.assessment-list > li { grid-template-columns: 1fr auto !important; }
+.scale-form { gap: 14px; }
+.scale-meta { display: flex; flex-wrap: wrap; align-items: end; gap: 16px; color: var(--muted); font-size: 0.8rem; }
+.scale-meta label, .scale-notes { display: grid; gap: 5px; color: var(--muted); font-size: 0.74rem; font-weight: 700; }
+.scale-section { display: grid; gap: 10px; }
+.scale-section h5 { margin: 6px 0 0; color: var(--plum-dark); font-size: 0.95rem; }
+.scale-item { display: grid; gap: 6px; padding: 10px 12px; border: 1px solid #edf0f4; border-radius: 10px; }
+.scale-item-label { margin: 0; font-size: 0.84rem; font-weight: 700; }
+.points { color: var(--muted); font-size: 0.7rem; }
+.serial-input { display: grid; gap: 4px; color: var(--muted); font-size: 0.72rem; font-weight: 700; }
+.serial-input input { width: 90px; }
+.recognition-groups { display: grid; gap: 8px; }
+.recognition-group { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; font-size: 0.82rem; }
+.recognition-group strong { min-width: 80px; }
+.scale-total { position: sticky; bottom: 0; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 14px; border: 1px solid #e3dcf7; border-radius: 12px; background: #faf8ff; }
+.scale-total > div:last-child { display: flex; align-items: center; gap: 10px; }
+.scale-total strong { font-size: 1.05rem; }
+.scale-total small { color: #856316; }
+
+/* Impresión de la ficha: incluye antecedentes y escalas */
+@media print {
+  .app-sidebar, .app-topbar, .no-print, .back-link, .view-heading, .view-meta, .management-card-heading,
+  .service-card-heading, .profile-section-heading button, .record-controls button, .record-controls a,
+  .demo-banner { display: none !important; }
+  .app-layout, .app-main, .app-content { display: block; padding: 0; background: #fff; }
+  .management-card, .service-card, .directory-panel { padding: 0; border: 0; background: #fff; }
+  .profile-section { break-inside: avoid; border-color: #ccc; }
+  body { background: #fff; }
+}

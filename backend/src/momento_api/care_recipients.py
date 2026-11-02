@@ -19,8 +19,10 @@ from momento_api.models import (
     StaffRole,
     UserAccount,
 )
+from momento_api.forms import clean_background
 from momento_api.schemas import (
     HEALTH_FIELDS,
+    BackgroundUpdate,
     STORY_FIELDS,
     CareRecipientContactInput,
     CareRecipientContactRead,
@@ -123,6 +125,8 @@ def _recipient(session: Session, care_unit_id: UUID, recipient_id: UUID) -> Care
 def _profile(recipient: CareRecipient, roles: set[StaffRole]) -> CareRecipientProfileRead:
     profile = CareRecipientProfileRead.model_validate(recipient)
     profile.missing_fields = missing_fields(recipient)
+    photo = next((d for d in recipient.documents if d.category == "photo"), None)
+    profile.photo_document_id = photo.id if photo else None
     profile.can_edit = bool(roles & set(PROFILE_EDITORS))
     profile.can_edit_health = bool(roles & set(HEALTH_EDITORS))
     profile.can_edit_story = bool(roles & set(STORY_EDITORS))
@@ -262,6 +266,40 @@ def update_care_recipient(
         session.commit()
         recipient = _recipient(session, care_unit_id, recipient_id)
     return _profile(recipient, roles)
+
+
+@router.put(
+    "/{care_unit_id}/care-recipients/{recipient_id}/background",
+    response_model=CareRecipientProfileRead,
+)
+def update_background(
+    care_unit_id: UUID,
+    recipient_id: UUID,
+    payload: BackgroundUpdate,
+    session: Session = Depends(get_session),
+    account: UserAccount = Depends(get_authenticated_account),
+) -> CareRecipientProfileRead:
+    """Antecedentes y datos de ingreso: los registran el encargado o el médico."""
+    care_unit = _care_unit(session, care_unit_id)
+    recipient = _recipient(session, care_unit_id, recipient_id)
+    roles = _roles(session, account, care_unit)
+    if not roles & set(HEALTH_EDITORS):
+        raise _deny(session, account, care_unit, "care_recipient.background_updated", recipient.id,
+                    "Los antecedentes los registran el encargado o el médico.")
+    try:
+        recipient.background = clean_background(payload.answers) or None
+    except ValueError as error:
+        raise HTTPException(status_code=422, detail=str(error)) from None
+    record_event(
+        session,
+        action="care_recipient.background_updated",
+        actor_account_id=account.id,
+        organization_id=care_unit.organization_id,
+        target_type="care_recipient",
+        target_id=recipient.id,
+    )
+    session.commit()
+    return _profile(_recipient(session, care_unit_id, recipient_id), roles)
 
 
 def _require_contact_editor(session: Session, account: UserAccount, care_unit: CareUnit, recipient: CareRecipient) -> None:

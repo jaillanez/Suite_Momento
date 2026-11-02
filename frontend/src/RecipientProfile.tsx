@@ -1,5 +1,7 @@
 import { type FormEvent, useEffect, useState } from "react";
+import BackgroundSection from "./Background";
 import { readApiError } from "./OrganizationsPanel";
+import ScalesSection from "./Scales";
 
 type Contact = {
   id: string;
@@ -15,14 +17,14 @@ type Contact = {
 type DocumentItem = {
   id: string;
   title: string;
-  category: "identity" | "consent" | "study" | "other";
+  category: "identity" | "consent" | "study" | "photo" | "other";
   original_filename: string;
   content_type: string;
   size_bytes: number;
   created_at: string;
 };
 
-type Profile = Record<string, string | boolean | null | Contact[] | DocumentItem[] | string[]> & {
+type Profile = Record<string, string | boolean | null | Contact[] | DocumentItem[] | string[] | Record<string, unknown>> & {
   id: string;
   display_name: string;
   birth_date: string | null;
@@ -31,6 +33,9 @@ type Profile = Record<string, string | boolean | null | Contact[] | DocumentItem
   contacts: Contact[];
   documents: DocumentItem[];
   missing_fields: string[];
+  preferred_name: string | null;
+  photo_document_id: string | null;
+  background: Record<string, unknown> | null;
   can_edit: boolean;
   can_edit_health: boolean;
   can_edit_story: boolean;
@@ -38,25 +43,41 @@ type Profile = Record<string, string | boolean | null | Contact[] | DocumentItem
   can_deactivate: boolean;
 };
 
-type Field = { key: string; label: string; type?: "date" | "textarea" | "select"; options?: string[]; wide?: boolean };
+type Field = { key: string; label: string; type?: "date" | "textarea" | "select" | "bool"; options?: [string, string][]; suggestions?: string[]; wide?: boolean };
 type Section = { id: string; title: string; note?: string; editableBy: "general" | "health" | "story"; fields: Field[] };
 
 const sections: Section[] = [
   {
     id: "identity",
-    title: "Identificación",
+    title: "Datos generales",
     editableBy: "general",
     fields: [
       { key: "display_name", label: "Nombre visible" },
-      { key: "preferred_name", label: "Cómo prefiere que le digan" },
+      { key: "preferred_name", label: "Cómo le gusta ser nombrado/a" },
       { key: "first_name", label: "Nombres" },
-      { key: "last_name", label: "Apellidos" },
+      { key: "last_name", label: "Apellidos (paterno y materno)" },
       { key: "birth_date", label: "Fecha de nacimiento", type: "date" },
-      { key: "document_type", label: "Tipo de documento", type: "select", options: ["DNI", "CI", "Pasaporte", "Otro"] },
+      { key: "sex", label: "Sexo", type: "select", options: [["mujer", "Mujer"], ["hombre", "Hombre"], ["otro", "Otro"]] },
+      { key: "document_type", label: "Tipo de documento", type: "select", options: [["DNI", "DNI"], ["CI", "CI"], ["Pasaporte", "Pasaporte"], ["Otro", "Otro"]] },
       { key: "document_number", label: "Número de documento" },
-      { key: "gender", label: "Género (como la persona lo indique)" },
       { key: "nationality", label: "Nacionalidad" },
+      { key: "birth_country", label: "Lugar de nacimiento – país", suggestions: ["Argentina", "Uruguay"] },
+      { key: "birth_province", label: "Lugar de nacimiento – provincia", suggestions: ["San Juan"] },
+      { key: "birth_locality", label: "Lugar de nacimiento – departamento o localidad" },
       { key: "languages", label: "Idiomas" },
+      { key: "education_level", label: "Nivel de instrucción formal", type: "select", options: [
+        ["primario_incompleto", "Primario incompleto"], ["primario_completo", "Primario completo"], ["complementaria", "Complementaria"],
+        ["secundario_incompleto", "Secundario incompleto"], ["secundario_completo", "Secundario completo"], ["terciario", "Terciario"],
+        ["universitario", "Universitario"]] },
+      { key: "education_title", label: "Título (terciario o universitario)" },
+      { key: "occupation", label: "Ocupación a lo largo de la vida", type: "select", options: [
+        ["ama_de_casa", "Ama de casa"], ["oficios", "Oficios"], ["comerciante", "Comerciante"], ["administrativo", "Administrativo"],
+        ["profesional_no_docente", "Profesional no docente"], ["docente", "Docente"], ["desocupado", "Desocupado"]] },
+      { key: "occupation_detail", label: "Ocupaciones (detalle)" },
+      { key: "marital_status", label: "Estado civil", type: "select", options: [
+        ["soltero", "Soltero/a"], ["casado_en_pareja", "Casado/a o en pareja"], ["divorciado_separado", "Divorciado/a o separado/a"], ["viudo", "Viudo/a"]] },
+      { key: "has_children", label: "Hijos", type: "bool" },
+      { key: "children_details", label: "Hijos: nombre, apellido, edad y grupo familiar", type: "textarea" },
       { key: "admission_date", label: "Fecha de ingreso", type: "date" },
       { key: "room", label: "Habitación / cama" },
       { key: "address", label: "Domicilio (cuidado domiciliario)", wide: true },
@@ -103,6 +124,8 @@ const sections: Section[] = [
 
 function formatValue(field: Field, value: unknown): string {
   if (value === null || value === undefined || value === "") return "—";
+  if (field.type === "bool") return value ? "Sí" : "No";
+  if (field.type === "select") return field.options?.find(([option]) => option === value)?.[1] ?? String(value);
   if (field.type === "date" && typeof value === "string") return new Date(`${value}T12:00:00`).toLocaleDateString("es-AR");
   return String(value);
 }
@@ -165,14 +188,21 @@ export default function RecipientProfile({ careUnitId, recipientId, onBack }: { 
     <section className="profile-view">
       <button className="back-link inline" type="button" onClick={onBack}>← Volver al listado</button>
       <header className="profile-header">
-        <div>
+        {profile.photo_document_id ? (
+          <img className="profile-photo" src={`${path}/documents/${profile.photo_document_id}?inline=true`} alt={`Foto de ${profile.display_name}`} />
+        ) : <span className="profile-photo empty" aria-hidden="true">{profile.display_name.slice(0, 1)}</span>}
+        <div className="profile-title">
           <p className="eyebrow">Ficha de la persona</p>
           <h3>{profile.display_name}</h3>
+          {profile.preferred_name && <p className="preferred-name">Le gusta que le digan <strong>{profile.preferred_name}</strong></p>}
           <p className="profile-summary">
             {[age !== null ? `${age} años` : null, profile.room ? `Habitación ${profile.room}` : null, emergency ? `Emergencia: ${emergency.full_name} · ${emergency.phone}` : "Sin contacto de emergencia"].filter(Boolean).join(" · ")}
           </p>
         </div>
-        {profile.can_deactivate && <button className="link-action danger" type="button" onClick={() => void deactivate()}>Dar de baja</button>}
+        <div className="profile-actions no-print">
+          <button className="secondary-action" type="button" onClick={() => window.print()}>Imprimir ficha</button>
+          {profile.can_deactivate && <button className="link-action danger" type="button" onClick={() => void deactivate()}>Dar de baja</button>}
+        </div>
       </header>
       {error && <p className="form-message error-message" role="alert">{error}</p>}
       {profile.missing_fields.length > 0 && (
@@ -181,9 +211,9 @@ export default function RecipientProfile({ careUnitId, recipientId, onBack }: { 
           <span>Falta: {profile.missing_fields.join(", ")}.</span>
         </div>
       )}
-      {sections.map((section) => {
+      {sections.flatMap((section) => {
         const canEdit = section.editableBy === "health" ? profile.can_edit_health : section.editableBy === "story" ? profile.can_edit_story : profile.can_edit;
-        return (
+        return [
           <article className="profile-section" key={section.id}>
             <div className="profile-section-heading">
               <h4>{section.title}</h4>
@@ -202,8 +232,17 @@ export default function RecipientProfile({ careUnitId, recipientId, onBack }: { 
                 ))}
               </dl>
             )}
-          </article>
-        );
+          </article>,
+          section.id === "health" ? (
+            <BackgroundSection
+              key="background"
+              path={`${path}/background`}
+              background={profile.background}
+              canEdit={profile.can_edit_health}
+              onSaved={(updated) => setProfile(updated as Profile)}
+            />
+          ) : null,
+        ];
       })}
       <ContactsSection
         path={`${path}/contacts`}
@@ -220,16 +259,21 @@ export default function RecipientProfile({ careUnitId, recipientId, onBack }: { 
         path={`${path}/documents`}
         documents={profile.documents}
         canManage={profile.can_manage_documents}
-        onChanged={(documents) => setProfile({ ...profile, documents })}
+        onChanged={(documents) => setProfile({ ...profile, documents, photo_document_id: documents.find((item) => item.category === "photo")?.id ?? null })}
       />
+      <ScalesSection path={`${path}/assessments`} canApply={profile.can_edit_health} canDelete={profile.can_deactivate} />
     </section>
   );
 }
 
 function SectionForm({ section, profile, onCancel, onSave }: { section: Section; profile: Profile; onCancel: () => void; onSave: (changes: Record<string, unknown>) => Promise<void> }) {
   const [values, setValues] = useState<Record<string, string>>(() =>
-    Object.fromEntries(section.fields.map((field) => [field.key, (profile[field.key] as string | null) ?? ""])),
+    Object.fromEntries(section.fields.map((field) => {
+      const value = profile[field.key];
+      return [field.key, field.type === "bool" ? (value === true ? "si" : value === false ? "no" : "") : (value as string | null) ?? ""];
+    })),
   );
+  const boolKeys = new Set(section.fields.filter((field) => field.type === "bool").map((field) => field.key));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
@@ -239,7 +283,10 @@ function SectionForm({ section, profile, onCancel, onSave }: { section: Section;
     setError("");
     try {
       // Vacío se envía como null para poder borrar un dato.
-      await onSave(Object.fromEntries(Object.entries(values).map(([key, value]) => [key, value.trim() === "" ? null : value])));
+      await onSave(Object.fromEntries(Object.entries(values).map(([key, value]) => [
+        key,
+        value.trim() === "" ? null : boolKeys.has(key) ? value === "si" : value,
+      ])));
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "No se pudo guardar.");
     } finally {
@@ -255,18 +302,22 @@ function SectionForm({ section, profile, onCancel, onSave }: { section: Section;
             {field.label}
             {field.type === "textarea" ? (
               <textarea rows={3} value={values[field.key]} onChange={(event) => setValues({ ...values, [field.key]: event.target.value })} />
-            ) : field.type === "select" ? (
+            ) : field.type === "select" || field.type === "bool" ? (
               <select value={values[field.key]} onChange={(event) => setValues({ ...values, [field.key]: event.target.value })}>
                 <option value="">—</option>
-                {field.options?.map((option) => <option key={option} value={option}>{option}</option>)}
+                {(field.type === "bool" ? [["si", "Sí"], ["no", "No"]] : field.options ?? []).map(([option, label]) => <option key={option} value={option}>{label}</option>)}
               </select>
             ) : (
-              <input
-                type={field.type === "date" ? "date" : "text"}
-                value={values[field.key]}
-                required={field.key === "display_name"}
-                onChange={(event) => setValues({ ...values, [field.key]: event.target.value })}
-              />
+              <>
+                <input
+                  type={field.type === "date" ? "date" : "text"}
+                  value={values[field.key]}
+                  required={field.key === "display_name"}
+                  list={field.suggestions ? `${field.key}-options` : undefined}
+                  onChange={(event) => setValues({ ...values, [field.key]: event.target.value })}
+                />
+                {field.suggestions && <datalist id={`${field.key}-options`}>{field.suggestions.map((option) => <option key={option} value={option} />)}</datalist>}
+              </>
             )}
           </label>
         ))}
@@ -376,6 +427,7 @@ const documentCategories: Record<DocumentItem["category"], string> = {
   identity: "Documento de identidad",
   consent: "Consentimiento",
   study: "Estudio o informe",
+  photo: "Foto actual",
   other: "Otro",
 };
 
@@ -425,10 +477,10 @@ function DocumentsSection({ path, documents, canManage, onChanged }: { path: str
   return (
     <article className="profile-section">
       <div className="profile-section-heading">
-        <h4>Documentos</h4>
-        {canManage && !open && <button className="link-action" type="button" onClick={() => setOpen(true)}>Subir documento</button>}
+        <h4>Documentos y estudios</h4>
+        {canManage && !open && <button className="primary-action upload-action no-print" type="button" onClick={() => setOpen(true)}><span aria-hidden="true">↑</span> Cargar documento</button>}
       </div>
-      <p className="modal-help">PDF, JPG o PNG de hasta 10 MB. Cada descarga queda en el registro de control.</p>
+      <p className="modal-help">PDF, JPG o PNG de hasta 10 MB. La foto actual (JPG o PNG) se muestra en la ficha. Cada descarga queda en el registro de control.</p>
       {documents.length === 0 && !open && <p className="list-empty">Sin documentos adjuntos.</p>}
       <ul className="record-list compact">
         {documents.map((document) => (
@@ -457,7 +509,7 @@ function DocumentsSection({ path, documents, canManage, onChanged }: { path: str
           </div>
           <div className="modal-actions">
             <button className="secondary-action" type="button" onClick={() => setOpen(false)}>Cancelar</button>
-            <button className="primary-action" type="submit" disabled={saving || !file}>{saving ? "Subiendo…" : "Subir"}</button>
+            <button className="primary-action" type="submit" disabled={saving || !file}>{saving ? "Cargando…" : "Cargar"}</button>
           </div>
         </form>
       )}

@@ -85,3 +85,19 @@ def test_documents_are_scoped_to_service(client: TestClient, scenario: Scenario)
     assert client.get(f"{_docs(scenario)}/{document['id']}").status_code == 404
     other = f"/api/care-units/{scenario.other_unit_id}/care-recipients/{scenario.recipient_id}/documents/{document['id']}"
     assert client.get(other).status_code == 404
+
+
+def test_photo_must_be_image_and_is_shown_inline(client: TestClient, scenario: Scenario) -> None:
+    as_user(client, "jefa@test.example")
+    params = {"title": "Foto", "category": "photo", "filename": "foto.png"}
+    pdf = client.post(_docs(scenario), params=params, content=PDF, headers={"Content-Type": "application/pdf"})
+    assert pdf.status_code == 415
+    png = b"\x89PNG\r\n\x1a\n" + b"0" * 10
+    photo = client.post(_docs(scenario), params=params, content=png, headers={"Content-Type": "image/png"}).json()
+    profile = client.get(f"/api/care-units/{scenario.unit_id}/care-recipients/{scenario.recipient_id}").json()
+    assert profile["photo_document_id"] == photo["id"]
+    shown = client.get(f"{_docs(scenario)}/{photo['id']}", params={"inline": "true"})
+    assert shown.headers["content-disposition"].startswith("inline")
+    # inline no aplica a documentos que no son foto
+    other = _upload(client, scenario).json()
+    assert client.get(f"{_docs(scenario)}/{other['id']}", params={"inline": "true"}).headers["content-disposition"].startswith("attachment")

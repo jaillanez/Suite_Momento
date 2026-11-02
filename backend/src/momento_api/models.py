@@ -365,8 +365,18 @@ class CareRecipient(Base):
     birth_date: Mapped[date | None] = mapped_column(Date)
     document_type: Mapped[str | None] = mapped_column(String(20))
     document_number: Mapped[str | None] = mapped_column(String(30))
-    gender: Mapped[str | None] = mapped_column(String(40))
+    sex: Mapped[str | None] = mapped_column(String(10))
     nationality: Mapped[str | None] = mapped_column(String(60))
+    birth_country: Mapped[str | None] = mapped_column(String(60))
+    birth_province: Mapped[str | None] = mapped_column(String(60))
+    birth_locality: Mapped[str | None] = mapped_column(String(100))
+    education_level: Mapped[str | None] = mapped_column(String(40))
+    education_title: Mapped[str | None] = mapped_column(String(120))
+    occupation: Mapped[str | None] = mapped_column(String(40))
+    occupation_detail: Mapped[str | None] = mapped_column(String(200))
+    marital_status: Mapped[str | None] = mapped_column(String(30))
+    has_children: Mapped[bool | None] = mapped_column(Boolean)
+    children_details: Mapped[str | None] = mapped_column(Text)
     languages: Mapped[str | None] = mapped_column(String(120))
     admission_date: Mapped[date | None] = mapped_column(Date)
     room: Mapped[str | None] = mapped_column(String(40))
@@ -386,6 +396,10 @@ class CareRecipient(Base):
     mobility_support: Mapped[str | None] = mapped_column(Text)
     sensory_communication: Mapped[str | None] = mapped_column(Text)
     support_needs: Mapped[str | None] = mapped_column(Text)
+
+    # Antecedentes y datos de ingreso según la planilla del equipo; se valida
+    # contra la definición de momento_api.forms.
+    background: Mapped[dict[str, object] | None] = mapped_column(JSON)
 
     # Historia de vida y preferencias.
     life_history: Mapped[str | None] = mapped_column(Text)
@@ -454,7 +468,7 @@ class CareRecipientDocument(Base):
     __tablename__ = "care_recipient_documents"
     __table_args__ = (
         CheckConstraint(
-            "category IN ('identity', 'consent', 'study', 'other')",
+            "category IN ('identity', 'consent', 'study', 'photo', 'other')",
             name="ck_recipient_documents_category",
         ),
     )
@@ -483,6 +497,38 @@ class CareRecipientDocument(Base):
     )
 
     uploaded_by: Mapped[OrganizationMembership] = relationship()
+
+
+class Assessment(Base):
+    """Escala aplicada a una persona; el puntaje lo calcula el sistema."""
+
+    __tablename__ = "assessments"
+
+    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
+    care_recipient_id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("care_recipients.id", ondelete="RESTRICT"),
+        nullable=False,
+        index=True,
+    )
+    scale_code: Mapped[str] = mapped_column(String(20), nullable=False)
+    performed_on: Mapped[date] = mapped_column(Date, nullable=False)
+    answers: Mapped[dict[str, object]] = mapped_column(JSON, nullable=False)
+    total_score: Mapped[int] = mapped_column(Integer, nullable=False)
+    max_score: Mapped[int] = mapped_column(Integer, nullable=False)
+    subscores: Mapped[dict[str, object] | None] = mapped_column(JSON)
+    interpretation: Mapped[str | None] = mapped_column(String(80))
+    notes: Mapped[str | None] = mapped_column(Text)
+    performed_by_membership_id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("organization_memberships.id", ondelete="RESTRICT"),
+        nullable=False,
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+
+    performed_by: Mapped[OrganizationMembership] = relationship()
 
 
 class FamilyAuthorization(Base):

@@ -10,13 +10,17 @@ El 02/11/2026 Jorge pidió que la ficha esté completa. Se implementaron todos l
 
 | Sección | Campos |
 |---|---|
-| Identificación | Nombre visible, cómo prefiere que le digan, nombres, apellidos, fecha de nacimiento, tipo y número de documento (DNI, CI, pasaporte u otro), género (como la persona lo indique), nacionalidad, idiomas, fecha de ingreso, habitación o cama, domicilio (cuidado domiciliario) |
+| Datos generales | Nombre visible, cómo le gusta ser nombrado/a, sexo, lugar de nacimiento, nivel de instrucción, ocupación, estado civil, hijos, foto, nombres, apellidos, fecha de nacimiento, tipo y número de documento (DNI, CI, pasaporte u otro), nacionalidad, idiomas, fecha de ingreso, habitación o cama, domicilio (cuidado domiciliario) |
 | Cobertura | Obra social, prepaga o mutualista; número de afiliado; médico de cabecera y su teléfono |
 | Salud y apoyos | Alergias, antecedentes relevantes, dieta y restricciones, movilidad y ayudas técnicas, audición/visión/comunicación, apoyos y cuidados especiales |
 | Historia y preferencias | Historia de vida, gustos y preferencias, rutinas, creencias y prácticas espirituales |
 | Contactos | Nombre, vínculo, teléfono, correo, notas; marca de contacto de emergencia (exige teléfono) y de referente legal o apoderado |
 
 La sección de salud es **información de referencia**: no reemplaza la historia clínica, no son indicaciones y Momento no aplica reglas clínicas sobre esos datos.
+
+## Antecedentes y escalas
+
+Los antecedentes, datos de ingreso y escalas (Barthel, Yesavage, CQC y ACE-III) siguen la planilla del equipo. Detalle, correcciones y dudas en [Escalas y antecedentes](escalas.md).
 
 ## Datos obligatorios (confirmado por Jorge el 02/11/2026)
 

@@ -2,6 +2,8 @@
 
 from fastapi import Depends, FastAPI, HTTPException
 
+from momento_api.assessments import definitions_router as scales_definitions_router
+from momento_api.assessments import router as assessments_router
 from momento_api.audit_log import router as audit_log_router
 from momento_api.auth import get_management_account, router as auth_router
 from momento_api.care_recipients import router as care_recipients_router
@@ -24,6 +26,8 @@ app.include_router(organizations_router, dependencies=authenticated)
 app.include_router(memberships_router, dependencies=authenticated)
 app.include_router(care_recipients_router, dependencies=authenticated)
 app.include_router(documents_router, dependencies=authenticated)
+app.include_router(assessments_router, dependencies=authenticated)
+app.include_router(scales_definitions_router, dependencies=authenticated)
 app.include_router(workflow_config_router, dependencies=authenticated)
 app.include_router(family_authorizations_router, dependencies=authenticated)
 app.include_router(requests_router, dependencies=authenticated)

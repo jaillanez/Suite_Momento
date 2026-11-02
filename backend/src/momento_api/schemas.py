@@ -1,7 +1,7 @@
 """Esquemas de entrada y salida para organizaciones y servicios."""
 
 from datetime import date, datetime
-from typing import Literal
+from typing import Any, Literal
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
@@ -330,9 +330,21 @@ class FamilyLinkedPerson(BaseModel):
 
 IDENTITY_FIELDS = (
     "display_name", "first_name", "last_name", "preferred_name", "birth_date",
-    "document_type", "document_number", "gender", "nationality", "languages",
-    "admission_date", "room", "address",
+    "document_type", "document_number", "sex", "nationality", "languages",
+    "admission_date", "room", "address", "birth_country", "birth_province", "birth_locality",
+    "education_level", "education_title", "occupation", "occupation_detail", "marital_status",
+    "has_children", "children_details",
 )
+SEX_OPTIONS = ("mujer", "hombre", "otro")
+EDUCATION_LEVELS = (
+    "primario_incompleto", "primario_completo", "complementaria", "secundario_incompleto",
+    "secundario_completo", "terciario", "universitario",
+)
+OCCUPATIONS = (
+    "ama_de_casa", "oficios", "comerciante", "administrativo", "profesional_no_docente",
+    "docente", "desocupado",
+)
+MARITAL_STATUSES = ("soltero", "casado_en_pareja", "divorciado_separado", "viudo")
 COVERAGE_FIELDS = (
     "health_coverage", "coverage_member_number", "primary_physician", "primary_physician_phone",
 )
@@ -354,8 +366,24 @@ class CareRecipientProfileUpdate(BaseModel):
     birth_date: date | None = None
     document_type: Literal["DNI", "CI", "Pasaporte", "Otro"] | None = None
     document_number: str | None = Field(default=None, max_length=30)
-    gender: str | None = Field(default=None, max_length=40)
+    sex: Literal["mujer", "hombre", "otro"] | None = None
     nationality: str | None = Field(default=None, max_length=60)
+    birth_country: str | None = Field(default=None, max_length=60)
+    birth_province: str | None = Field(default=None, max_length=60)
+    birth_locality: str | None = Field(default=None, max_length=100)
+    education_level: Literal[
+        "primario_incompleto", "primario_completo", "complementaria", "secundario_incompleto",
+        "secundario_completo", "terciario", "universitario",
+    ] | None = None
+    education_title: str | None = Field(default=None, max_length=120)
+    occupation: Literal[
+        "ama_de_casa", "oficios", "comerciante", "administrativo", "profesional_no_docente",
+        "docente", "desocupado",
+    ] | None = None
+    occupation_detail: str | None = Field(default=None, max_length=200)
+    marital_status: Literal["soltero", "casado_en_pareja", "divorciado_separado", "viudo"] | None = None
+    has_children: bool | None = None
+    children_details: str | None = Field(default=None, max_length=4000)
     languages: str | None = Field(default=None, max_length=120)
     admission_date: date | None = None
     room: str | None = Field(default=None, max_length=40)
@@ -447,8 +475,19 @@ class CareRecipientProfileRead(BaseModel):
     birth_date: date | None
     document_type: str | None
     document_number: str | None
-    gender: str | None
+    sex: str | None
     nationality: str | None
+    birth_country: str | None
+    birth_province: str | None
+    birth_locality: str | None
+    education_level: str | None
+    education_title: str | None
+    occupation: str | None
+    occupation_detail: str | None
+    marital_status: str | None
+    has_children: bool | None
+    children_details: str | None
+    background: dict[str, Any] | None
     languages: str | None
     admission_date: date | None
     room: str | None
@@ -472,6 +511,7 @@ class CareRecipientProfileRead(BaseModel):
     contacts: list[CareRecipientContactRead]
     documents: list["CareRecipientDocumentRead"] = []
     missing_fields: list[str] = []
+    photo_document_id: UUID | None = None
     can_edit: bool = False
     can_edit_health: bool = False
     can_edit_story: bool = False
@@ -487,7 +527,7 @@ class CareRecipientDocumentRead(BaseModel):
 
     id: UUID
     title: str
-    category: Literal["identity", "consent", "study", "other"]
+    category: Literal["identity", "consent", "study", "photo", "other"]
     original_filename: str
     content_type: str
     size_bytes: int
@@ -495,3 +535,43 @@ class CareRecipientDocumentRead(BaseModel):
 
 
 CareRecipientProfileRead.model_rebuild()
+
+
+class BackgroundUpdate(BaseModel):
+    answers: dict[str, Any]
+
+
+class ScorePreview(BaseModel):
+    answers: dict[str, Any]
+
+
+class AssessmentCreate(BaseModel):
+    scale_code: Literal["barthel", "gds15", "cqc", "ace3"]
+    performed_on: date
+    answers: dict[str, Any]
+    notes: str | None = Field(default=None, max_length=4000)
+
+    @model_validator(mode="after")
+    def not_future(self) -> "AssessmentCreate":
+        if self.performed_on > date.today():
+            raise ValueError("La fecha de la evaluación no puede ser futura.")
+        return self
+
+
+class AssessmentSummary(BaseModel):
+    id: UUID
+    scale_code: str
+    scale_name: str
+    performed_on: date
+    total_score: int
+    max_score: int
+    subscores: dict[str, Any] | None
+    interpretation: str | None
+    performed_by_name: str
+    created_at: datetime
+
+
+class AssessmentDetail(AssessmentSummary):
+    answers: dict[str, Any]
+    notes: str | None
+    credited_by_recall: list[str] = []

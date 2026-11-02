@@ -1,6 +1,6 @@
 # Momento — plan de trabajo por fases
 
-**Estado al 02/11/2026:** Fases 0 y 1 cerradas. Fase 2 implementada: puestos y permisos, autorizaciones familiares, acceso familiar separado, bandeja persistente, auditoría con pantalla de consulta y gestión de cuentas. Queda validarla con el equipo piloto y elegir el canal de invitaciones. Fase 3 implementada: ficha completa con contactos y permisos por puesto, pendiente de revisión profesional.  
+**Estado al 02/11/2026:** Fases 0 y 1 cerradas. Fase 2 implementada: puestos y permisos, autorizaciones familiares, acceso familiar separado, bandeja persistente, auditoría con pantalla de consulta y gestión de cuentas. Queda validarla con el equipo piloto y elegir el canal de invitaciones. Fase 3 implementada: ficha completa con contactos, documentos, antecedentes y escalas (Barthel, Yesavage, CQC, ACE-III), pendiente de revisión profesional.  
 **Propósito:** orientar al agente de IA y al equipo para avanzar en orden, conservar las decisiones y evitar construir funciones no validadas.
 
 ## Acuerdos del proyecto
