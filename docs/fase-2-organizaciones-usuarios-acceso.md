@@ -81,7 +81,9 @@ Valores por defecto que tomó el agente, ajustables sin rediseño:
 
 - **Auditoría:** se registran inicios y cierres de sesión (también los rechazados), altas y cambios de usuarios, autorizaciones y revocaciones, accesos denegados, y creación, asignación, cambio de estado y respuesta de solicitudes. Se guardan identificadores y códigos, nunca contraseñas ni el texto de los mensajes. Por ahora no se borran; la retención queda por definir.
 - **Alta de cuentas:** el encargado da de alta a la persona y puede asignarle una contraseña inicial desde la misma pantalla. Mínimo 8 caracteres (pedido por Jorge el 02/11/2026). Invitaciones por correo o WhatsApp quedan para más adelante.
-- **Datos existentes:** la migración 0006 traduce la función descriptiva al puesto. Lo que no reconoce queda como cuidador, que es el puesto con menos acceso.
+- **Datos existentes:** la migración 0006 solo reconoce, por coincidencia exacta, las descripciones que generaba el propio sistema ("Encargado de residencia", "Encargado/a", "Médico/a"). Cualquier otra queda como cuidador, el puesto con menos acceso, y el encargado debe asignar el puesto correcto a mano. No se derivan permisos de texto libre.
+- **Contraseñas:** mínimo 8 caracteres, por pedido de Jorge para usar claves simples en pruebas. Antes del piloto conviene volver a 12 o más. El límite de intentos de ingreso vive en memoria y se reinicia al reiniciar la API; debe persistirse antes de exponer el sistema.
+- **Encargado de una sede:** ve y gestiona solo los usuarios de su sede; el encargado de toda la organización ve todo.
 
 ## Implementado en el repositorio
 

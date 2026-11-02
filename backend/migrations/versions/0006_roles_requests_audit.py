@@ -26,15 +26,17 @@ def upgrade() -> None:
             nullable=False,
         ),
     )
-    # Los vínculos existentes solo tenían una función descriptiva. Se traduce
-    # al puesto confirmado; lo no reconocido queda como cuidador (menor acceso).
+    # Los vínculos existentes solo tenían una función descriptiva de texto libre.
+    # No se derivan permisos de texto libre: solo se reconocen, por igualdad
+    # exacta, las etiquetas que generaba el propio sistema. El resto queda como
+    # cuidador (menor acceso) y el encargado debe asignar el puesto a mano.
     op.execute(
         """
         UPDATE organization_memberships
         SET staff_role = CASE
-            WHEN role_label ILIKE '%encargad%' THEN 'manager'
-            WHEN role_label ILIKE '%administr%' THEN 'administrative'
-            WHEN role_label ILIKE '%dic%' OR role_label ILIKE '%doctor%' THEN 'physician'
+            WHEN role_label IN ('Encargado de residencia', 'Encargada de residencia', 'Encargado/a')
+                THEN 'manager'
+            WHEN role_label = 'Médico/a' THEN 'physician'
             ELSE 'caregiver'
         END
         WHERE user_group = 'staff'

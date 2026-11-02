@@ -449,3 +449,21 @@ def test_family_denied_request_on_foreign_recipient_is_not_linked(
         assert event.outcome == "denied"
         assert event.target_id is None
         assert str(event.organization_id) == scenario.organization_id
+
+
+def test_service_manager_only_sees_users_of_their_service(
+    client: TestClient, scenario: Scenario, db_sessions: sessionmaker[Session]
+) -> None:
+    from momento_api.models import OrganizationMembership, StaffRole
+
+    with db_sessions() as session:
+        membership = session.get(OrganizationMembership, UUID(scenario.memberships["physician_south"]))
+        membership.staff_role = StaffRole.MANAGER
+        session.commit()
+
+    as_user(client, "medicosur@test.example")
+    path = f"/api/organizations/{scenario.organization_id}/memberships"
+    visible = {item["id"] for item in client.get(f"{path}?include_inactive=true").json()}
+    assert scenario.memberships["physician_south"] in visible
+    assert scenario.memberships["caregiver"] not in visible  # Sede Norte
+    assert scenario.memberships["family"] not in visible  # Sede Norte

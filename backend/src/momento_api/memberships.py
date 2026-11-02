@@ -153,11 +153,14 @@ def list_memberships(
         )
         .limit(limit)
     )
-    # Solo el encargado ve cuentas desactivadas, para poder reactivarlas.
-    if not (include_inactive and viewer.staff_role is StaffRole.MANAGER):
+    # Solo el encargado de toda la organización ve todas las cuentas y las
+    # desactivadas; el resto queda limitado a su sede y, si no es encargado, a familias.
+    is_org_manager = viewer.staff_role is StaffRole.MANAGER and viewer.care_unit_id is None
+    if not (include_inactive and is_org_manager):
         statement = statement.where(OrganizationMembership.is_active.is_(True))
-    if viewer.staff_role is not StaffRole.MANAGER:
-        statement = statement.where(OrganizationMembership.user_group == UserGroup.FAMILY)
+    if not is_org_manager:
+        if viewer.staff_role is not StaffRole.MANAGER:
+            statement = statement.where(OrganizationMembership.user_group == UserGroup.FAMILY)
         if viewer.care_unit_id is not None:
             statement = statement.where(
                 or_(
