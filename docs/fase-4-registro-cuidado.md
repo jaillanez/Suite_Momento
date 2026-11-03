@@ -11,7 +11,7 @@
 | Entrega de turno | Pantalla "Turno y registros": lo importante desde el turno anterior, los pendientes abiertos, lo registrado en el turno actual y en el anterior | Todo el personal del servicio |
 | Ficha de la persona | Sección "Registro diario" con los últimos 7 días y sus pendientes | Todo el personal del servicio |
 
-- **Los registros no se editan.** Si hay un error, quien lo cargó o el encargado lo anula con un motivo. Queda visible tachado en la ficha y desaparece de la entrega de turno.
+- **Los registros no se editan.** Si hay un error, quien lo cargó o el encargado lo anula con un motivo. **Un incidente solo lo anula el encargado**, para que nadie pueda retirar solo un incidente propio. Queda visible tachado en la ficha y desaparece de la entrega de turno.
 - **La familia no ve estos registros.** Qué se comparte con la familia es parte de la Fase 5.
 - Cada carga, anulación y consulta queda en el registro de control. El registro de control guarda el tipo de nota, pero no su texto.
 - Momento no interpreta los registros. El formulario recuerda que ante una urgencia se sigue el protocolo de la residencia.
@@ -26,7 +26,8 @@ Los valores están en `backend/src/momento_api/care_log.py`, al comienzo del arc
 | Zona horaria | Argentina (Buenos Aires) o Uruguay (Montevideo), según el país del servicio | `TIMEZONES` |
 | Carga retroactiva | Hasta 7 días hacia atrás; no se aceptan horas futuras | `MAX_BACKDATE_DAYS` |
 | Tipos de registro | Los 8 de la tabla de arriba | `CARE_ENTRY_CATEGORIES` en `models.py` (requiere migración) |
-| Incidentes | Siempre se marcan como importantes | `create_entry` |
+| Incidentes | Siempre se marcan como importantes; solo el encargado los anula | `create_entry`, `_may_void` |
+| Resolver pendientes | Cualquiera del servicio; queda quién lo cerró y la nota | `_close_task` |
 
 ## Fuera de esta entrega
 

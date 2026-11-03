@@ -188,7 +188,7 @@ export function CareLogSection({ unitId, recipientId, recipientName }: { unitId:
           <button className="primary-action" type="button" onClick={() => setRecording(true)}>+ Registrar</button>
         </div>
       </div>
-      <p className="modal-help">Últimos 7 días. Los registros no se editan; si hay un error, se anulan con un motivo.</p>
+      <p className="modal-help">Últimos 7 días. Los registros no se editan; si hay un error, se anulan con un motivo. Un incidente solo lo anula el encargado.</p>
       {error && <p className="form-message error-message" role="alert">{error}</p>}
       {tasks.length > 0 && <TaskList tasks={tasks} unitId={unitId} onChanged={() => void reload()} />}
       {entries.length === 0 ? <p className="list-empty">Sin registros en los últimos 7 días.</p> : <EntryList entries={entries} unitId={unitId} onChanged={() => void reload()} />}

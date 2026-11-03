@@ -146,6 +146,13 @@ def _utc(value: datetime) -> datetime:
     return value.replace(tzinfo=timezone.utc) if value.tzinfo is None else value
 
 
+def _may_void(entry: CareEntry, account: UserAccount, manager: bool) -> bool:
+    """Quien lo cargó puede anular sus registros comunes; un incidente solo lo anula el encargado."""
+    if entry.category == "incident":
+        return manager
+    return manager or entry.recorded_by.user_account_id == account.id
+
+
 def _entry_read(entry: CareEntry, account: UserAccount, manager: bool) -> dict[str, object]:
     return {
         "id": str(entry.id),
@@ -159,7 +166,7 @@ def _entry_read(entry: CareEntry, account: UserAccount, manager: bool) -> dict[s
         "voided": entry.voided_at is not None,
         "void_reason": entry.void_reason,
         "voided_by_name": entry.voided_by.user.display_name if entry.voided_by else None,
-        "can_void": entry.voided_at is None and (manager or entry.recorded_by.user_account_id == account.id),
+        "can_void": entry.voided_at is None and _may_void(entry, account, manager),
     }
 
 
@@ -280,8 +287,10 @@ def void_entry(
     if entry is None:
         raise HTTPException(status_code=404, detail="Registro no encontrado.")
     manager = _is_manager(session, account, care_unit)
-    if not manager and entry.recorded_by.user_account_id != account.id:
-        raise HTTPException(status_code=403, detail="Solo quien cargó el registro o el encargado pueden anularlo.")
+    if not _may_void(entry, account, manager):
+        detail = ("Un incidente solo lo puede anular el encargado." if entry.category == "incident"
+                  else "Solo quien cargó el registro o el encargado pueden anularlo.")
+        raise HTTPException(status_code=403, detail=detail)
     if entry.voided_at is not None:
         raise HTTPException(status_code=409, detail="El registro ya estaba anulado.")
     entry.voided_at = datetime.now(timezone.utc)
@@ -290,6 +299,7 @@ def void_entry(
     record_event(
         session, action="care_entry.voided", actor_account_id=account.id,
         organization_id=care_unit.organization_id, target_type="care_entry", target_id=entry.id,
+        details={"category": entry.category, "important": entry.important},
     )
     session.commit()
     session.refresh(entry)
@@ -357,6 +367,8 @@ def _close_task(
     if task.status != "open":
         raise HTTPException(status_code=409, detail="El pendiente ya estaba cerrado.")
     manager = _is_manager(session, account, care_unit)
+    # Resolver un pendiente lo puede hacer cualquiera del turno (es la idea de la continuidad);
+    # queda quién lo cerró y la nota. Cancelarlo sin resolver es solo de quien lo creó o del encargado.
     if new_status == "cancelled" and not manager and task.created_by.user_account_id != account.id:
         raise HTTPException(status_code=403, detail="Solo quien lo creó o el encargado pueden cancelarlo.")
     task.status = new_status

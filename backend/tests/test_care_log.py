@@ -98,3 +98,13 @@ def test_tasks_flow_complete_and_cancel_rules(client: TestClient, scenario: Scen
     assert [t["title"] for t in other.get(f"{tasks}?status=closed").json()] == ["Llamar a la hija"]
     handover = other.get(f"/api/care-units/{scenario.unit_id}/handover").json()
     assert [t["title"] for t in handover["open_tasks"]] == ["Reponer pañales"]
+
+
+def test_incident_can_only_be_voided_by_manager(client: TestClient, scenario: Scenario) -> None:
+    caregiver = as_user(client, "cuidador@test.example")
+    entry = caregiver.post(_entries(scenario), json={"category": "incident", "text": "Se cayó", "important": False}).json()
+    assert entry["important"] is True and entry["can_void"] is False
+    void = f"/api/care-units/{scenario.unit_id}/care-entries/{entry['id']}/void"
+    assert caregiver.post(void, json={"reason": "Me equivoqué"}).status_code == 403
+    client.cookies.clear()
+    assert as_user(client, "jefa@test.example").post(void, json={"reason": "Era otra persona"}).status_code == 200
