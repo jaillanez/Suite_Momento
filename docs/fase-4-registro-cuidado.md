@@ -31,7 +31,7 @@ Cada residencia o servicio domiciliario decide cómo trabaja. Lo configura el **
 | Además, aviso por correo | No | Sí (a los mismos puestos) |
 
 Otras reglas:
-- **Avisos en Momento:** aparecen en la campana de la barra superior, con el nombre de la persona y quién lo cargó. Lo que pasó se lee en "Turno y registros", al que lleva el aviso. La web consulta cada minuto. Los avisos se guardan en el servidor (`/api/notifications`), así la **app móvil de la Fase 7 usará los mismos avisos** y podrá sumar notificaciones push. Cada persona ve solo sus avisos, y deja de verlos si se la desactiva de la organización.
+- **Avisos en Momento:** aparecen en la campana de la barra superior, con el nombre de la persona y quién lo cargó. Lo que pasó se lee en "Turno y registros", al que lleva el aviso. La web consulta cada minuto. Los avisos se guardan en el servidor (`/api/notifications`), así la **app móvil de la Fase 7 usará los mismos avisos** y podrá sumar notificaciones push. Cada persona ve solo sus avisos, y solo mientras siga como personal activo del servicio del aviso: si la desactivan o la pasan a otro servicio, deja de verlos.
 - **Aviso por correo (opcional):** solo dice que hubo un incidente en el servicio, sin nombre ni detalle. El correo real requiere configurar el servidor de correo (ver Fase 2).
 - Quien registra el incidente no recibe aviso.
 - Cualquiera del servicio puede marcar un pendiente como hecho, y queda guardado quién fue y su nota. Cancelarlo es solo de quien lo creó o del encargado.

@@ -10,11 +10,11 @@ from datetime import datetime, timezone
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Response
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
 from momento_api.auth import get_authenticated_account
-from momento_api.models import Notification, OrganizationMembership, UserAccount
+from momento_api.models import Notification, OrganizationMembership, UserAccount, UserGroup
 from momento_api.session import get_session
 
 router = APIRouter(prefix="/api/notifications", tags=["Avisos"])
@@ -44,12 +44,32 @@ def _utc(value: datetime) -> datetime:
 
 
 def _visible(account: UserAccount):
-    """Solo avisos de organizaciones donde la cuenta sigue activa."""
-    active_orgs = select(OrganizationMembership.organization_id).where(
-        OrganizationMembership.user_account_id == account.id,
-        OrganizationMembership.is_active.is_(True),
+    """Solo avisos de servicios a los que la cuenta sigue llegando como personal activo.
+
+    Si a la persona la pasan a otro servicio o la desactivan, deja de ver los avisos
+    anteriores (que nombran a residentes). Los avisos para familias, cuando existan
+    (Fase 5), necesitarán su propia regla.
+    """
+    reachable = (
+        select(OrganizationMembership.organization_id, OrganizationMembership.care_unit_id)
+        .where(
+            OrganizationMembership.user_account_id == account.id,
+            OrganizationMembership.is_active.is_(True),
+            OrganizationMembership.user_group == UserGroup.STAFF,
+        )
+        .subquery()
     )
-    return (Notification.user_account_id == account.id, Notification.organization_id.in_(active_orgs))
+    return (
+        Notification.user_account_id == account.id,
+        select(1).where(
+            reachable.c.organization_id == Notification.organization_id,
+            or_(
+                reachable.c.care_unit_id.is_(None),
+                Notification.care_unit_id.is_(None),
+                reachable.c.care_unit_id == Notification.care_unit_id,
+            ),
+        ).exists(),
+    )
 
 
 @router.get("")

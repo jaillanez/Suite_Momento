@@ -135,3 +135,22 @@ def test_incident_creates_in_app_notification_and_email_is_optional(client: Test
     other = as_user(client, "medica@test.example")
     assert other.get("/api/notifications").json()["items"] == []
     assert other.post(f"/api/notifications/{item['id']}/read").status_code == 404
+
+
+def test_notifications_hidden_after_moving_to_another_unit(client: TestClient, scenario: Scenario) -> None:
+    put = _put(scenario)
+    manager = as_user(client, "jefa@test.example")
+    manager.put(put, json=_settings(incident_notify_roles=["physician"]))
+    client.cookies.clear()
+    as_user(client, "cuidador@test.example").post(_entries(scenario), json={"category": "incident", "text": "x"})
+    client.cookies.clear()
+    physician = as_user(client, "medica@test.example")
+    assert physician.get("/api/notifications").json()["unread"] == 1
+    from momento_api.models import OrganizationMembership
+    from momento_api.session import get_session
+    from uuid import UUID
+    session = next(client.app.dependency_overrides[get_session]())
+    member = session.get(OrganizationMembership, UUID(scenario.memberships["physician"]))
+    member.care_unit_id = UUID(scenario.other_unit_id)
+    session.commit()
+    assert physician.get("/api/notifications").json() == {"unread": 0, "items": []}
