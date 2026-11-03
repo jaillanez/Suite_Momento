@@ -410,6 +410,13 @@ class CareRecipient(Base):
     routines: Mapped[str | None] = mapped_column(Text)
     beliefs: Mapped[str | None] = mapped_column(Text)
 
+    # Consentimiento para compartir fotos con la familia. Sin él no se publican fotos.
+    image_consent_given_by: Mapped[str | None] = mapped_column(String(160))
+    image_consent_on: Mapped[date | None] = mapped_column(Date)
+    image_consent_recorded_by_membership_id: Mapped[UUID | None] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("organization_memberships.id", ondelete="RESTRICT")
+    )
+
     is_active: Mapped[bool] = mapped_column(
         Boolean, nullable=False, default=True, server_default="true"
     )
@@ -670,6 +677,9 @@ class FamilyUpdate(Base):
         Uuid(as_uuid=True), ForeignKey("organization_memberships.id", ondelete="RESTRICT")
     )
     withdraw_reason: Mapped[str | None] = mapped_column(String(300))
+    # Foto opcional, guardada en disco con un nombre interno (ver family_updates.py).
+    photo_storage_key: Mapped[str | None] = mapped_column(String(80), unique=True)
+    photo_content_type: Mapped[str | None] = mapped_column(String(30))
 
     recipient: Mapped[CareRecipient] = relationship()
     published_by: Mapped[OrganizationMembership] = relationship(foreign_keys=[published_by_membership_id])

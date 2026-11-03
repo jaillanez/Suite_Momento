@@ -1596,6 +1596,12 @@ button.filter-chip { cursor: pointer; font: inherit; font-size: 0.72rem; }
 .family-updates p { margin: 0; line-height: 1.5; }
 .family-update-meta { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; }
 .family-update-meta span { color: var(--muted); font-size: 0.74rem; }
+.family-photo { display: block; max-width: min(100%, 420px); max-height: 320px; border-radius: 10px; object-fit: cover; }
+.image-consent { display: grid; gap: 8px; padding: 10px 12px; border-radius: 10px; background: var(--paper); font-size: 0.8rem; }
+.image-consent p { margin: 0; }
+.image-consent .link-action { padding: 0; font-size: 0.78rem; }
+.image-consent-form { display: grid; gap: 10px; }
+.moment-modal .family-photo { max-height: 160px; }
 .family-categories { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
 .family-request-form { display: grid; gap: 12px; padding: 20px; border: 1px solid #e3dcf7; border-radius: 14px; background: #fff; }
 .family-request-form h2 { margin: 0; font-size: 1.05rem; }

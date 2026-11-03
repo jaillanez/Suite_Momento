@@ -51,6 +51,8 @@ DEFAULTS: dict[str, Any] = {
     "family_update_roles": ["manager", "administrative", "physician", "caregiver"],
     # Avisar en Momento a la familia cuando hay una novedad nueva.
     "family_update_notify": True,
+    # Permitir fotos en las novedades (además, cada persona necesita su consentimiento de imagen).
+    "family_update_photos": True,
 }
 
 SHIFT_PRESETS = {
@@ -156,6 +158,11 @@ def clean_settings(raw: Any) -> dict[str, Any]:
     if not isinstance(family_notify, bool):
         raise ValueError("Opción inválida para el aviso a la familia.")
     result["family_update_notify"] = family_notify
+
+    photos = raw.get("family_update_photos", result["family_update_photos"])
+    if not isinstance(photos, bool):
+        raise ValueError("Opción inválida para las fotos en novedades.")
+    result["family_update_photos"] = photos
     return result
 
 

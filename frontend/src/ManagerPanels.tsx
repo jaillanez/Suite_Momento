@@ -45,6 +45,8 @@ const actionLabels: Record<string, string> = {
   "family_update.withdrawn": "Retiro de una novedad para la familia",
   "family_updates.viewed": "Consulta de novedades por la familia",
   "audit.purged": "Depuración del registro vencido",
+  "image_consent.recorded": "Registro del consentimiento de imagen",
+  "image_consent.revoked": "Retiro del consentimiento de imagen",
 };
 
 const detailLabels: Record<string, string> = {

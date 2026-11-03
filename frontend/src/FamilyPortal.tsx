@@ -18,6 +18,7 @@ type FamilyUpdate = {
   text: string;
   published_by_role: string;
   published_at: string;
+  has_photo: boolean;
 };
 
 type FamilyRequest = {
@@ -92,6 +93,7 @@ export default function FamilyPortal({ userName, onLogout }: { userName: string;
                           <span>{formatDate(item.published_at)} · {item.published_by_role}</span>
                         </div>
                         <p>{item.text}</p>
+                        {item.has_photo && <img className="family-photo" src={`/api/family/updates/${item.id}/photo`} alt={`Foto de ${item.care_recipient_name}`} loading="lazy" />}
                       </li>
                     ))}
                   </ul>

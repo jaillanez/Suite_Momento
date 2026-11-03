@@ -74,7 +74,7 @@ Detalle en [Fase 3 — Ficha de la persona mayor](fase-3-ficha-persona.md).
 
 ## Fase 5 — Comunicación con familia y personas de confianza (primera entrega implementada; validación con el piloto pendiente)
 
-**Hecho el 03/11/2026:** novedades para la familia. El equipo las publica a mano (o partiendo de un registro del día, revisando el texto), solo las ven los familiares con el permiso «Novedades» y la familia recibe un aviso en Momento. Quién publica se configura por servicio. Detalle en [fase-5-comunicacion-familia.md](fase-5-comunicacion-familia.md). Fotos y mensajería siguen sin implementar.
+**Hecho el 03/11/2026:** novedades para la familia. El equipo las publica a mano (o partiendo de un registro del día, revisando el texto), solo las ven los familiares con el permiso «Novedades» y la familia recibe un aviso en Momento. Quién publica se configura por servicio. Detalle en [fase-5-comunicacion-familia.md](fase-5-comunicacion-familia.md). Fotos agregadas el mismo día, con consentimiento de imagen por persona. La mensajería sigue sin implementar.
 
 **Objetivo:** compartir información autorizada y mantener un canal claro con el equipo.
 

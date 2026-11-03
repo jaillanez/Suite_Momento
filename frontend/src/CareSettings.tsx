@@ -13,6 +13,7 @@ type Settings = {
   incident_notify_email: boolean;
   family_update_roles: StaffRole[];
   family_update_notify: boolean;
+  family_update_photos: boolean;
 };
 
 const hours = Array.from({ length: 24 }, (_, hour) => hour);
@@ -174,6 +175,10 @@ export default function CareSettingsEditor({ organizationId, careUnitId }: { org
         <label className="inline-check">
           <input type="checkbox" checked={settings.family_update_notify} onChange={(event) => change({ family_update_notify: event.target.checked })} />
           Avisar a la familia en Momento cuando hay una novedad
+        </label>
+        <label className="inline-check">
+          <input type="checkbox" checked={settings.family_update_photos} onChange={(event) => change({ family_update_photos: event.target.checked })} />
+          Permitir fotos (solo de personas con consentimiento de imagen registrado)
         </label>
       </fieldset>
 
