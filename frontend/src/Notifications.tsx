@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from "react";
 
-type Item = { id: string; kind: string; title: string; body: string | null; created_at: string; read: boolean };
+export type Item = { id: string; kind: string; title: string; body: string | null; created_at: string; read: boolean };
 
 const when = (value: string) => new Date(value).toLocaleString("es-AR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23" });
 
-/** Campana de avisos. Consulta cada minuto; la app móvil usará las mismas rutas. */
-export default function NotificationBell({ onOpenShift }: { onOpenShift: () => void }) {
+/** Campana de avisos. Consulta cada minuto; la app móvil usará las mismas rutas.
+ *  El personal usa /api/notifications y las familias /api/family/notifications. */
+export default function NotificationBell({ basePath = "/api/notifications", onOpen }: { basePath?: string; onOpen: (item: Item) => void }) {
   const [items, setItems] = useState<Item[]>([]);
   const [unread, setUnread] = useState(0);
   const [open, setOpen] = useState(false);
@@ -13,7 +14,7 @@ export default function NotificationBell({ onOpenShift }: { onOpenShift: () => v
 
   async function load() {
     try {
-      const response = await fetch("/api/notifications");
+      const response = await fetch(basePath);
       if (!response.ok) return;
       const data = (await response.json()) as { unread: number; items: Item[] };
       setItems(data.items);
@@ -39,14 +40,14 @@ export default function NotificationBell({ onOpenShift }: { onOpenShift: () => v
   }, [open]);
 
   async function select(item: Item) {
-    if (!item.read) await fetch(`/api/notifications/${item.id}/read`, { method: "POST" });
+    if (!item.read) await fetch(`${basePath}/${item.id}/read`, { method: "POST" });
     setOpen(false);
     await load();
-    if (item.kind === "incident") onOpenShift();
+    onOpen(item);
   }
 
   async function readAll() {
-    await fetch("/api/notifications/read-all", { method: "POST" });
+    await fetch(`${basePath}/read-all`, { method: "POST" });
     await load();
   }
 

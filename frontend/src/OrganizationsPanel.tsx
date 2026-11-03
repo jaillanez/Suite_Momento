@@ -642,7 +642,7 @@ function CareRecipientPanel({ careUnitId, canCreate }: { careUnitId: string; can
 }
 
 export type StaffRole = "manager" | "administrative" | "physician" | "caregiver";
-export type Category = "medication" | "activities" | "diet";
+export type Category = "medication" | "activities" | "diet" | "updates";
 
 export const staffRoleLabels: Record<StaffRole, string> = {
   manager: "Encargado/a",
@@ -655,6 +655,7 @@ export const categoryLabels: Record<Category, string> = {
   medication: "Medicación",
   activities: "Actividades",
   diet: "Dietas",
+  updates: "Novedades",
 };
 
 type FamilyAuthorization = {
@@ -1045,7 +1046,7 @@ function FamilyAuthorizationModal({
   const [recipients, setRecipients] = useState<CareRecipient[]>([]);
   const [authorizations, setAuthorizations] = useState<FamilyAuthorization[]>([]);
   const [recipientId, setRecipientId] = useState("");
-  const [categories, setCategories] = useState<Category[]>(["medication", "activities", "diet"]);
+  const [categories, setCategories] = useState<Category[]>(["medication", "activities", "diet", "updates"]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");

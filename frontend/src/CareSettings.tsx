@@ -11,6 +11,8 @@ type Settings = {
   incident_void: "manager" | "author";
   incident_notify_roles: StaffRole[];
   incident_notify_email: boolean;
+  family_update_roles: StaffRole[];
+  family_update_notify: boolean;
 };
 
 const hours = Array.from({ length: 24 }, (_, hour) => hour);
@@ -155,6 +157,24 @@ export default function CareSettingsEditor({ organizationId, careUnitId }: { org
           Además, enviar un correo
         </label>
         <p className="modal-help">El aviso aparece en la campana de Momento (y en la futura app móvil) con el nombre de la persona; lo que pasó se lee en "Turno y registros". El correo solo dice que hubo un incidente en el servicio, sin nombre ni detalle. Si no se marca a nadie, no se avisa.</p>
+      </fieldset>
+
+      <fieldset>
+        <legend>Novedades para la familia</legend>
+        <p className="modal-help">Nada del registro diario llega solo a la familia: alguien del equipo escribe o revisa el texto y lo publica. La ven solo los familiares con el permiso «Novedades».</p>
+        <div className="option-row">
+          <span>Pueden publicar:</span>
+          {(Object.keys(staffRoleLabels) as StaffRole[]).map((role) => (
+            <label key={role} className="inline-check">
+              <input type="checkbox" checked={settings.family_update_roles.includes(role)} onChange={(event) => change({ family_update_roles: event.target.checked ? [...settings.family_update_roles, role] : settings.family_update_roles.filter((item) => item !== role) })} />
+              {staffRoleLabels[role]}
+            </label>
+          ))}
+        </div>
+        <label className="inline-check">
+          <input type="checkbox" checked={settings.family_update_notify} onChange={(event) => change({ family_update_notify: event.target.checked })} />
+          Avisar a la familia en Momento cuando hay una novedad
+        </label>
       </fieldset>
 
       {error && <p className="form-message error-message" role="alert">{error}</p>}

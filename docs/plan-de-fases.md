@@ -1,6 +1,6 @@
 # Momento — plan de trabajo por fases
 
-**Estado al 02/11/2026:** Fases 0 y 1 cerradas. Fase 2 implementada: puestos y permisos, autorizaciones familiares, acceso familiar separado, bandeja persistente, auditoría con pantalla de consulta y gestión de cuentas. Invitación y recuperación de contraseña por correo agregadas el 03/11/2026. Queda validarla con el equipo piloto. Fase 3 implementada: ficha completa con contactos, documentos, antecedentes y escalas (Barthel, Yesavage, CQC, ACE-III), pendiente de revisión profesional.  
+**Estado al 03/11/2026:** Fases 0 y 1 cerradas. Fase 2 implementada: puestos y permisos, autorizaciones familiares, acceso familiar separado, bandeja persistente, auditoría con pantalla de consulta y gestión de cuentas. Invitación y recuperación de contraseña por correo agregadas el 03/11/2026. Queda validarla con el equipo piloto. Fase 3 implementada: ficha completa con contactos, documentos, antecedentes y escalas (Barthel, Yesavage, CQC, ACE-III), pendiente de revisión profesional. Fase 4 (registro diario, pendientes y entrega de turno) y Fase 5 (novedades para la familia) con primera entrega implementada, pendientes de validar con el piloto.  
 **Propósito:** orientar al agente de IA y al equipo para avanzar en orden, conservar las decisiones y evitar construir funciones no validadas.
 
 ## Acuerdos del proyecto
@@ -44,7 +44,7 @@ Documentos: [Fase 0 — Descubrimiento y definición de Momento](fase-0-descubri
 
 **Avance del 02/11/2026:** puestos confirmados (encargado, administrativo, médico y cuidador) aplicados en la API; autorizaciones familiares con otorgamiento y revocación; ingreso y portal familiar separados; bandeja guardada en PostgreSQL con designación, asignación, estados y respuesta; auditoría de acciones sensibles; pruebas de acceso permitido y denegado.
 
-**Pendiente de Fase 2:** cargar la contraseña de aplicación de Gmail para que los correos salgan desde illanezjorgea@gmail.com, definir cuánto tiempo se conserva la auditoría y revisar todo con el equipo piloto.
+**Pendiente de Fase 2:** definir cuánto tiempo se conserva la auditoría y revisar todo con el equipo piloto. El correo ya sale desde illanezjorgea@gmail.com (03/11/2026).
 
 **Decisiones confirmadas por Jorge:** una organización prestadora puede contener varias sedes o servicios; el piloto contempla personal, familias/personas de confianza y personas mayores; el acceso familiar lo autoriza el encargado de la residencia, un administrativo habilitado o el médico, y se limita a información de la persona vinculada sobre medicación, actividades y dietas.
 
@@ -72,7 +72,9 @@ Detalle en [Fase 3 — Ficha de la persona mayor](fase-3-ficha-persona.md).
 
 **Resultado esperado:** flujos de cuidado acordados, responsables identificados, trazabilidad de cambios y manejo claro de errores y situaciones que requieren escalamiento.
 
-## Fase 5 — Comunicación con familia y personas de confianza
+## Fase 5 — Comunicación con familia y personas de confianza (primera entrega implementada; validación con el piloto pendiente)
+
+**Hecho el 03/11/2026:** novedades para la familia. El equipo las publica a mano (o partiendo de un registro del día, revisando el texto), solo las ven los familiares con el permiso «Novedades» y la familia recibe un aviso en Momento. Quién publica se configura por servicio. Detalle en [fase-5-comunicacion-familia.md](fase-5-comunicacion-familia.md). Fotos y mensajería siguen sin implementar.
 
 **Objetivo:** compartir información autorizada y mantener un canal claro con el equipo.
 

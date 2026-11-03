@@ -65,6 +65,7 @@ class SharedCareCategory(str, Enum):
     MEDICATION = "medication"
     ACTIVITIES = "activities"
     DIET = "diet"
+    UPDATES = "updates"
 
 
 class Organization(Base):
@@ -637,13 +638,51 @@ class Notification(Base):
     read_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
 
+class FamilyUpdate(Base):
+    """Novedad que el equipo publica para las familias autorizadas a ver "Novedades".
+
+    Nada del registro diario se comparte solo: una persona del equipo escribe o revisa
+    el texto y lo publica. No se edita; si hay un error se retira con un motivo.
+    """
+
+    __tablename__ = "family_updates"
+
+    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
+    care_unit_id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("care_units.id", ondelete="RESTRICT"), nullable=False, index=True
+    )
+    care_recipient_id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("care_recipients.id", ondelete="RESTRICT"), nullable=False, index=True
+    )
+    text: Mapped[str] = mapped_column(Text, nullable=False)
+    # Registro del día del que se partió, solo para trazabilidad; la familia no lo ve.
+    source_entry_id: Mapped[UUID | None] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("care_entries.id", ondelete="RESTRICT")
+    )
+    published_by_membership_id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("organization_memberships.id", ondelete="RESTRICT"), nullable=False
+    )
+    published_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+    withdrawn_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    withdrawn_by_membership_id: Mapped[UUID | None] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("organization_memberships.id", ondelete="RESTRICT")
+    )
+    withdraw_reason: Mapped[str | None] = mapped_column(String(300))
+
+    recipient: Mapped[CareRecipient] = relationship()
+    published_by: Mapped[OrganizationMembership] = relationship(foreign_keys=[published_by_membership_id])
+    withdrawn_by: Mapped[OrganizationMembership | None] = relationship(foreign_keys=[withdrawn_by_membership_id])
+
+
 class FamilyAuthorization(Base):
     """Permisos familiares explícitos por persona y categoría."""
 
     __tablename__ = "family_authorizations"
     __table_args__ = (
         CheckConstraint(
-            "category IN ('medication', 'activities', 'diet')",
+            "category IN ('medication', 'activities', 'diet', 'updates')",
             name="ck_family_authorizations_category",
         ),
         UniqueConstraint(
@@ -714,7 +753,7 @@ class FamilyRequest(Base):
     __tablename__ = "family_requests"
     __table_args__ = (
         CheckConstraint(
-            "category IN ('medication', 'activities', 'diet')",
+            "category IN ('medication', 'activities', 'diet', 'updates')",
             name="ck_family_requests_category",
         ),
     )

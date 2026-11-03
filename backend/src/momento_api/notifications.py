@@ -1,7 +1,8 @@
 """Avisos dentro de Momento.
 
 Cada aviso pertenece a una cuenta y solo lo ve esa cuenta. La web los consulta cada
-minuto; la app móvil (Fase 7) usará estas mismas rutas y podrá sumar avisos push.
+minuto; las familias usan las mismas rutas bajo /api/family. La app móvil (Fase 7)
+usará estas rutas y podrá sumar avisos push.
 """
 
 from __future__ import annotations
@@ -10,14 +11,23 @@ from datetime import datetime, timezone
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Response
-from sqlalchemy import func, or_, select
+from sqlalchemy import and_, func, or_, select
 from sqlalchemy.orm import Session
 
 from momento_api.auth import get_authenticated_account
-from momento_api.models import Notification, OrganizationMembership, UserAccount, UserGroup
+from momento_api.models import (
+    FamilyAuthorization,
+    FamilyUpdate,
+    Notification,
+    OrganizationMembership,
+    SharedCareCategory,
+    UserAccount,
+    UserGroup,
+)
 from momento_api.session import get_session
 
-router = APIRouter(prefix="/api/notifications", tags=["Avisos"])
+# Sin prefijo propio: main.py lo monta en /api (personal) y en /api/family (familias).
+router = APIRouter(prefix="/notifications", tags=["Avisos"])
 
 
 def notify(
@@ -44,11 +54,12 @@ def _utc(value: datetime) -> datetime:
 
 
 def _visible(account: UserAccount):
-    """Solo avisos de servicios a los que la cuenta sigue llegando como personal activo.
+    """Solo avisos que la cuenta sigue teniendo derecho a ver.
 
-    Si a la persona la pasan a otro servicio o la desactivan, deja de ver los avisos
-    anteriores (que nombran a residentes). Los avisos para familias, cuando existan
-    (Fase 5), necesitarán su propia regla.
+    Personal: avisos de servicios a los que llega como personal activo. Si la pasan a
+    otro servicio o la desactivan, deja de ver los anteriores (nombran a residentes).
+    Familias: avisos de novedades vigentes de personas que sigue teniendo autorizadas
+    para "Novedades"; si se revoca el permiso o se retira la novedad, el aviso desaparece.
     """
     reachable = (
         select(OrganizationMembership.organization_id, OrganizationMembership.care_unit_id)
@@ -59,8 +70,8 @@ def _visible(account: UserAccount):
         )
         .subquery()
     )
-    return (
-        Notification.user_account_id == account.id,
+    staff = and_(
+        Notification.kind != "family_update",
         select(1).where(
             reachable.c.organization_id == Notification.organization_id,
             or_(
@@ -70,6 +81,25 @@ def _visible(account: UserAccount):
             ),
         ).exists(),
     )
+    family = and_(
+        Notification.kind == "family_update",
+        select(1)
+        .select_from(FamilyUpdate)
+        .join(FamilyAuthorization, FamilyAuthorization.care_recipient_id == FamilyUpdate.care_recipient_id)
+        .join(OrganizationMembership, OrganizationMembership.id == FamilyAuthorization.family_membership_id)
+        .where(
+            FamilyUpdate.id == Notification.target_id,
+            FamilyUpdate.withdrawn_at.is_(None),
+            FamilyAuthorization.category == SharedCareCategory.UPDATES,
+            FamilyAuthorization.is_active.is_(True),
+            FamilyAuthorization.can_view.is_(True),
+            OrganizationMembership.user_account_id == account.id,
+            OrganizationMembership.user_group == UserGroup.FAMILY,
+            OrganizationMembership.is_active.is_(True),
+        )
+        .exists(),
+    )
+    return (Notification.user_account_id == account.id, or_(staff, family))
 
 
 @router.get("")

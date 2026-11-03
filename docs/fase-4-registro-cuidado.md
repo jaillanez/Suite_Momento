@@ -12,7 +12,7 @@
 | Ficha de la persona | Sección "Registro diario" con los últimos 7 días y sus pendientes | Todo el personal del servicio |
 
 - **Los registros no se editan.** Si hay un error, quien lo cargó o el encargado lo anula con un motivo. **Un incidente solo lo anula el encargado**, para que nadie pueda retirar solo un incidente propio. Queda visible tachado en la ficha y desaparece de la entrega de turno.
-- **La familia no ve estos registros.** Qué se comparte con la familia es parte de la Fase 5.
+- **La familia no ve estos registros.** Para compartir algo, alguien del equipo publica una novedad revisando el texto (ver [Fase 5](fase-5-comunicacion-familia.md)).
 - Cada carga, anulación y consulta queda en el registro de control. El registro de control guarda el tipo de nota, pero no su texto.
 - Momento no interpreta los registros. El formulario recuerda que ante una urgencia se sigue el protocolo de la residencia.
 

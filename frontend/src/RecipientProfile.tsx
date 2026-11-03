@@ -2,6 +2,7 @@ import { type FormEvent, useEffect, useState } from "react";
 import BackgroundSection from "./Background";
 import { readApiError } from "./OrganizationsPanel";
 import { CareLogSection } from "./CareLog";
+import { FamilyUpdatesSection } from "./FamilyUpdates";
 import ScalesSection from "./Scales";
 
 type Contact = {
@@ -145,6 +146,7 @@ export default function RecipientProfile({ careUnitId, recipientId, onBack }: { 
   const [profile, setProfile] = useState<Profile | null>(null);
   const [error, setError] = useState("");
   const [editing, setEditing] = useState<string | null>(null);
+  const [sharedCount, setSharedCount] = useState(0);
 
   useEffect(() => {
     let active = true;
@@ -262,7 +264,8 @@ export default function RecipientProfile({ careUnitId, recipientId, onBack }: { 
         canManage={profile.can_manage_documents}
         onChanged={(documents) => setProfile({ ...profile, documents, photo_document_id: documents.find((item) => item.category === "photo")?.id ?? null })}
       />
-      <CareLogSection unitId={careUnitId} recipientId={recipientId} recipientName={profile.preferred_name || profile.display_name} />
+      <CareLogSection unitId={careUnitId} recipientId={recipientId} recipientName={profile.preferred_name || profile.display_name} onShared={() => setSharedCount((count) => count + 1)} />
+      <FamilyUpdatesSection key={sharedCount} unitId={careUnitId} recipientId={recipientId} recipientName={profile.preferred_name || profile.display_name} />
       <ScalesSection path={`${path}/assessments`} canApply={profile.can_edit_health} canDelete={profile.can_deactivate} />
     </section>
   );

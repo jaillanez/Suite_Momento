@@ -22,6 +22,7 @@ from momento_api.models import (
     CareUnitWorkflowStatus,
     FamilyAuthorization,
     FamilyRequest,
+    FamilyUpdate,
     Organization,
     OrganizationMembership,
     SharedCareCategory,
@@ -325,7 +326,20 @@ def complete_demo(session: Session, organization: Organization) -> list[str]:
                     authorized_by_membership_id=manager.id,
                     category=category,
                 ))
-        added.append(f"autorizaciones de medicación, actividades y dietas para {len(pairs)} familias")
+        added.append(f"autorizaciones de medicación, actividades, dietas y novedades para {len(pairs)} familias")
+    elif manager is not None:
+        # Bases creadas antes de que existiera el permiso "Novedades".
+        has_updates = set(session.scalars(
+            select(FamilyAuthorization.family_membership_id).where(FamilyAuthorization.category == SharedCareCategory.UPDATES)
+        ).all())
+        missing = [(family, recipient) for family, recipient in pairs if family.id not in has_updates]
+        for family, recipient in missing:
+            session.add(FamilyAuthorization(
+                care_recipient_id=recipient.id, family_membership_id=family.id,
+                authorized_by_membership_id=manager.id, category=SharedCareCategory.UPDATES,
+            ))
+        if missing:
+            added.append(f"permiso de novedades para {len(missing)} familias")
 
     has_requests = session.scalar(
         select(func.count(FamilyRequest.id)).where(FamilyRequest.care_unit_id == unit.id)
@@ -351,7 +365,33 @@ def complete_demo(session: Session, organization: Organization) -> list[str]:
 
     added.extend(complete_profiles(session, unit, pairs[1:] if demo_family is not None else pairs))
     added.extend(sample_care_log(session, unit, staff, [recipient for _, recipient in pairs[1:4]]))
+    added.extend(sample_family_updates(session, unit, staff, [recipient for _, recipient in pairs[:3]]))
     return added
+
+
+SAMPLE_UPDATES = [
+    (0, 2, "Hoy participó del taller de música y cantó con el grupo. Estuvo muy contenta."),
+    (0, 26, "Almorzó bien y por la tarde recibió la visita de una vecina."),
+    (2, 6, "Salió a caminar por el jardín con su cuidadora; disfrutó del sol."),
+]
+
+
+def sample_family_updates(session: Session, unit: CareUnit, staff: dict, recipients: list[CareRecipient]) -> list[str]:
+    """Novedades de ejemplo para el portal familiar (solo si el servicio no tiene ninguna)."""
+    caregivers = [m for m in staff.values() if m.staff_role is StaffRole.CAREGIVER and m.is_active]
+    if not caregivers or len(recipients) < 3 or session.scalar(
+        select(func.count(FamilyUpdate.id)).where(FamilyUpdate.care_unit_id == unit.id)
+    ):
+        return []
+    now = datetime.now(timezone.utc)
+    session.flush()
+    for index, (person, hours, text) in enumerate(SAMPLE_UPDATES):
+        session.add(FamilyUpdate(
+            care_unit_id=unit.id, care_recipient_id=recipients[person].id, text=text,
+            published_by_membership_id=caregivers[index % len(caregivers)].id,
+            published_at=now - timedelta(hours=hours),
+        ))
+    return [f"{len(SAMPLE_UPDATES)} novedades de ejemplo para familias"]
 
 
 # (horas atrás, índice de persona, categoría, texto, importante)

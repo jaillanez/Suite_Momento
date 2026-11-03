@@ -2,7 +2,8 @@
 
 Todo el personal del servicio puede registrar y ver. Los registros no se editan: si hay
 un error, quien lo cargó (o el encargado) lo anula con un motivo y queda visible tachado.
-La familia no ve estos registros; compartir información es parte de la Fase 5.
+La familia no ve estos registros: para compartir algo, una persona del equipo publica
+una novedad (family_updates.py) partiendo del registro y revisando el texto.
 La medicación queda fuera hasta que el equipo valide el circuito.
 """
 
@@ -189,12 +190,15 @@ def _task_read(task: CareTask, account: UserAccount, manager: bool) -> dict[str,
     }
 
 
-def _entry_settings(settings: dict[str, Any]) -> dict[str, Any]:
+def _entry_settings(settings: dict[str, Any], member: OrganizationMembership) -> dict[str, Any]:
     """Lo que la pantalla necesita para el formulario de registro."""
     return {
         "categories": [c for c in settings["categories"] if c["enabled"]],
         "max_backdate_days": settings["max_backdate_days"],
         "incident_always_important": settings["incident_always_important"],
+        # Si quien consulta puede partir de un registro para publicar una novedad a la familia.
+        "can_share_with_family": member.staff_role is not None
+        and member.staff_role.value in settings["family_update_roles"],
     }
 
 
@@ -264,7 +268,7 @@ def list_entries(
     return {
         "entries": [_entry_read(entry, account, manager, settings) for entry in entries],
         "open_tasks": [_task_read(task, account, manager) for task in _open_tasks(session, care_unit, recipient.id)],
-        "settings": _entry_settings(settings),
+        "settings": _entry_settings(settings, member),
     }
 
 
@@ -469,7 +473,7 @@ def handover(
     account: UserAccount = Depends(get_authenticated_account),
 ) -> dict[str, object]:
     """Lo ocurrido en el turno anterior y en el actual, y los pendientes abiertos."""
-    care_unit, _ = _unit_and_member(session, account, care_unit_id)
+    care_unit, member = _unit_and_member(session, account, care_unit_id)
     zone = _zone(care_unit)
     settings = settings_for(care_unit)
     now = datetime.now(timezone.utc)
@@ -499,5 +503,5 @@ def handover(
         "previous_shift": window(previous),
         "entries": [_entry_read(entry, account, manager, settings) for entry in entries],
         "open_tasks": [_task_read(task, account, manager) for task in _open_tasks(session, care_unit)],
-        "settings": _entry_settings(settings),
+        "settings": _entry_settings(settings, member),
     }

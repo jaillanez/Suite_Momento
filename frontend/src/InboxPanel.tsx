@@ -35,6 +35,7 @@ export const categoryClass: Record<Category, string> = {
   diet: "type-diet",
   activities: "type-activity",
   medication: "type-medication",
+  updates: "type-updates",
 };
 
 export function formatDate(value: string): string {

@@ -1,4 +1,5 @@
 import { type FormEvent, useEffect, useState } from "react";
+import { FamilyUpdateModal } from "./FamilyUpdates";
 import { Modal, readApiError } from "./OrganizationsPanel";
 
 export type EntryCategory = "food" | "hygiene" | "sleep" | "mood" | "activity" | "health" | "incident" | "other";
@@ -32,7 +33,7 @@ export type CareTask = {
   can_cancel: boolean;
 };
 type Shift = { label: string; start: string; end: string };
-export type EntrySettings = { categories: { code: EntryCategory; label: string }[]; max_backdate_days: number; incident_always_important: boolean };
+export type EntrySettings = { categories: { code: EntryCategory; label: string }[]; max_backdate_days: number; incident_always_important: boolean; can_share_with_family: boolean };
 type Handover = { current_shift: Shift; previous_shift: Shift; entries: CareEntry[]; open_tasks: CareTask[]; settings: EntrySettings };
 type Organization = { id: string; name: string };
 type Unit = { id: string; name: string };
@@ -124,7 +125,7 @@ export default function CareShiftPanel() {
         <div className="shift-grid">
           <article className="management-card shift-important">
             <h3>Para tener en cuenta <span className="count-badge">{important.length}</span></h3>
-            {important.length === 0 ? <p className="list-empty">Nada marcado como importante desde el turno anterior.</p> : <EntryList entries={important} showPerson onChanged={() => void reload()} unitId={unitId} />}
+            {important.length === 0 ? <p className="list-empty">Nada marcado como importante desde el turno anterior.</p> : <EntryList entries={important} showPerson canShare={data.settings.can_share_with_family} onChanged={() => void reload()} unitId={unitId} />}
           </article>
           <article className="management-card">
             <h3>Pendientes <span className="count-badge">{data.open_tasks.length}</span></h3>
@@ -132,11 +133,11 @@ export default function CareShiftPanel() {
           </article>
           <article className="management-card">
             <h3>Turno actual · {data.current_shift.label} <small>desde {hour(data.current_shift.start)}</small></h3>
-            {inCurrent.length === 0 ? <p className="list-empty">Todavía no hay registros en este turno.</p> : <EntryList entries={inCurrent} showPerson onChanged={() => void reload()} unitId={unitId} />}
+            {inCurrent.length === 0 ? <p className="list-empty">Todavía no hay registros en este turno.</p> : <EntryList entries={inCurrent} showPerson canShare={data.settings.can_share_with_family} onChanged={() => void reload()} unitId={unitId} />}
           </article>
           <article className="management-card">
             <h3>Turno anterior · {data.previous_shift.label} <small>{hour(data.previous_shift.start)} a {hour(data.previous_shift.end)}</small></h3>
-            {inPrevious.length === 0 ? <p className="list-empty">No hubo registros en el turno anterior.</p> : <EntryList entries={inPrevious} showPerson onChanged={() => void reload()} unitId={unitId} />}
+            {inPrevious.length === 0 ? <p className="list-empty">No hubo registros en el turno anterior.</p> : <EntryList entries={inPrevious} showPerson canShare={data.settings.can_share_with_family} onChanged={() => void reload()} unitId={unitId} />}
           </article>
         </div>
       )}
@@ -147,7 +148,7 @@ export default function CareShiftPanel() {
 }
 
 /** Sección de la ficha: registros de los últimos 7 días y pendientes de la persona. */
-export function CareLogSection({ unitId, recipientId, recipientName }: { unitId: string; recipientId: string; recipientName: string }) {
+export function CareLogSection({ unitId, recipientId, recipientName, onShared }: { unitId: string; recipientId: string; recipientName: string; onShared?: () => void }) {
   const [entries, setEntries] = useState<CareEntry[]>([]);
   const [tasks, setTasks] = useState<CareTask[]>([]);
   const [settings, setSettings] = useState<EntrySettings | null>(null);
@@ -184,15 +185,24 @@ export function CareLogSection({ unitId, recipientId, recipientName }: { unitId:
       <p className="modal-help">Últimos 7 días. Los registros no se editan; si hay un error, se anulan con un motivo.</p>
       {error && <p className="form-message error-message" role="alert">{error}</p>}
       {tasks.length > 0 && <TaskList tasks={tasks} unitId={unitId} onChanged={() => void reload()} />}
-      {entries.length === 0 ? <p className="list-empty">Sin registros en los últimos 7 días.</p> : <EntryList entries={entries} unitId={unitId} onChanged={() => void reload()} />}
+      {entries.length === 0 ? <p className="list-empty">Sin registros en los últimos 7 días.</p> : <EntryList entries={entries} unitId={unitId} canShare={settings?.can_share_with_family ?? false} onChanged={() => void reload()} onShared={onShared} />}
       {recording && settings && <EntryModal unitId={unitId} recipients={person} settings={settings} onClose={() => setRecording(false)} onSaved={() => { setRecording(false); void reload(); }} />}
       {addingTask && <TaskModal unitId={unitId} recipients={person} onClose={() => setAddingTask(false)} onSaved={() => { setAddingTask(false); void reload(); }} />}
     </article>
   );
 }
 
-function EntryList({ entries, unitId, showPerson = false, onChanged }: { entries: CareEntry[]; unitId: string; showPerson?: boolean; onChanged: () => void }) {
+function EntryList({ entries, unitId, showPerson = false, canShare = false, onChanged, onShared }: {
+  entries: CareEntry[];
+  unitId: string;
+  showPerson?: boolean;
+  canShare?: boolean;
+  onChanged: () => void;
+  onShared?: () => void;
+}) {
   const [error, setError] = useState("");
+  const [sharing, setSharing] = useState<CareEntry | null>(null);
+  const [shared, setShared] = useState("");
 
   async function voidEntry(entry: CareEntry) {
     const reason = window.prompt("¿Por qué se anula este registro? (queda visible tachado)");
@@ -208,6 +218,7 @@ function EntryList({ entries, unitId, showPerson = false, onChanged }: { entries
   return (
     <>
       {error && <p className="form-message error-message" role="alert">{error}</p>}
+      {shared && <p className="form-message" role="status">{shared}</p>}
       <ul className="care-entries">
         {entries.map((entry) => (
           <li key={entry.id} className={(entry.voided ? "voided" : "") + (entry.important ? " important" : "")}>
@@ -219,10 +230,24 @@ function EntryList({ entries, unitId, showPerson = false, onChanged }: { entries
             </div>
             <p>{entry.text}</p>
             {entry.voided && <small className="void-note">Anulado por {entry.voided_by_name}: {entry.void_reason}</small>}
-            {entry.can_void && <button className="link-action danger" type="button" onClick={() => void voidEntry(entry)}>Anular</button>}
+            <div className="care-entry-actions">
+              {canShare && !entry.voided && <button className="link-action" type="button" onClick={() => { setShared(""); setSharing(entry); }}>Compartir con la familia</button>}
+              {entry.can_void && <button className="link-action danger" type="button" onClick={() => void voidEntry(entry)}>Anular</button>}
+            </div>
           </li>
         ))}
       </ul>
+      {sharing && (
+        <FamilyUpdateModal
+          unitId={unitId}
+          recipientId={sharing.care_recipient_id}
+          recipientName={sharing.recipient_name}
+          initialText={sharing.text}
+          sourceEntryId={sharing.id}
+          onClose={() => setSharing(null)}
+          onPublished={() => { setShared(`Publicado para la familia de ${sharing.recipient_name}.`); setSharing(null); onShared?.(); }}
+        />
+      )}
     </>
   );
 }

@@ -1,7 +1,8 @@
 """Configuración del registro del cuidado por servicio.
 
 Cada residencia o servicio domiciliario decide cómo trabaja: turnos, tipos de
-novedades, cuánto se puede cargar hacia atrás y qué pasa con los incidentes. La
+novedades, cuánto se puede cargar hacia atrás, qué pasa con los incidentes y quién
+publica novedades para la familia. La
 configura el encargado de la organización desde "Organizaciones". Si un servicio no
 guardó nada, se usan los valores de DEFAULTS.
 """
@@ -46,6 +47,10 @@ DEFAULTS: dict[str, Any] = {
     "incident_notify_roles": ["manager"],
     # Además del aviso en Momento, mandar un correo (sin nombre ni detalle).
     "incident_notify_email": False,
+    # Puestos que pueden publicar novedades para la familia (vacío: nadie).
+    "family_update_roles": ["manager", "administrative", "physician", "caregiver"],
+    # Avisar en Momento a la familia cuando hay una novedad nueva.
+    "family_update_notify": True,
 }
 
 SHIFT_PRESETS = {
@@ -141,6 +146,16 @@ def clean_settings(raw: Any) -> dict[str, Any]:
     if not isinstance(email, bool):
         raise ValueError("Opción inválida para el aviso por correo.")
     result["incident_notify_email"] = email
+
+    publishers = raw.get("family_update_roles", result["family_update_roles"])
+    if not isinstance(publishers, list) or not all(isinstance(r, str) and r in valid_roles for r in publishers):
+        raise ValueError("Puesto inválido en quién publica novedades para la familia.")
+    result["family_update_roles"] = [role.value for role in StaffRole if role.value in publishers]
+
+    family_notify = raw.get("family_update_notify", result["family_update_notify"])
+    if not isinstance(family_notify, bool):
+        raise ValueError("Opción inválida para el aviso a la familia.")
+    result["family_update_notify"] = family_notify
     return result
 
 

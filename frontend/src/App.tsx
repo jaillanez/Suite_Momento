@@ -135,7 +135,7 @@ export default function App() {
             <h1>{pageTitles[page]}</h1>
           </div>
           <div className="topbar-actions">
-            <NotificationBell onOpenShift={() => setPage("shift")} />
+            <NotificationBell onOpen={(item) => { if (item.kind === "incident") setPage("shift"); }} />
             {logoutError && <span className="form-message error-message" role="alert">{logoutError}</span>}<span className="demo-user-badge">{userName}{access.role ? ` · ${staffRoleLabels[access.role]}` : ""}</span>
             <button className="login-button" type="button" onClick={() => void logout()}>Salir</button>
           </div>

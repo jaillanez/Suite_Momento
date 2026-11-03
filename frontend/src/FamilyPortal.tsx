@@ -1,5 +1,6 @@
 import { type FormEvent, useEffect, useState } from "react";
 import { categoryClass, formatDate } from "./InboxPanel";
+import NotificationBell from "./Notifications";
 import { type Category, categoryLabels, readApiError } from "./OrganizationsPanel";
 
 type LinkedPerson = {
@@ -7,6 +8,16 @@ type LinkedPerson = {
   display_name: string;
   care_unit_name: string;
   categories: { category: Category; can_view: boolean; can_respond: boolean; can_request: boolean }[];
+};
+
+type FamilyUpdate = {
+  id: string;
+  care_recipient_id: string;
+  care_recipient_name: string;
+  care_unit_name: string;
+  text: string;
+  published_by_role: string;
+  published_at: string;
 };
 
 type FamilyRequest = {
@@ -24,6 +35,7 @@ type FamilyRequest = {
 export default function FamilyPortal({ userName, onLogout }: { userName: string; onLogout: () => void }) {
   const [people, setPeople] = useState<LinkedPerson[]>([]);
   const [requests, setRequests] = useState<FamilyRequest[]>([]);
+  const [updates, setUpdates] = useState<FamilyUpdate[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [composing, setComposing] = useState(false);
@@ -31,9 +43,11 @@ export default function FamilyPortal({ userName, onLogout }: { userName: string;
   async function load() {
     setError("");
     try {
-      const [peopleResponse, requestsResponse] = await Promise.all([fetch("/api/family/people"), fetch("/api/family/requests")]);
+      const [peopleResponse, requestsResponse, updatesResponse] = await Promise.all([fetch("/api/family/people"), fetch("/api/family/requests"), fetch("/api/family/updates")]);
       if (!peopleResponse.ok) throw new Error(await readApiError(peopleResponse));
       if (!requestsResponse.ok) throw new Error(await readApiError(requestsResponse));
+      if (!updatesResponse.ok) throw new Error(await readApiError(updatesResponse));
+      setUpdates((await updatesResponse.json()) as FamilyUpdate[]);
       setPeople((await peopleResponse.json()) as LinkedPerson[]);
       setRequests((await requestsResponse.json()) as FamilyRequest[]);
     } catch (caught) {
@@ -52,6 +66,7 @@ export default function FamilyPortal({ userName, onLogout }: { userName: string;
       <header className="public-header">
         <div className="app-brand"><img src="/brand/iso-momento.png" alt="" /><span>Momento</span></div>
         <div className="topbar-actions">
+          <NotificationBell basePath="/api/family/notifications" onOpen={() => void load()} />
           <span className="demo-user-badge">{userName}</span>
           <button className="login-button" type="button" onClick={onLogout}>Salir</button>
         </div>
@@ -65,6 +80,24 @@ export default function FamilyPortal({ userName, onLogout }: { userName: string;
         {loading ? <p className="empty-state" role="status">Cargando…</p> : (
           <>
             {composing && <RequestForm people={people} onCancel={() => setComposing(false)} onSent={() => { setComposing(false); void load(); }} />}
+            {people.some((person) => person.categories.some((item) => item.category === "updates" && item.can_view)) && (
+              <section className="family-section" aria-labelledby="family-updates">
+                <h2 id="family-updates">Novedades</h2>
+                {updates.length === 0 ? <p className="list-empty">Todavía no hay novedades. Cuando el equipo publique algo, lo vas a ver acá.</p> : (
+                  <ul className="family-updates">
+                    {updates.map((item) => (
+                      <li key={item.id}>
+                        <div className="family-update-meta">
+                          <strong>{item.care_recipient_name}</strong>
+                          <span>{formatDate(item.published_at)} · {item.published_by_role}</span>
+                        </div>
+                        <p>{item.text}</p>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </section>
+            )}
             <section className="family-section" aria-labelledby="family-people">
               <h2 id="family-people">Personas a cargo</h2>
               {people.length === 0 ? (

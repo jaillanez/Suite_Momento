@@ -41,6 +41,9 @@ const actionLabels: Record<string, string> = {
   "care_task.completed": "Pendiente resuelto",
   "care_task.cancelled": "Pendiente cancelado",
   "care_settings.updated": "Cambio en la configuración del registro diario",
+  "family_update.published": "Publicación de una novedad para la familia",
+  "family_update.withdrawn": "Retiro de una novedad para la familia",
+  "family_updates.viewed": "Consulta de novedades por la familia",
 };
 
 const detailLabels: Record<string, string> = {

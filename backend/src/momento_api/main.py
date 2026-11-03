@@ -12,7 +12,9 @@ from momento_api.care_settings import router as care_settings_router
 from momento_api.database import database_is_ready
 from momento_api.documents import router as documents_router
 from momento_api.family_authorizations import router as family_authorizations_router
-from momento_api.family_requests import family_router, staff_router as requests_router
+from momento_api.family_requests import family_router, get_family_memberships, staff_router as requests_router
+from momento_api.family_updates import family_router as family_updates_family_router
+from momento_api.family_updates import router as family_updates_router
 from momento_api.memberships import router as memberships_router
 from momento_api.notifications import router as notifications_router
 from momento_api.organizations import router as organizations_router
@@ -32,7 +34,8 @@ app.include_router(memberships_router, dependencies=authenticated)
 app.include_router(care_recipients_router, dependencies=authenticated)
 app.include_router(care_log_router, dependencies=authenticated)
 app.include_router(care_settings_router, dependencies=authenticated)
-app.include_router(notifications_router, dependencies=authenticated)
+app.include_router(notifications_router, prefix="/api", dependencies=authenticated)
+app.include_router(family_updates_router, dependencies=authenticated)
 app.include_router(documents_router, dependencies=authenticated)
 app.include_router(assessments_router, dependencies=authenticated)
 app.include_router(scales_definitions_router, dependencies=authenticated)
@@ -42,6 +45,8 @@ app.include_router(requests_router, dependencies=authenticated)
 app.include_router(audit_log_router, dependencies=authenticated)
 # El acceso familiar no pasa por la dependencia de personal: valida su propio vínculo.
 app.include_router(family_router)
+app.include_router(family_updates_family_router)
+app.include_router(notifications_router, prefix="/api/family", dependencies=[Depends(get_family_memberships)])
 
 
 @app.get("/api/health", tags=["Sistema"])

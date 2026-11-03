@@ -1251,6 +1251,7 @@ a:focus-visible {
 .type-diet { color:#54723e; background:#edf5e8; }
 .type-activity { color:#72538a; background:#f3ecf8; }
 .type-medication { color:#9a5d37; background:#fff0e5; }
+.type-updates { color:#2f6577; background:#e8f3f6; }
 .inbox-view,.settings-view { display:grid; gap:17px; }
 .inbox-filters { display:flex; flex-wrap:wrap; gap:8px; }
 .filter-chip { padding:8px 12px; border:1px solid #e1e4ed; border-radius:999px; color:#626a7b; background:#fff; font-size:.72rem; }
@@ -1590,6 +1591,11 @@ button.filter-chip { cursor: pointer; font: inherit; font-size: 0.72rem; }
 .family-person { display: grid; gap: 6px; padding: 16px; border: 1px solid var(--line); border-radius: 13px; background: #fff; }
 .family-person h3 { margin: 0; font-size: 1rem; }
 .family-person p { margin: 0; color: var(--muted); font-size: 0.76rem; }
+.family-updates { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
+.family-updates li { display: grid; gap: 6px; padding: 16px; border: 1px solid var(--line); border-radius: 13px; background: #fff; }
+.family-updates p { margin: 0; line-height: 1.5; }
+.family-update-meta { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; }
+.family-update-meta span { color: var(--muted); font-size: 0.74rem; }
 .family-categories { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
 .family-request-form { display: grid; gap: 12px; padding: 20px; border: 1px solid #e3dcf7; border-radius: 14px; background: #fff; }
 .family-request-form h2 { margin: 0; font-size: 1.05rem; }
@@ -1848,6 +1854,8 @@ a.link-action { text-decoration: none; }
 .entry-activity { background: #e9f7f4; color: #2e6b62; }
 .entry-health { background: #fdeaea; color: #8f2f2f; }
 .entry-incident { background: #9a3b3b; color: #fff; }
+.entry-family { background: #e8f3f6; color: #2f6577; }
+.care-entry-actions { display: flex; flex-wrap: wrap; gap: 14px; }
 .care-tasks li { display: flex; justify-content: space-between; gap: 12px; align-items: center; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--paper); }
 .care-tasks li small { display: block; margin-top: 2px; }
 .modal-form textarea { font: inherit; }

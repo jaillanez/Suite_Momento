@@ -76,7 +76,9 @@ def test_demo_scenario_is_complete_and_completion_is_idempotent() -> None:
 
         assert first and second == []
         assert session.scalar(select(func.count(FamilyRequest.id))) == 4
-        assert session.scalar(select(func.count(FamilyAuthorization.id))) == 32 * 3
+        assert session.scalar(select(func.count(FamilyAuthorization.id))) == 32 * 4
+        from momento_api.models import FamilyUpdate
+        assert session.scalar(select(func.count(FamilyUpdate.id))) == 3
         designated = session.scalars(
             select(OrganizationMembership).where(OrganizationMembership.handles_inbox.is_(True))
         ).all()
