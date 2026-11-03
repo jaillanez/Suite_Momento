@@ -42,8 +42,10 @@ DEFAULTS: dict[str, Any] = {
     "incident_always_important": True,
     # "manager": solo el encargado anula incidentes; "author": también quien lo cargó.
     "incident_void": "manager",
-    # Puestos que reciben un aviso por correo cuando se registra un incidente (vacío: nadie).
+    # Puestos que reciben un aviso en Momento cuando se registra un incidente (vacío: nadie).
     "incident_notify_roles": ["manager"],
+    # Además del aviso en Momento, mandar un correo (sin nombre ni detalle).
+    "incident_notify_email": False,
 }
 
 SHIFT_PRESETS = {
@@ -99,6 +101,14 @@ def clean_settings(raw: Any) -> dict[str, Any]:
         if not isinstance(label, str) or not label.strip() or len(label.strip()) > 40 or not isinstance(item["enabled"], bool):
             raise ValueError("Cada tipo de novedad necesita un nombre de hasta 40 caracteres.")
         clean_categories.append({"code": item["code"], "label": label.strip(), "enabled": item["enabled"]})
+    # "Incidente" está protegido: siempre habilitado y con su nombre, porque de él dependen
+    # los avisos y las reglas de anulación. Ningún otro tipo puede llamarse igual.
+    reserved = CATEGORY_LABELS["incident"].casefold()
+    for c in clean_categories:
+        if c["code"] == "incident":
+            c["enabled"], c["label"] = True, CATEGORY_LABELS["incident"]
+        elif c["label"].casefold() == reserved:
+            raise ValueError("«Incidente» está reservado para el tipo de novedad incidente.")
     if len({c["code"] for c in clean_categories}) != len(CARE_ENTRY_CATEGORIES):
         raise ValueError("Hay tipos de novedad repetidos.")
     if not any(c["enabled"] for c in clean_categories):
@@ -126,6 +136,11 @@ def clean_settings(raw: Any) -> dict[str, Any]:
     if not isinstance(roles, list) or not all(isinstance(r, str) and r in valid_roles for r in roles):
         raise ValueError("Puesto inválido en los avisos de incidentes.")
     result["incident_notify_roles"] = [role.value for role in StaffRole if role.value in roles]
+
+    email = raw.get("incident_notify_email", result["incident_notify_email"])
+    if not isinstance(email, bool):
+        raise ValueError("Opción inválida para el aviso por correo.")
+    result["incident_notify_email"] = email
     return result
 
 

@@ -1,6 +1,7 @@
 import { type FormEvent, useEffect, useState } from "react";
 import CareShiftPanel from "./CareLog";
 import FamilyPortal from "./FamilyPortal";
+import NotificationBell from "./Notifications";
 import { ForgotPasswordForm, ResetPasswordScreen } from "./PasswordScreens";
 import { AuditPanel, SettingsPanel } from "./ManagerPanels";
 import InboxPanel, { categoryClass, formatDate, type InboxRequest, loadInboxes } from "./InboxPanel";
@@ -134,6 +135,7 @@ export default function App() {
             <h1>{pageTitles[page]}</h1>
           </div>
           <div className="topbar-actions">
+            <NotificationBell onOpenShift={() => setPage("shift")} />
             {logoutError && <span className="form-message error-message" role="alert">{logoutError}</span>}<span className="demo-user-badge">{userName}{access.role ? ` · ${staffRoleLabels[access.role]}` : ""}</span>
             <button className="login-button" type="button" onClick={() => void logout()}>Salir</button>
           </div>

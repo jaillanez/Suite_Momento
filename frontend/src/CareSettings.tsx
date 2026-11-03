@@ -10,6 +10,7 @@ type Settings = {
   incident_always_important: boolean;
   incident_void: "manager" | "author";
   incident_notify_roles: StaffRole[];
+  incident_notify_email: boolean;
 };
 
 const hours = Array.from({ length: 24 }, (_, hour) => hour);
@@ -72,7 +73,7 @@ export default function CareSettingsEditor({ organizationId, careUnitId }: { org
       <summary>
         <span>
           <strong>Registro diario y turnos</strong>
-          <small>{shifts.length} {shifts.length === 1 ? "turno" : "turnos"} · {settings.categories.filter((c) => c.enabled).length} tipos de novedad · avisos de incidentes: {settings.incident_notify_roles.length ? settings.incident_notify_roles.map((role) => staffRoleLabels[role]).join(", ") : "nadie"}</small>
+          <small>{shifts.length} {shifts.length === 1 ? "turno" : "turnos"} · {settings.categories.filter((c) => c.enabled).length} tipos de novedad · avisos de incidentes: {settings.incident_notify_roles.length ? settings.incident_notify_roles.map((role) => staffRoleLabels[role]).join(", ") + (settings.incident_notify_email ? " (Momento y correo)" : " (en Momento)") : "nadie"}</small>
         </span>
       </summary>
 
@@ -111,10 +112,11 @@ export default function CareSettingsEditor({ organizationId, careUnitId }: { org
           {settings.categories.map((category, index) => (
             <li key={category.code}>
               <label className="inline-check">
-                <input type="checkbox" checked={category.enabled} onChange={(event) => change({ categories: settings.categories.map((item, i) => (i === index ? { ...item, enabled: event.target.checked } : item)) })} />
+                <input type="checkbox" checked={category.enabled} disabled={category.code === "incident"} onChange={(event) => change({ categories: settings.categories.map((item, i) => (i === index ? { ...item, enabled: event.target.checked } : item)) })} />
                 <span className="visually-hidden">Habilitar</span>
               </label>
-              <input aria-label="Nombre del tipo de novedad" value={category.label} maxLength={40} disabled={!category.enabled} onChange={(event) => change({ categories: settings.categories.map((item, i) => (i === index ? { ...item, label: event.target.value } : item)) })} />
+              <input aria-label="Nombre del tipo de novedad" value={category.label} maxLength={40} disabled={!category.enabled || category.code === "incident"} onChange={(event) => change({ categories: settings.categories.map((item, i) => (i === index ? { ...item, label: event.target.value } : item)) })} />
+              {category.code === "incident" && <small className="modal-help">Siempre activo: de él dependen los avisos.</small>}
             </li>
           ))}
         </ul>
@@ -140,7 +142,7 @@ export default function CareSettingsEditor({ organizationId, careUnitId }: { org
           <label className="inline-check"><input type="radio" name={`void-${careUnitId}`} checked={settings.incident_void === "author"} onChange={() => change({ incident_void: "author" })} /> También quien lo cargó</label>
         </div>
         <div className="option-row">
-          <span>Avisar por correo a:</span>
+          <span>Avisar en Momento a:</span>
           {(Object.keys(staffRoleLabels) as StaffRole[]).map((role) => (
             <label key={role} className="inline-check">
               <input type="checkbox" checked={settings.incident_notify_roles.includes(role)} onChange={(event) => change({ incident_notify_roles: event.target.checked ? [...settings.incident_notify_roles, role] : settings.incident_notify_roles.filter((item) => item !== role) })} />
@@ -148,7 +150,11 @@ export default function CareSettingsEditor({ organizationId, careUnitId }: { org
             </label>
           ))}
         </div>
-        <p className="modal-help">El correo solo dice que hubo un incidente en el servicio; no incluye el nombre de la persona ni lo que pasó. Si no se marca nadie, no se avisa.</p>
+        <label className="inline-check">
+          <input type="checkbox" checked={settings.incident_notify_email} disabled={!settings.incident_notify_roles.length} onChange={(event) => change({ incident_notify_email: event.target.checked })} />
+          Además, enviar un correo
+        </label>
+        <p className="modal-help">El aviso aparece en la campana de Momento (y en la futura app móvil) con el nombre de la persona; lo que pasó se lee en "Turno y registros". El correo solo dice que hubo un incidente en el servicio, sin nombre ni detalle. Si no se marca a nadie, no se avisa.</p>
       </fieldset>
 
       {error && <p className="form-message error-message" role="alert">{error}</p>}

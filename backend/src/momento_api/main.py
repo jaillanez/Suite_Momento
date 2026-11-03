@@ -14,6 +14,7 @@ from momento_api.documents import router as documents_router
 from momento_api.family_authorizations import router as family_authorizations_router
 from momento_api.family_requests import family_router, staff_router as requests_router
 from momento_api.memberships import router as memberships_router
+from momento_api.notifications import router as notifications_router
 from momento_api.organizations import router as organizations_router
 from momento_api.password_links import router as password_links_router
 from momento_api.workflow_config import router as workflow_config_router
@@ -31,6 +32,7 @@ app.include_router(memberships_router, dependencies=authenticated)
 app.include_router(care_recipients_router, dependencies=authenticated)
 app.include_router(care_log_router, dependencies=authenticated)
 app.include_router(care_settings_router, dependencies=authenticated)
+app.include_router(notifications_router, dependencies=authenticated)
 app.include_router(documents_router, dependencies=authenticated)
 app.include_router(assessments_router, dependencies=authenticated)
 app.include_router(scales_definitions_router, dependencies=authenticated)

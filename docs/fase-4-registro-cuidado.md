@@ -23,14 +23,17 @@ Cada residencia o servicio domiciliario decide cómo trabaja. Lo configura el **
 | Opción | Valor por defecto | Alternativas |
 |---|---|---|
 | Turnos | 3 de 8 h: Mañana 6, Tarde 14, Noche 22 | 2 de 12 h (Día 8, Noche 20) o de 1 a 6 turnos con nombre y hora a elección |
-| Tipos de novedad | Los 8 habilitados: alimentación, higiene, descanso, ánimo, actividad, salud, incidente, otro | Desactivar los que no se usan y cambiarles el nombre |
+| Tipos de novedad | Los 8 habilitados: alimentación, higiene, descanso, ánimo, actividad, salud, incidente, otro | Desactivar los que no se usan y cambiarles el nombre. "Incidente" siempre queda activo y con su nombre, porque de él dependen los avisos |
 | Registros olvidados | Hasta 7 días hacia atrás | De 0 (solo en el momento) a 31 días |
 | Incidente importante | Siempre se marca como importante | Que lo decida quien registra |
 | Quién anula un incidente | Solo el encargado | También quien lo cargó |
-| Aviso de incidentes por correo | Al encargado | Cualquier combinación de puestos, o nadie |
+| Aviso de incidentes en Momento | Al encargado | Cualquier combinación de puestos, o nadie |
+| Además, aviso por correo | No | Sí (a los mismos puestos) |
 
 Otras reglas:
-- El aviso por correo solo dice que hubo un incidente en el servicio. No incluye el nombre de la persona ni lo que pasó, y no le llega a quien lo registró. El correo real requiere configurar el servidor de correo (ver Fase 2).
+- **Avisos en Momento:** aparecen en la campana de la barra superior, con el nombre de la persona y quién lo cargó. Lo que pasó se lee en "Turno y registros", al que lleva el aviso. La web consulta cada minuto. Los avisos se guardan en el servidor (`/api/notifications`), así la **app móvil de la Fase 7 usará los mismos avisos** y podrá sumar notificaciones push. Cada persona ve solo sus avisos, y deja de verlos si se la desactiva de la organización.
+- **Aviso por correo (opcional):** solo dice que hubo un incidente en el servicio, sin nombre ni detalle. El correo real requiere configurar el servidor de correo (ver Fase 2).
+- Quien registra el incidente no recibe aviso.
 - Cualquiera del servicio puede marcar un pendiente como hecho, y queda guardado quién fue y su nota. Cancelarlo es solo de quien lo creó o del encargado.
 - La zona horaria sale del país del servicio (Argentina o Uruguay).
 

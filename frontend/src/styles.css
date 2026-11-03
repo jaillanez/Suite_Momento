@@ -1877,6 +1877,19 @@ a.link-action { text-decoration: none; }
 .care-settings .option-row > span { color: var(--muted); font-size: 0.82rem; }
 .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
+.notification-wrapper { position: relative; }
+.notification-bell { position: relative; display: grid; width: 40px; height: 40px; place-items: center; border: 1px solid var(--line); border-radius: 10px; color: var(--ink); background: var(--paper); cursor: pointer; }
+.notification-bell:hover { color: var(--plum-dark); border-color: #d6ccff; }
+.notification-count { position: absolute; top: -6px; right: -6px; min-width: 19px; padding: 1px 5px; border-radius: 99px; color: #fff; background: #b3412f; font-size: 0.68rem; font-weight: 800; line-height: 17px; text-align: center; }
+.notification-panel { position: absolute; z-index: 30; top: 48px; right: 0; width: min(360px, 90vw); max-height: 70vh; overflow: auto; padding: 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--paper); box-shadow: 0 12px 32px rgb(35 40 61 / 14%); }
+.notification-panel-heading { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.notification-panel ul { display: grid; gap: 4px; margin: 0; padding: 0; list-style: none; }
+.notification-panel li button { display: grid; width: 100%; gap: 2px; padding: 9px 10px; border: 0; border-radius: 9px; color: var(--ink); background: transparent; font: inherit; text-align: left; cursor: pointer; }
+.notification-panel li button:hover { background: #f6f7fa; }
+.notification-panel li button.unread { background: #f4f0ff; }
+.notification-panel li button.unread strong::before { content: ""; display: inline-block; width: 7px; height: 7px; margin-right: 6px; border-radius: 50%; background: var(--plum); vertical-align: middle; }
+.notification-panel li span, .notification-panel li small { color: var(--muted); font-size: 0.78rem; }
+
 @media print {
   .app-sidebar, .app-topbar, .no-print, .back-link, .view-heading, .view-meta, .management-card-heading,
   .service-card-heading, .profile-section-heading button, .record-controls button, .record-controls a,

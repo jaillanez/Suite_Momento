@@ -611,6 +611,32 @@ class CareTask(Base):
     closed_by: Mapped[OrganizationMembership | None] = relationship(foreign_keys=[closed_by_membership_id])
 
 
+class Notification(Base):
+    """Aviso dentro de Momento para una cuenta. Lo consume la web y, más adelante, la app móvil."""
+
+    __tablename__ = "notifications"
+
+    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
+    user_account_id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("user_accounts.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    organization_id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False
+    )
+    care_unit_id: Mapped[UUID | None] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("care_units.id", ondelete="CASCADE")
+    )
+    kind: Mapped[str] = mapped_column(String(30), nullable=False)
+    title: Mapped[str] = mapped_column(String(200), nullable=False)
+    body: Mapped[str | None] = mapped_column(String(500))
+    target_type: Mapped[str | None] = mapped_column(String(40))
+    target_id: Mapped[UUID | None] = mapped_column(Uuid(as_uuid=True))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+    read_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
 class FamilyAuthorization(Base):
     """Permisos familiares explícitos por persona y categoría."""
 

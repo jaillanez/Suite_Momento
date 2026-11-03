@@ -23,6 +23,7 @@ from momento_api.audit import record_event
 from momento_api.auth import get_authenticated_account
 from momento_api.care_settings import DEFAULTS, category_label, settings_for
 from momento_api.mailer import send_mail
+from momento_api.notifications import notify
 from momento_api.models import (
     CARE_ENTRY_CATEGORIES,
     CareEntry,
@@ -197,8 +198,8 @@ def _entry_settings(settings: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def _incident_recipients(session: Session, care_unit: CareUnit, settings: dict[str, Any], author: UserAccount) -> list[str]:
-    """Correos del personal activo del servicio con los puestos elegidos, sin incluir a quien registra."""
+def _incident_recipients(session: Session, care_unit: CareUnit, settings: dict[str, Any], author: UserAccount) -> list[UserAccount]:
+    """Personal activo del servicio con los puestos elegidos, sin incluir a quien registra."""
     roles = [StaffRole(role) for role in settings["incident_notify_roles"]]
     if not roles:
         return []
@@ -210,11 +211,8 @@ def _incident_recipients(session: Session, care_unit: CareUnit, settings: dict[s
             OrganizationMembership.care_unit_id.is_(None) | (OrganizationMembership.care_unit_id == care_unit.id),
         )
     ).all()
-    emails = {
-        m.user.email for m in members
-        if m.user.email and m.user.is_active and m.user_account_id != author.id
-    }
-    return sorted(emails)
+    accounts = {m.user_account_id: m.user for m in members if m.user.is_active and m.user_account_id != author.id}
+    return list(accounts.values())
 
 
 _ENTRY_LOAD = (
@@ -309,8 +307,19 @@ def create_entry(
         details={"category": payload.category, "important": entry.important},
     )
     recipients = _incident_recipients(session, care_unit, settings, account) if payload.category == "incident" else []
+    if recipients:
+        # En Momento sí se nombra a la persona (quien recibe el aviso tiene acceso al servicio);
+        # el texto del registro no se copia: se lee en "Turno y registros".
+        notify(
+            session, account_ids=[person.id for person in recipients], organization_id=care_unit.organization_id,
+            care_unit_id=care_unit.id, kind="incident",
+            title=f"Incidente registrado: {recipient.preferred_name or recipient.display_name}",
+            body=f"{care_unit.name} · cargó {member.user.display_name}",
+            target_type="care_entry", target_id=entry.id,
+        )
+    emails = sorted({person.email for person in recipients if person.email}) if settings["incident_notify_email"] else []
     session.commit()
-    for email in recipients:
+    for email in emails:
         # Sin nombre de la persona ni texto: el detalle se ve solo dentro de Momento.
         background.add_task(
             send_mail, email, "Momento: nuevo incidente registrado",

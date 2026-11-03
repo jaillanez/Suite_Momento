@@ -41,8 +41,9 @@ def test_validation_rejects_bad_settings() -> None:
         clean_settings(_settings(shifts=[{"label": "A", "start_hour": 6}, {"label": "B", "start_hour": 6}]))
     with pytest.raises(ValueError):
         clean_settings(_settings(shifts=[{"label": "A", "start_hour": 24}]))
-    with pytest.raises(ValueError):
-        clean_settings(_settings(categories=[{**c, "enabled": False} for c in DEFAULTS["categories"]]))
+    # Aunque se desactiven todos, "Incidente" queda habilitado.
+    all_off = clean_settings(_settings(categories=[{**c, "enabled": False} for c in DEFAULTS["categories"]]))
+    assert [c["code"] for c in all_off["categories"] if c["enabled"]] == ["incident"]
     with pytest.raises(ValueError):
         clean_settings(_settings(incident_notify_roles=["dueño"]))
     with pytest.raises(ValueError):
@@ -86,6 +87,7 @@ def test_incident_rules_follow_settings(client: TestClient, scenario: Scenario, 
     manager = as_user(client, "jefa@test.example")
     manager.put(_put(scenario), json=_settings(
         incident_always_important=False, incident_void="author", incident_notify_roles=["manager", "physician"],
+        incident_notify_email=True,
     ))
     client.cookies.clear()
     caregiver = as_user(client, "cuidador@test.example")
@@ -104,3 +106,32 @@ def test_no_incident_email_when_roles_empty(client: TestClient, scenario: Scenar
     client.cookies.clear()
     as_user(client, "cuidador@test.example").post(_entries(scenario), json={"category": "incident", "text": "x"})
     assert mailer.outbox == []
+
+
+def test_incident_category_cannot_be_disabled_or_impersonated() -> None:
+    hidden = [{**c, "enabled": c["code"] != "incident", "label": "Caída" if c["code"] == "incident" else c["label"]} for c in DEFAULTS["categories"]]
+    incident = next(c for c in clean_settings(_settings(categories=hidden))["categories"] if c["code"] == "incident")
+    assert incident == {"code": "incident", "label": "Incidente", "enabled": True}
+    fake = [{**c, "label": "incidente" if c["code"] == "other" else c["label"]} for c in DEFAULTS["categories"]]
+    with pytest.raises(ValueError):
+        clean_settings(_settings(categories=fake))
+
+
+def test_incident_creates_in_app_notification_and_email_is_optional(client: TestClient, scenario: Scenario, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("MOMENTO_MAIL_DEBUG", "true")
+    mailer.outbox.clear()
+    as_user(client, "cuidador@test.example").post(_entries(scenario), json={"category": "incident", "text": "Se cayó"})
+    assert mailer.outbox == []  # por defecto, solo aviso en Momento
+    client.cookies.clear()
+    manager = as_user(client, "jefa@test.example")
+    data = manager.get("/api/notifications").json()
+    assert data["unread"] == 1
+    item = data["items"][0]
+    assert item["kind"] == "incident" and "Persona Norte" in item["title"] and "Se cayó" not in (item["body"] or "")
+    assert manager.post(f"/api/notifications/{item['id']}/read").status_code == 204
+    assert manager.get("/api/notifications").json()["unread"] == 0
+    client.cookies.clear()
+    # Otra cuenta no ve ni marca avisos ajenos.
+    other = as_user(client, "medica@test.example")
+    assert other.get("/api/notifications").json()["items"] == []
+    assert other.post(f"/api/notifications/{item['id']}/read").status_code == 404
