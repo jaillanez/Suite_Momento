@@ -47,7 +47,7 @@ def test_only_expired_events_are_deleted_and_only_with_apply(monkeypatch: pytest
         actions = sorted(e.action for e in session.scalars(select(AuditEvent)).all())
         assert actions == ["audit.purged", "reciente"]
         purged = session.scalar(select(AuditEvent).where(AuditEvent.action == "audit.purged"))
-        assert purged.details["run_by"] == "jorge"
+        assert purged.organization_id is None and purged.details["run_by"] == "jorge"
 
 
 def test_purge_is_recorded_in_each_affected_organization(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -64,10 +64,12 @@ def test_purge_is_recorded_in_each_affected_organization(monkeypatch: pytest.Mon
             for _ in range(count):
                 session.add(AuditEvent(action="viejo", outcome="success", occurred_at=old, organization_id=org.id))
         session.commit()
-        assert purge_expired(session, apply=True, now=NOW, operator="jorge") == 3
+        assert purge_expired(session, apply=True, now=NOW, operator="jorge\n<b>x") == 3
         session.commit()
-        records = {e.organization_id: e.details["deleted"] for e in session.scalars(select(AuditEvent)).all()}
-        assert records == {orgs[0].id: 2, orgs[1].id: 1}
+        records = {e.organization_id: e.details for e in session.scalars(select(AuditEvent)).all()}
+        assert {k: v["deleted"] for k, v in records.items()} == {orgs[0].id: 2, orgs[1].id: 1, None: 3}
+        # La identidad del operador no llega al registro de ninguna residencia.
+        assert "run_by" not in records[orgs[0].id] and records[None]["run_by"] == "jorgebx"
     engine.dispose()
     engine.dispose()
 

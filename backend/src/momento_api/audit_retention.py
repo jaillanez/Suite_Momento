@@ -13,8 +13,9 @@ vencieron.
 from __future__ import annotations
 
 import argparse
-import getpass
 import os
+import pwd
+import re
 from datetime import datetime, timezone
 
 from dotenv import load_dotenv
@@ -56,14 +57,34 @@ def purge_expired(session: Session, *, apply: bool, now: datetime | None = None,
     expired = sum(per_organization.values())
     if apply and expired:
         session.execute(delete(AuditEvent).where(AuditEvent.occurred_at < limit))
+        details = {"retention_years": years, "before": limit.date().isoformat()}
         # Una constancia por organización, para que cada encargado la vea en su registro.
         for organization_id, deleted in per_organization.items():
-            record_event(
-                session, action="audit.purged", actor_account_id=None, organization_id=organization_id,
-                details={"deleted": deleted, "retention_years": years, "before": limit.date().isoformat(),
-                         "run_by": operator or "desconocido"},
-            )
+            if organization_id is not None:
+                record_event(
+                    session, action="audit.purged", actor_account_id=None, organization_id=organization_id,
+                    details={"deleted": deleted, **details},
+                )
+        # Quién lo ejecutó queda solo en una constancia interna, sin organización: no la ve
+        # ninguna residencia.
+        record_event(
+            session, action="audit.purged", actor_account_id=None, organization_id=None,
+            details={"deleted": expired, **details, "run_by": _clean_operator(operator)},
+        )
     return expired
+
+
+def _clean_operator(value: str | None) -> str:
+    cleaned = re.sub(r"[^A-Za-z0-9._-]", "", value or "")[:64]
+    return cleaned or "desconocido"
+
+
+def _system_user() -> str:
+    """Usuario del sistema operativo según el proceso (no según variables de entorno)."""
+    try:
+        return pwd.getpwuid(os.getuid()).pw_name
+    except KeyError:
+        return str(os.getuid())
 
 
 def main() -> None:
@@ -78,7 +99,7 @@ def main() -> None:
     try:
         with Session(engine) as session, session.begin():
             years = retention_years()
-            count = purge_expired(session, apply=args.apply, operator=getpass.getuser())
+            count = purge_expired(session, apply=args.apply, operator=_system_user())
         if args.apply:
             print(f"Plazo: {years} años. Se borraron {count} eventos vencidos.")
         else:
