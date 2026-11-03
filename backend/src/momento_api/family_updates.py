@@ -8,8 +8,9 @@ publicó (o el encargado) la retira con un motivo y la familia deja de verla.
 
 Fotos: solo si el servicio las permite y la persona tiene registrado su consentimiento
 de imagen (quién lo dio y cuándo). Quien publica confirma además que no aparecen otras
-personas o que también consintieron. Si se quita el consentimiento o el servicio deja de
-permitir fotos, la familia deja de ver las fotos ya publicadas; el texto sigue visible.
+personas o que también consintieron. Si se retira la novedad o se quita el consentimiento,
+las fotos se borran del disco; si el servicio deja de permitir fotos, la familia deja de
+verlas. El texto de la novedad sigue visible.
 """
 
 from __future__ import annotations
@@ -205,6 +206,7 @@ def publish_update(
             detail="Ningún familiar tiene permiso para ver novedades de esta persona. Habilitalo en Usuarios y vínculos.",
         )
     photo = _checked_photo(payload, recipient, settings) if payload.photo is not None else None
+    photo_path = None
     update = FamilyUpdate(
         care_unit_id=care_unit.id, care_recipient_id=recipient.id, text=payload.text,
         source_entry_id=payload.source_entry_id, published_by_membership_id=member.id,
@@ -212,15 +214,28 @@ def publish_update(
     if photo is not None:
         update.photo_storage_key = uuid4().hex
         update.photo_content_type = payload.photo.content_type  # type: ignore[union-attr]
-        fd = os.open(storage_dir() / update.photo_storage_key, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+        photo_path = storage_dir() / update.photo_storage_key
+        fd = os.open(photo_path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
         with os.fdopen(fd, "wb") as handle:
             handle.write(photo)
+    try:
+        _save_update(session, update, care_unit, recipient, account, readers, settings, photo is not None)
+    except Exception:
+        session.rollback()
+        if photo_path is not None:
+            photo_path.unlink(missing_ok=True)
+        raise
+    created = session.scalar(select(FamilyUpdate).options(*_LOAD).where(FamilyUpdate.id == update.id))
+    return _staff_read(created, account, _is_manager(session, account, care_unit))
+
+
+def _save_update(session, update, care_unit, recipient, account, readers, settings, has_photo: bool) -> None:
     session.add(update)
     session.flush()
     record_event(
         session, action="family_update.published", actor_account_id=account.id,
         organization_id=care_unit.organization_id, target_type="care_recipient", target_id=recipient.id,
-        details={"update_id": str(update.id), "readers": len(readers), "photo": photo is not None},
+        details={"update_id": str(update.id), "readers": len(readers), "photo": has_photo},
     )
     if settings["family_update_notify"]:
         notify(
@@ -230,8 +245,6 @@ def publish_update(
             target_type="family_update", target_id=update.id,
         )
     session.commit()
-    created = session.scalar(select(FamilyUpdate).options(*_LOAD).where(FamilyUpdate.id == update.id))
-    return _staff_read(created, account, _is_manager(session, account, care_unit))
 
 
 def _checked_photo(payload: UpdateCreate, recipient: CareRecipient, settings: dict) -> bytes:
@@ -261,10 +274,25 @@ def staff_photo(
     account: UserAccount = Depends(get_authenticated_account),
 ) -> Response:
     care_unit, _ = _unit_and_member(session, account, care_unit_id)
-    update = session.scalar(select(FamilyUpdate).where(FamilyUpdate.id == update_id, FamilyUpdate.care_unit_id == care_unit.id))
-    if update is None or update.photo_storage_key is None:
+    update = session.scalar(select(FamilyUpdate).where(
+        FamilyUpdate.id == update_id, FamilyUpdate.care_unit_id == care_unit.id,
+        FamilyUpdate.withdrawn_at.is_(None), FamilyUpdate.photo_storage_key.is_not(None),
+    ))
+    if update is None:
         raise HTTPException(status_code=404, detail="Foto no encontrada.")
-    return _photo_response(update)
+    _active_recipient(session, care_unit, update.care_recipient_id)
+    response = _photo_response(update)
+    _record_photo_view(session, account, care_unit.organization_id, update)
+    return response
+
+
+def _record_photo_view(session: Session, account: UserAccount, organization_id: UUID, update: FamilyUpdate) -> None:
+    record_event(
+        session, action="family_update.photo_viewed", actor_account_id=account.id,
+        organization_id=organization_id, target_type="care_recipient", target_id=update.care_recipient_id,
+        details={"update_id": str(update.id)},
+    )
+    session.commit()
 
 
 @router.put("/{care_unit_id}/care-recipients/{recipient_id}/image-consent")
@@ -300,7 +328,7 @@ def revoke_consent(
     session: Session = Depends(get_session),
     account: UserAccount = Depends(get_authenticated_account),
 ) -> Response:
-    """Quita el consentimiento: la familia deja de ver las fotos ya publicadas."""
+    """Quita el consentimiento y borra las fotos ya publicadas de esta persona."""
     care_unit, _ = _unit_and_member(session, account, care_unit_id)
     recipient = _active_recipient(session, care_unit, recipient_id)
     if not _roles(session, account, care_unit) & FAMILY_AUTHORIZER_ROLES:
@@ -308,11 +336,22 @@ def revoke_consent(
     recipient.image_consent_given_by = None
     recipient.image_consent_on = None
     recipient.image_consent_recorded_by_membership_id = None
+    photos = session.scalars(select(FamilyUpdate).where(
+        FamilyUpdate.care_recipient_id == recipient.id, FamilyUpdate.photo_storage_key.is_not(None)
+    )).all()
+    keys = [update.photo_storage_key for update in photos]
+    for update in photos:
+        update.photo_storage_key = None
+        update.photo_content_type = None
     record_event(
         session, action="image_consent.revoked", actor_account_id=account.id,
         organization_id=care_unit.organization_id, target_type="care_recipient", target_id=recipient.id,
+        details={"photos_erased": len(keys)},
     )
     session.commit()
+    # Los archivos se borran después de confirmar, para no perderlos si falla el guardado.
+    for key in keys:
+        (storage_dir() / key).unlink(missing_ok=True)
     return Response(status_code=204)
 
 
@@ -338,12 +377,17 @@ def withdraw_update(
     update.withdrawn_at = datetime.now(timezone.utc)
     update.withdrawn_by_membership_id = member.id
     update.withdraw_reason = payload.reason.strip()
+    photo_key = update.photo_storage_key
+    update.photo_storage_key = None
+    update.photo_content_type = None
     record_event(
         session, action="family_update.withdrawn", actor_account_id=account.id,
         organization_id=care_unit.organization_id, target_type="care_recipient", target_id=update.care_recipient_id,
-        details={"update_id": str(update.id)},
+        details={"update_id": str(update.id), "photo_erased": photo_key is not None},
     )
     session.commit()
+    if photo_key is not None:
+        (storage_dir() / photo_key).unlink(missing_ok=True)
     session.refresh(update)
     return _staff_read(update, account, manager)
 
@@ -361,6 +405,7 @@ def _allowed_recipients(memberships: list[OrganizationMembership]):
 def family_photo(
     update_id: UUID,
     session: Session = Depends(get_session),
+    account: UserAccount = Depends(get_authenticated_account),
     memberships: list[OrganizationMembership] = Depends(get_family_memberships),
 ) -> Response:
     update = session.scalar(
@@ -374,7 +419,9 @@ def family_photo(
     care_unit = session.get(CareUnit, update.care_unit_id) if update is not None else None
     if update is None or care_unit is None or not update.recipient.is_active or not _photos_visible(update.recipient, settings_for(care_unit)):
         raise HTTPException(status_code=404, detail="Foto no encontrada.")
-    return _photo_response(update)
+    response = _photo_response(update)
+    _record_photo_view(session, account, care_unit.organization_id, update)
+    return response
 
 
 @family_router.get("/updates")

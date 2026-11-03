@@ -16,7 +16,8 @@
 - Una novedad puede llevar **una foto** (JPG o PNG, hasta 5 MB).
 - Solo si la persona tiene registrado su **consentimiento de imagen**: quién lo dio (la persona o su representante) y la fecha. Lo registran o quitan el encargado, un administrativo o el médico, desde la ficha → "Novedades para la familia". Se recomienda guardar el consentimiento firmado en Documentos con el tipo «Consentimiento».
 - Quien publica debe confirmar que **en la foto no aparecen otras personas, o que también dieron su consentimiento**.
-- Si se quita el consentimiento, o el servicio deja de permitir fotos, la familia **deja de ver las fotos ya publicadas**; el texto de la novedad sigue visible.
+- Si se **retira la novedad** o se **quita el consentimiento**, las fotos **se borran del disco** y no se recuperan aunque se vuelva a registrar el consentimiento. Si el servicio deja de permitir fotos, la familia deja de verlas. El texto de la novedad sigue visible.
+- Cada vez que alguien abre una foto (equipo o familia) queda en el registro de control.
 - Las fotos se guardan en el disco del servidor, como los documentos de la ficha, y solo se entregan a quien tiene permiso. No se guardan en el navegador.
 - Momento no decide qué vale como consentimiento válido: eso lo define la residencia según la normativa de cada país.
 

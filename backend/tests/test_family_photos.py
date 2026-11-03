@@ -92,3 +92,28 @@ def test_photo_not_reachable_by_other_unit_or_after_withdraw(client: TestClient,
         f"/api/care-units/{scenario.unit_id}/family-updates/{update['id']}/withdraw", json={"reason": "Error"})
     family = as_user(client, "familia@test.example", family=True)
     assert family.get(f"/api/family/updates/{update['id']}/photo").status_code == 404
+
+
+def test_withdraw_and_revoke_erase_files_and_views_are_audited(client: TestClient, scenario: Scenario, documents_dir: Path, db_sessions) -> None:
+    from sqlalchemy import select
+    from momento_api.models import AuditEvent
+    _grant(client, scenario)
+    _consent(client, scenario)
+    caregiver = as_user(client, "cuidador@test.example")
+    first = caregiver.post(f"{_base(scenario)}/family-updates", json={"text": "Uno", "photo": PHOTO, "others_confirmed": True}).json()
+    caregiver.post(f"{_base(scenario)}/family-updates", json={"text": "Dos", "photo": PHOTO, "others_confirmed": True})
+    assert len(list(documents_dir.iterdir())) == 2
+    family = as_user(client, "familia@test.example", family=True)
+    assert family.get(f"/api/family/updates/{first['id']}/photo").status_code == 200
+    with db_sessions() as session:
+        assert session.scalars(select(AuditEvent).where(AuditEvent.action == "family_update.photo_viewed")).all()
+
+    as_user(client, "cuidador@test.example").post(
+        f"/api/care-units/{scenario.unit_id}/family-updates/{first['id']}/withdraw", json={"reason": "Error"})
+    assert len(list(documents_dir.iterdir())) == 1
+    as_user(client, "jefa@test.example").delete(f"{_base(scenario)}/image-consent")
+    assert list(documents_dir.iterdir()) == []
+    # Volver a registrar el consentimiento no recupera fotos borradas.
+    _consent(client, scenario)
+    family = as_user(client, "familia@test.example", family=True)
+    assert all(item["has_photo"] is False for item in family.get("/api/family/updates").json())

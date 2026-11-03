@@ -47,6 +47,7 @@ const actionLabels: Record<string, string> = {
   "audit.purged": "Depuración del registro vencido",
   "image_consent.recorded": "Registro del consentimiento de imagen",
   "image_consent.revoked": "Retiro del consentimiento de imagen",
+  "family_update.photo_viewed": "Consulta de una foto compartida con la familia",
 };
 
 const detailLabels: Record<string, string> = {

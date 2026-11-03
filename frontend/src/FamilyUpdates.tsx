@@ -50,7 +50,7 @@ export function FamilyUpdatesSection({ unitId, recipientId, recipientName }: { u
   useEffect(() => { void reload(); }, [path]);
 
   async function withdraw(update: FamilyUpdate) {
-    const reason = window.prompt("¿Por qué se retira esta novedad? La familia deja de verla.");
+    const reason = window.prompt("¿Por qué se retira esta novedad? La familia deja de verla y, si tiene foto, la foto se borra.");
     if (!reason?.trim()) return;
     try {
       const response = await fetch(`/api/care-units/${unitId}/family-updates/${update.id}/withdraw`, {
@@ -122,7 +122,7 @@ function ImageConsent({ path, consent, canManage, onChanged }: { path: string; c
   }
 
   async function revoke() {
-    if (!window.confirm("¿Quitar el consentimiento? La familia deja de ver las fotos ya publicadas.")) return;
+    if (!window.confirm("¿Quitar el consentimiento? Se borran las fotos ya publicadas de esta persona y no se pueden recuperar.")) return;
     const response = await fetch(path, { method: "DELETE" });
     if (!response.ok) { setError(await readApiError(response)); return; }
     onChanged();
