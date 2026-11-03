@@ -14,6 +14,7 @@ type Item = {
   max?: number;
   groups?: Group[];
   recall_key?: string;
+  table?: [number, number][];
 };
 type Scale = { code: string; name: string; description: string; max: number; sections: { title: string; items: Item[] }[] };
 type Answers = Record<string, unknown>;
@@ -267,18 +268,16 @@ function ItemInput({ item, value, readOnly, credited, onChange }: { item: Item; 
     );
   }
   if (item.type === "fluency") {
-    const data = (value as { raw?: number | null; score?: number | null } | undefined) ?? {};
+    const data = (value as { raw?: number | null } | undefined) ?? {};
+    const raw = data.raw ?? null;
+    // Misma tabla que usa el servidor (scale_parameters.py); el puntaje guardado lo calcula el servidor.
+    const converted = raw === null ? null : item.table?.find(([minimum]) => raw >= minimum)?.[1] ?? 0;
     return (
       <div className="option-row">
         <label className="serial-input">Palabras válidas
-          <input type="number" min={0} max={200} disabled={readOnly} value={data.raw ?? ""} onChange={(event) => onChange({ ...data, raw: event.target.value === "" ? null : Number(event.target.value) })} />
+          <input type="number" min={0} max={200} disabled={readOnly} value={raw ?? ""} onChange={(event) => onChange({ raw: event.target.value === "" ? null : Number(event.target.value) })} />
         </label>
-        <label className="serial-input">Puntaje convertido (0–7)
-          <select disabled={readOnly} value={data.score ?? ""} onChange={(event) => onChange({ ...data, score: event.target.value === "" ? null : Number(event.target.value) })}>
-            <option value="">—</option>
-            {[0, 1, 2, 3, 4, 5, 6, 7].map((points) => <option key={points} value={points}>{points}</option>)}
-          </select>
-        </label>
+        <span className="score-badge">Puntaje: {converted === null ? "—" : `${converted}/7`}</span>
       </div>
     );
   }

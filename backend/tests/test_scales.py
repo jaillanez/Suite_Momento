@@ -3,7 +3,8 @@
 import pytest
 from fastapi.testclient import TestClient
 
-from momento_api.scales import ACE3, ADDRESS, SCALES, score, serial7_points
+from momento_api.scale_parameters import FLUENCY_ANIMALS_TABLE, FLUENCY_LETTERS_TABLE
+from momento_api.scales import ACE3, ADDRESS, SCALES, fluency_points, score, serial7_points
 from tests.access_helpers import Scenario, as_user, client, scenario  # noqa: F401
 
 
@@ -65,6 +66,25 @@ def test_serial_sevens_score_relative_to_previous_answer() -> None:
     assert serial7_points([93, None, 79, 72, 65]) == 4
 
 
+def test_serial_sevens_absolute_rule_when_parameter_changes() -> None:
+    assert serial7_points([92, 85, 78, 71, 64], relative=False) == 0
+    assert serial7_points([93, 85, 79, 72, 65], relative=False) == 4
+
+
+def test_fluency_uses_official_conversion_tables() -> None:
+    assert [fluency_points(FLUENCY_LETTERS_TABLE, n) for n in (0, 1, 2, 5, 7, 10, 13, 17, 18, 40)] == [0, 0, 1, 2, 3, 4, 5, 6, 7, 7]
+    assert [fluency_points(FLUENCY_ANIMALS_TABLE, n) for n in (4, 5, 7, 9, 11, 14, 17, 21, 22)] == [0, 1, 2, 3, 4, 5, 6, 6, 7]
+
+
+def test_fluency_score_is_converted_by_server_not_client() -> None:
+    answers = _ace_full()
+    answers["fluency_p"] = {"raw": 12, "score": 7}
+    answers["fluency_animals"] = {"raw": 9}
+    result = score("ace3", answers)
+    assert result["subscores"]["Fluencia"]["score"] == 5 + 3
+    assert result["answers"]["fluency_p"] == {"raw": 12, "score": 5}
+
+
 def _ace_full() -> dict:
     answers = {}
     for section in ACE3["sections"]:
@@ -76,7 +96,7 @@ def _ace_full() -> dict:
             elif item["type"] == "serial7":
                 answers[item["key"]] = [93, 86, 79, 72, 65]
             elif item["type"] == "fluency":
-                answers[item["key"]] = {"raw": 20, "score": 7}
+                answers[item["key"]] = {"raw": 30}
             elif item["type"] == "recognition":
                 answers[item["key"]] = {}
     return answers
@@ -119,7 +139,7 @@ def test_ace3_writing_and_word_repetition_rules() -> None:
 
 def test_ace3_rejects_invalid_values() -> None:
     answers = _ace_full()
-    answers["fluency_p"] = {"raw": 30, "score": 9}
+    answers["fluency_p"] = {"raw": 300}
     with pytest.raises(ValueError):
         score("ace3", answers)
     with pytest.raises(ValueError):

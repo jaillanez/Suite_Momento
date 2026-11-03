@@ -3,12 +3,21 @@
 Fuente: planilla "Escalas Momento Instituciones" y apuntes de revisión de Jorge
 (03/09/2026). El sistema suma puntos según la planilla; no interpreta resultados
 salvo los rangos que la planilla define (Barthel). Los puntos que se apartan de la
-planilla están marcados con «CORRECCIÓN» y documentados en docs/escalas.md.
+planilla están marcados con «CORRECCIÓN» y documentados en docs/escalas.md. Los valores
+que el equipo puede ajustar (Barthel, restas, tablas de fluencia) están en scale_parameters.py.
 """
 
 from __future__ import annotations
 
 from typing import Any
+
+from momento_api.scale_parameters import (
+    BARTHEL_BANDS,
+    BARTHEL_EATING,
+    FLUENCY_ANIMALS_TABLE,
+    FLUENCY_LETTERS_TABLE,
+    SERIAL7_RELATIVE_TO_PREVIOUS,
+)
 
 # --- Constructores de ítems --------------------------------------------------
 
@@ -35,9 +44,8 @@ BARTHEL = {
     "name": "Índice de Barthel",
     "description": "Actividades básicas de la vida diaria.",
     "sections": [{"title": "Actividades", "items": [
-        # CORRECCIÓN: la planilla da 15 a "Comer – Independiente" y el total llega a 105.
-        # Se usa 10 (valor estándar) para que el máximo sea 100, como indica la revisión.
-        choice("comer", "Comer", [("Incapaz", 0), ("Necesita ayuda", 5), ("Independiente", 10)]),
+        # CORRECCIÓN: la planilla da 15 a "Comer – Independiente" (total 105). Valor en scale_parameters.py.
+        choice("comer", "Comer", BARTHEL_EATING),
         choice("traslado", "Trasladarse entre la silla y la cama", [
             ("Incapaz, no se mantiene sentado", 0), ("Necesita ayuda importante, puede estar sentado", 5),
             ("Necesita algo de ayuda", 10), ("Independiente", 15)]),
@@ -56,9 +64,7 @@ BARTHEL = {
     ]}],
 }
 
-# Rangos de la planilla. 100 no figura en ella; se informa como "Independiente".
-BARTHEL_BANDS = [(0, 24, "Dependencia total"), (25, 49, "Dependencia severa"), (50, 74, "Dependencia moderada"),
-                 (75, 90, "Dependencia media"), (91, 99, "Dependencia mínima"), (100, 100, "Independiente")]
+# Los rangos de interpretación (BARTHEL_BANDS) están en scale_parameters.py.
 
 # --- Yesavage (GDS-15) -------------------------------------------------------
 
@@ -187,11 +193,13 @@ ACE3 = {
         ]},
         {"title": "Fluencia verbal", "items": [
             {"key": "fluency_p", "label": "Palabras con P", "type": "fluency", "domain": "fluencia", "max": 7,
+             "table": FLUENCY_LETTERS_TABLE,
              "instruction": "Un minuto: todas las palabras que comiencen con P, sin nombres ni lugares. "
-                            "Anote la cantidad de palabras válidas y el puntaje convertido (0 a 7) según la tabla de conversión."},
+                            "Anote la cantidad de palabras válidas; el sistema la convierte a puntaje (0 a 7)."},
             {"key": "fluency_animals", "label": "Animales", "type": "fluency", "domain": "fluencia", "max": 7,
+             "table": FLUENCY_ANIMALS_TABLE,
              "instruction": "Un minuto: todos los animales posibles. "
-                            "Anote la cantidad de animales válidos y el puntaje convertido (0 a 7) según la tabla de conversión."},
+                            "Anote la cantidad de animales válidos; el sistema la convierte a puntaje (0 a 7)."},
         ]},
         {"title": "Lenguaje", "items": [
             checks("comprehension", "Lápiz y papel", ["Pone el papel encima del lápiz", "Toma el lápiz pero no el papel",
@@ -256,8 +264,22 @@ def item_max(item: dict[str, Any]) -> int:
     return item["max"]
 
 
-def serial7_points(values: list[Any]) -> int:
-    """Cada resta es correcta si es 7 menos que la respuesta anterior (la primera, desde 100)."""
+def fluency_points(table: list[tuple[int, int]], words: int) -> int:
+    """Convierte la cantidad de palabras válidas con la tabla de scale_parameters.py."""
+    return next((points for minimum, points in table if words >= minimum), 0)
+
+
+def serial7_points(values: list[Any], *, relative: bool | None = None) -> int:
+    """Puntos de las restas seriadas según SERIAL7_RELATIVE_TO_PREVIOUS.
+
+    Relativa: cada resta cuenta si es 7 menos que la respuesta anterior (la primera, desde 100).
+    Absoluta: solo cuentan 93, 86, 79, 72 y 65 en su lugar.
+    """
+    if relative is None:
+        relative = SERIAL7_RELATIVE_TO_PREVIOUS
+    if not relative:
+        expected = [100 - 7 * (index + 1) for index in range(5)]
+        return sum(1 for value, right in zip(values[:5], expected) if value == right and not isinstance(value, bool))
     points, previous = 0, 100
     for value in values[:5]:
         if not isinstance(value, int) or isinstance(value, bool):
@@ -340,17 +362,19 @@ def score(code: str, answers: dict[str, Any], *, require_complete: bool = True) 
             points = serial7_points(values)
         elif kind == "fluency":
             data = value or {}
-            converted = data.get("score") if isinstance(data, dict) else None
             raw = data.get("raw") if isinstance(data, dict) else None
-            if converted is None:
-                missing.append(item["label"])
-                points = 0
-            elif isinstance(converted, bool) or not isinstance(converted, int) or not 0 <= converted <= 7 or (
+            if not isinstance(data, dict) or (
                 raw is not None and (isinstance(raw, bool) or not isinstance(raw, int) or not 0 <= raw <= 200)
             ):
-                raise ValueError(f"Revisá «{item['label']}»: el puntaje convertido va de 0 a 7.")
+                raise ValueError(f"Revisá «{item['label']}»: anotá la cantidad de palabras válidas (0 a 200).")
+            if raw is None:
+                missing.append(item["label"])
+                points = 0
+                answers = {**answers, item["key"]: {}}
             else:
-                points = converted
+                # El puntaje lo convierte el servidor; se ignora cualquier puntaje enviado.
+                points = fluency_points(item["table"], raw)
+                answers = {**answers, item["key"]: {"raw": raw, "score": points}}
         elif kind == "recognition":
             data = value or {}
             if not isinstance(data, dict):
