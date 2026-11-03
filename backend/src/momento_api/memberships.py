@@ -31,7 +31,7 @@ from momento_api.schemas import (
     MembershipUpdate,
     OrganizationMembershipRead,
 )
-from momento_api.password_links import issue_link, queue_link_email
+from momento_api.password_links import cancel_pending_links, issue_link, queue_link_email
 from momento_api.session import get_session
 
 router = APIRouter(prefix="/api/organizations", tags=["Usuarios y membresías"])
@@ -227,6 +227,8 @@ def update_membership(
     if payload.is_active is not None and payload.is_active != membership.is_active:
         membership.is_active = payload.is_active
         changes["is_active"] = payload.is_active
+        if not payload.is_active:
+            cancel_pending_links(session, membership.user_account_id)
 
     if changes:
         record_event(
@@ -265,6 +267,7 @@ def set_password(
         session.add(UserCredential(user_account_id=account.id, password_hash=hash_password(payload.password)))
     else:
         credential.password_hash = hash_password(payload.password)
+    cancel_pending_links(session, account.id)
     now = datetime.now(timezone.utc)
     for auth_session in session.scalars(
         select(AuthSession).where(

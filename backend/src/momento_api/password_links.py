@@ -14,6 +14,7 @@ import secrets
 import time
 from collections import defaultdict, deque
 from datetime import datetime, timedelta, timezone
+from uuid import UUID
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request, Response
 from pydantic import BaseModel, Field
@@ -43,16 +44,22 @@ def _hash(token: str) -> str:
     return hashlib.sha256(token.encode("utf-8")).hexdigest()
 
 
-def issue_link(session: Session, account: UserAccount, purpose: str) -> str:
-    """Crea un enlace nuevo y anula los anteriores sin usar de la misma cuenta."""
+def cancel_pending_links(session: Session, account_id: UUID) -> None:
+    """Anula los enlaces sin usar: al crear uno nuevo, cambiar la contraseña o desactivar el acceso."""
     now = datetime.now(timezone.utc)
-    for previous in session.scalars(
+    for pending in session.scalars(
         select(PasswordToken).where(
-            PasswordToken.user_account_id == account.id,
+            PasswordToken.user_account_id == account_id,
             PasswordToken.used_at.is_(None),
         )
     ).all():
-        previous.used_at = now
+        pending.used_at = now
+
+
+def issue_link(session: Session, account: UserAccount, purpose: str) -> str:
+    """Crea un enlace nuevo y anula los anteriores sin usar de la misma cuenta."""
+    now = datetime.now(timezone.utc)
+    cancel_pending_links(session, account.id)
     token = secrets.token_urlsafe(32)
     session.add(PasswordToken(
         user_account_id=account.id,
@@ -143,8 +150,14 @@ def confirm_reset(payload: ResetConfirm, session: Session = Depends(get_session)
     if expires_at is not None and expires_at.tzinfo is None:  # SQLite devuelve fechas sin zona
         expires_at = expires_at.replace(tzinfo=timezone.utc)
     account = session.get(UserAccount, link.user_account_id) if link is not None else None
+    has_access = account is not None and session.scalar(
+        select(OrganizationMembership.id).where(
+            OrganizationMembership.user_account_id == account.id,
+            OrganizationMembership.is_active.is_(True),
+        ).limit(1)
+    ) is not None
     if link is None or link.used_at is not None or expires_at is None or expires_at <= now \
-            or account is None or not account.is_active:
+            or account is None or not account.is_active or not has_access:
         raise HTTPException(status_code=400, detail="El enlace venció o ya se usó. Pedí uno nuevo.")
 
     try:

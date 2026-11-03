@@ -13,6 +13,7 @@ from tests.access_helpers import PASSWORD, Scenario, as_user, client, scenario  
 def local_mail(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv("MOMENTO_SMTP_HOST", raising=False)
     monkeypatch.delenv("MOMENTO_MAIL_FROM", raising=False)
+    monkeypatch.setenv("MOMENTO_MAIL_DEBUG", "true")
     mailer.outbox.clear()
     password_links._requests.clear()
 
@@ -96,3 +97,24 @@ def test_invalid_token_or_short_password_is_rejected(client: TestClient, scenari
     client.post("/api/auth/password-reset/request", json={"email": "medica@test.example"})
     token = _token(mailer.outbox[0])
     assert client.post("/api/auth/password-reset/confirm", json={"token": token, "password": "corta"}).status_code == 422
+
+
+def test_without_debug_flag_mail_is_discarded_not_logged(client: TestClient, scenario: Scenario, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]) -> None:
+    monkeypatch.delenv("MOMENTO_MAIL_DEBUG")
+    client.post("/api/auth/password-reset/request", json={"email": "medica@test.example"})
+    assert mailer.outbox == []
+    assert "restablecer" not in capsys.readouterr().err
+
+
+def test_password_change_or_deactivation_cancels_pending_links(client: TestClient, scenario: Scenario) -> None:
+    base = f"/api/organizations/{scenario.organization_id}/memberships/{scenario.memberships['caregiver']}"
+    manager = as_user(client, "jefa@test.example")
+    manager.post(f"{base}/invite")
+    token = _token(mailer.outbox[-1])
+    assert manager.post(f"{base}/password", json={"password": "ClaveEncargado1"}).status_code == 204
+    assert client.post("/api/auth/password-reset/confirm", json={"token": token, "password": "NuevaClave1"}).status_code == 400
+
+    manager.post(f"{base}/invite")
+    token = _token(mailer.outbox[-1])
+    assert manager.patch(base, json={"is_active": False}).status_code == 200
+    assert client.post("/api/auth/password-reset/confirm", json={"token": token, "password": "NuevaClave1"}).status_code == 400

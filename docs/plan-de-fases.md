@@ -44,7 +44,7 @@ Documentos: [Fase 0 — Descubrimiento y definición de Momento](fase-0-descubri
 
 **Avance del 02/11/2026:** puestos confirmados (encargado, administrativo, médico y cuidador) aplicados en la API; autorizaciones familiares con otorgamiento y revocación; ingreso y portal familiar separados; bandeja guardada en PostgreSQL con designación, asignación, estados y respuesta; auditoría de acciones sensibles; pruebas de acceso permitido y denegado.
 
-**Pendiente de Fase 2:** configurar el servidor de correo real (hoy el correo se muestra en la consola), definir cuánto tiempo se conserva la auditoría y revisar todo con el equipo piloto.
+**Pendiente de Fase 2:** configurar el servidor de correo real (hoy no se envía; en desarrollo se ve en la consola), definir cuánto tiempo se conserva la auditoría y revisar todo con el equipo piloto.
 
 **Decisiones confirmadas por Jorge:** una organización prestadora puede contener varias sedes o servicios; el piloto contempla personal, familias/personas de confianza y personas mayores; el acceso familiar lo autoriza el encargado de la residencia, un administrativo habilitado o el médico, y se limita a información de la persona vinculada sobre medicación, actividades y dietas.
 
