@@ -11,7 +11,7 @@ from tests.access_helpers import PASSWORD, Scenario, as_user, client, scenario  
 
 @pytest.fixture(autouse=True)
 def local_mail(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.delenv("MOMENTO_SMTP_HOST", raising=False)
+    monkeypatch.delenv("MOMENTO_SMTP_PASSWORD", raising=False)
     monkeypatch.delenv("MOMENTO_MAIL_FROM", raising=False)
     monkeypatch.setenv("MOMENTO_MAIL_DEBUG", "true")
     mailer.outbox.clear()

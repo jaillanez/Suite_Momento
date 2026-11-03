@@ -81,7 +81,7 @@ def test_disabled_category_renamed_label_and_backdate(client: TestClient, scenar
 
 
 def test_incident_rules_follow_settings(client: TestClient, scenario: Scenario, monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.delenv("MOMENTO_SMTP_HOST", raising=False)
+    monkeypatch.delenv("MOMENTO_SMTP_PASSWORD", raising=False)
     monkeypatch.setenv("MOMENTO_MAIL_DEBUG", "true")
     mailer.outbox.clear()
     manager = as_user(client, "jefa@test.example")

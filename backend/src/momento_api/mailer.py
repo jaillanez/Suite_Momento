@@ -2,7 +2,10 @@
 
 Parámetros (archivo .env):
 - MOMENTO_MAIL_FROM: remitente. Por defecto illanezjorgea@gmail.com.
-- MOMENTO_SMTP_HOST: servidor SMTP. Si está vacío, el correo NO se envía.
+- MOMENTO_SMTP_PASSWORD: la "contraseña de aplicación" de Gmail. Es lo único que falta
+  para enviar de verdad; sin ella el correo NO se envía.
+- MOMENTO_SMTP_HOST (smtp.gmail.com) y MOMENTO_SMTP_USER (el remitente): ya vienen
+  armados para Gmail; cambiarlos solo si se usa otro proveedor.
 - MOMENTO_MAIL_DEBUG: solo para desarrollo local. Con true y sin servidor SMTP, el
   correo completo (con el enlace) se muestra en la consola de la API para copiarlo.
   Nunca activarlo en un entorno real: el enlace da acceso a la cuenta.
@@ -24,6 +27,7 @@ from dataclasses import dataclass
 from email.message import EmailMessage
 
 DEFAULT_MAIL_FROM = "illanezjorgea@gmail.com"
+DEFAULT_SMTP_HOST = "smtp.gmail.com"
 DEFAULT_PUBLIC_URL = "http://127.0.0.1:5173"
 
 # Últimos correos del modo de desarrollo (MOMENTO_MAIL_DEBUG); lo usan las pruebas.
@@ -43,11 +47,12 @@ class MailSettings:
 
 
 def mail_settings() -> MailSettings:
+    sender = os.getenv("MOMENTO_MAIL_FROM", "").strip() or DEFAULT_MAIL_FROM
     return MailSettings(
-        sender=os.getenv("MOMENTO_MAIL_FROM", "").strip() or DEFAULT_MAIL_FROM,
-        host=os.getenv("MOMENTO_SMTP_HOST", "").strip(),
+        sender=sender,
+        host=os.getenv("MOMENTO_SMTP_HOST", "").strip() or DEFAULT_SMTP_HOST,
         port=int(os.getenv("MOMENTO_SMTP_PORT", "587") or 587),
-        user=os.getenv("MOMENTO_SMTP_USER", "").strip(),
+        user=os.getenv("MOMENTO_SMTP_USER", "").strip() or sender,
         password=os.getenv("MOMENTO_SMTP_PASSWORD", ""),
         starttls=os.getenv("MOMENTO_SMTP_STARTTLS", "true").strip().lower() in {"1", "true", "yes"},
         debug=os.getenv("MOMENTO_MAIL_DEBUG", "").strip().lower() in {"1", "true", "yes"},
@@ -64,14 +69,14 @@ def send_mail(to: str, subject: str, body: str) -> None:
     message["Subject"] = subject
     message.set_content(body)
 
-    if not settings.host:
+    if not settings.password:
         if not settings.debug:
-            print("[Momento · correo descartado: falta MOMENTO_SMTP_HOST]", file=sys.stderr, flush=True)
+            print("[Momento · correo descartado: falta MOMENTO_SMTP_PASSWORD]", file=sys.stderr, flush=True)
             return
         outbox.append(message)
         del outbox[:-50]
         print(
-            f"\n[Momento · correo sin enviar (MOMENTO_MAIL_DEBUG, solo desarrollo)]\n"
+            f"\n[Momento · correo sin enviar: falta MOMENTO_SMTP_PASSWORD (MOMENTO_MAIL_DEBUG, solo desarrollo)]\n"
             f"De: {settings.sender}\nPara: {to}\nAsunto: {subject}\n\n{body}\n",
             file=sys.stderr,
             flush=True,
@@ -84,8 +89,7 @@ def send_mail(to: str, subject: str, body: str) -> None:
             elif settings.user:
                 print("[Momento · correo no enviado: no se envían credenciales sin STARTTLS]", file=sys.stderr, flush=True)
                 return
-            if settings.user:
-                client.login(settings.user, settings.password)
+            client.login(settings.user, settings.password)
             client.send_message(message)
     except (OSError, smtplib.SMTPException) as error:
         # No se muestra el destinatario ni el enlace en el error.

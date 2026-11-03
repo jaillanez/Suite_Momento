@@ -95,3 +95,9 @@ def api_client(db_sessions: sessionmaker[Session]) -> Generator[TestClient, None
             yield client
     finally:
         app.dependency_overrides.pop(get_session, None)
+
+
+@pytest.fixture(autouse=True)
+def never_send_real_mail(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Las pruebas nunca envían correos reales aunque .env tenga la contraseña de Gmail."""
+    monkeypatch.delenv("MOMENTO_SMTP_PASSWORD", raising=False)

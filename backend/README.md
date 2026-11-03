@@ -13,7 +13,7 @@ Desde esta carpeta, crea un entorno con el Python 3.13.5 que ya está instalado:
 
 Copia .env.example a .env y configura MOMENTO_DATABASE_URL con una base local. El archivo .env es privado y no se sube a GitHub. La API puede iniciarse aunque PostgreSQL todavía no esté configurado; la comprobación de base de datos informará que no está disponible.
 
-Correo: sin `MOMENTO_SMTP_HOST`, las invitaciones y los enlaces de recuperación no se envían. Con `MOMENTO_MAIL_DEBUG=true` (solo en desarrollo local) se muestran en la consola de la API para copiarlos. Para enviarlos de verdad, completar las variables `MOMENTO_SMTP_*` y `MOMENTO_MAIL_FROM` (remitente, por defecto illanezjorgea@gmail.com) en `.env`.
+Correo: sale desde illanezjorgea@gmail.com por Gmail. Para enviar de verdad solo hay que poner en `.env` la contraseña de aplicación de Google en `MOMENTO_SMTP_PASSWORD` (se crea en https://myaccount.google.com/apppasswords). Sin ella no se envía nada; con `MOMENTO_MAIL_DEBUG=true` (solo en desarrollo local) los correos se muestran en la consola de la API. Las pruebas automáticas nunca envían correos reales.
 
 Escalas: los valores ajustables (Barthel, restas seriadas, tablas de fluencia) están en `src/momento_api/scale_parameters.py`; ver `docs/escalas.md`.
 
