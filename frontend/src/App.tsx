@@ -1,11 +1,12 @@
 import { type FormEvent, useEffect, useState } from "react";
+import CareShiftPanel from "./CareLog";
 import FamilyPortal from "./FamilyPortal";
 import { ForgotPasswordForm, ResetPasswordScreen } from "./PasswordScreens";
 import { AuditPanel, SettingsPanel } from "./ManagerPanels";
 import InboxPanel, { categoryClass, formatDate, type InboxRequest, loadInboxes } from "./InboxPanel";
 import OrganizationsPanel, { categoryLabels, type OrganizationView, type StaffRole, staffRoleLabels } from "./OrganizationsPanel";
 
-type Page = OrganizationView | "landing" | "login" | "family" | "dashboard" | "inbox" | "audit" | "settings";
+type Page = OrganizationView | "landing" | "login" | "family" | "dashboard" | "shift" | "inbox" | "audit" | "settings";
 type SessionMembership = { user_group: "staff" | "family" | "older_adult"; staff_role: StaffRole | null; handles_inbox: boolean };
 type Portal = "staff" | "family";
 type Access = { role: StaffRole | null; inbox: boolean };
@@ -29,6 +30,7 @@ const pageTitles: Record<Exclude<Page, "landing" | "login" | "family">, string> 
   organizations: "Organizaciones y servicios",
   people: "Personas cuidadas",
   users: "Usuarios y vínculos",
+  shift: "Turno y registros",
   inbox: "Bandeja de solicitudes",
   audit: "Registro de control",
   settings: "Configuración",
@@ -112,6 +114,7 @@ export default function App() {
         <nav className="main-navigation" aria-label="Navegación principal">
           <NavButton label="Dashboard" active={page === "dashboard"} onClick={() => setPage("dashboard")} mark="IN" />
           {isManager && <NavButton label="Organizaciones" active={page === "organizations"} onClick={() => setPage("organizations")} mark="OR" />}
+          <NavButton label="Turno y registros" active={page === "shift"} onClick={() => setPage("shift")} mark="TR" />
           <NavButton label="Personas cuidadas" active={page === "people"} onClick={() => setPage("people")} mark="PC" />
           {canAuthorize && <NavButton label={isManager ? "Usuarios y vínculos" : "Familias"} active={page === "users"} onClick={() => setPage("users")} mark="UV" />}
           {access.inbox && <NavButton label="Bandeja de solicitudes" active={page === "inbox"} onClick={() => setPage("inbox")} mark="BD" />}
@@ -139,6 +142,7 @@ export default function App() {
         <div className="app-content">
           {page === "dashboard" && <Dashboard userName={userName} isManager={isManager} canAuthorize={canAuthorize} hasInbox={access.inbox} />}
           {(page === "organizations" || page === "people" || page === "users") && <OrganizationsPanel view={page} canManage={isManager} canCreatePeople={isManager || access.role === "administrative"} />}
+          {page === "shift" && <CareShiftPanel />}
           {page === "inbox" && <InboxPanel isManager={isManager} />}
           {page === "audit" && <AuditPanel />}
           {page === "settings" && <SettingsPanel />}

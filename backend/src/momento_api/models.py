@@ -531,6 +531,84 @@ class Assessment(Base):
     performed_by: Mapped[OrganizationMembership] = relationship()
 
 
+CARE_ENTRY_CATEGORIES = ("food", "hygiene", "sleep", "mood", "activity", "health", "incident", "other")
+
+
+class CareEntry(Base):
+    """Registro breve del cuidado diario. No se edita: si hay un error se anula con motivo."""
+
+    __tablename__ = "care_entries"
+    __table_args__ = (
+        CheckConstraint(
+            "category IN ('food', 'hygiene', 'sleep', 'mood', 'activity', 'health', 'incident', 'other')",
+            name="ck_care_entries_category",
+        ),
+    )
+
+    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
+    care_unit_id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("care_units.id", ondelete="RESTRICT"), nullable=False, index=True
+    )
+    care_recipient_id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("care_recipients.id", ondelete="RESTRICT"), nullable=False, index=True
+    )
+    category: Mapped[str] = mapped_column(String(20), nullable=False)
+    text: Mapped[str] = mapped_column(Text, nullable=False)
+    important: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default="false")
+    occurred_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, index=True)
+    recorded_by_membership_id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("organization_memberships.id", ondelete="RESTRICT"), nullable=False
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+    voided_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    voided_by_membership_id: Mapped[UUID | None] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("organization_memberships.id", ondelete="RESTRICT")
+    )
+    void_reason: Mapped[str | None] = mapped_column(String(300))
+
+    recipient: Mapped[CareRecipient] = relationship()
+    recorded_by: Mapped[OrganizationMembership] = relationship(foreign_keys=[recorded_by_membership_id])
+    voided_by: Mapped[OrganizationMembership | None] = relationship(foreign_keys=[voided_by_membership_id])
+
+
+class CareTask(Base):
+    """Pendiente del servicio, opcionalmente de una persona; pasa de turno en turno hasta resolverse."""
+
+    __tablename__ = "care_tasks"
+    __table_args__ = (
+        CheckConstraint("status IN ('open', 'done', 'cancelled')", name="ck_care_tasks_status"),
+    )
+
+    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
+    care_unit_id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("care_units.id", ondelete="RESTRICT"), nullable=False, index=True
+    )
+    care_recipient_id: Mapped[UUID | None] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("care_recipients.id", ondelete="RESTRICT"), index=True
+    )
+    title: Mapped[str] = mapped_column(String(200), nullable=False)
+    details: Mapped[str | None] = mapped_column(Text)
+    due_on: Mapped[date | None] = mapped_column(Date)
+    status: Mapped[str] = mapped_column(String(10), nullable=False, default="open", server_default="open")
+    created_by_membership_id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("organization_memberships.id", ondelete="RESTRICT"), nullable=False
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+    closed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    closed_by_membership_id: Mapped[UUID | None] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("organization_memberships.id", ondelete="RESTRICT")
+    )
+    closing_note: Mapped[str | None] = mapped_column(String(500))
+
+    recipient: Mapped[CareRecipient | None] = relationship()
+    created_by: Mapped[OrganizationMembership] = relationship(foreign_keys=[created_by_membership_id])
+    closed_by: Mapped[OrganizationMembership | None] = relationship(foreign_keys=[closed_by_membership_id])
+
+
 class FamilyAuthorization(Base):
     """Permisos familiares explícitos por persona y categoría."""
 

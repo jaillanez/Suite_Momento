@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import os
 from dataclasses import dataclass
-from datetime import date
+from datetime import date, datetime, timedelta, timezone
 from uuid import UUID
 
 from dotenv import load_dotenv
@@ -13,7 +13,9 @@ from sqlalchemy.orm import Session
 
 from momento_api.auth import hash_password
 from momento_api.models import (
+    CareEntry,
     CareRecipient,
+    CareTask,
     CareRecipientContact,
     CareUnit,
     CareUnitType,
@@ -348,7 +350,47 @@ def complete_demo(session: Session, organization: Organization) -> list[str]:
         added.append(f"{len(SAMPLE_REQUESTS)} solicitudes de ejemplo en la bandeja")
 
     added.extend(complete_profiles(session, unit, pairs[1:] if demo_family is not None else pairs))
+    added.extend(sample_care_log(session, unit, staff, [recipient for _, recipient in pairs[1:4]]))
     return added
+
+
+# (horas atrás, índice de persona, categoría, texto, importante)
+SAMPLE_ENTRIES = [
+    (1, 0, "food", "Almorzó todo y pidió repetir el postre.", False),
+    (3, 1, "mood", "Estuvo inquieta después de la visita; se tranquilizó con música.", True),
+    (5, 2, "activity", "Participó del taller de jardinería.", False),
+    (9, 0, "sleep", "Durmió de corrido hasta las 6.", False),
+    (11, 1, "incident", "Resbaló en el baño sin golpearse; se avisó a la encargada.", True),
+    (14, 2, "hygiene", "Ducha con ayuda parcial.", False),
+]
+SAMPLE_TASKS = [
+    ("Avisar a la familia del control médico del jueves", 0, 2),
+    ("Revisar zapatillas antideslizantes", 1, 0),
+    ("Reponer jabón líquido en baños del primer piso", None, None),
+]
+
+
+def sample_care_log(session: Session, unit: CareUnit, staff: dict, recipients: list[CareRecipient]) -> list[str]:
+    """Registros y pendientes de ejemplo para ver la entrega de turno (solo si no hay ninguno)."""
+    caregivers = [m for m in staff.values() if m.staff_role is StaffRole.CAREGIVER and m.is_active]
+    if not caregivers or len(recipients) < 3 or session.scalar(
+        select(func.count(CareEntry.id)).where(CareEntry.care_unit_id == unit.id)
+    ):
+        return []
+    now = datetime.now(timezone.utc)
+    for index, (hours, person, category, text, important) in enumerate(SAMPLE_ENTRIES):
+        session.add(CareEntry(
+            care_unit_id=unit.id, care_recipient_id=recipients[person].id, category=category, text=text,
+            important=important, occurred_at=now - timedelta(hours=hours),
+            recorded_by_membership_id=caregivers[index % len(caregivers)].id,
+        ))
+    for title, person, days in SAMPLE_TASKS:
+        session.add(CareTask(
+            care_unit_id=unit.id, care_recipient_id=recipients[person].id if person is not None else None,
+            title=title, due_on=(now + timedelta(days=days)).date() if days is not None else None,
+            created_by_membership_id=caregivers[0].id,
+        ))
+    return [f"{len(SAMPLE_ENTRIES)} registros diarios y {len(SAMPLE_TASKS)} pendientes de ejemplo"]
 
 
 def complete_profiles(session: Session, unit: CareUnit, pairs: list) -> list[str]:

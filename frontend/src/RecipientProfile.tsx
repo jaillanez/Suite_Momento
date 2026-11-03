@@ -1,6 +1,7 @@
 import { type FormEvent, useEffect, useState } from "react";
 import BackgroundSection from "./Background";
 import { readApiError } from "./OrganizationsPanel";
+import { CareLogSection } from "./CareLog";
 import ScalesSection from "./Scales";
 
 type Contact = {
@@ -261,6 +262,7 @@ export default function RecipientProfile({ careUnitId, recipientId, onBack }: { 
         canManage={profile.can_manage_documents}
         onChanged={(documents) => setProfile({ ...profile, documents, photo_document_id: documents.find((item) => item.category === "photo")?.id ?? null })}
       />
+      <CareLogSection unitId={careUnitId} recipientId={recipientId} recipientName={profile.preferred_name || profile.display_name} />
       <ScalesSection path={`${path}/assessments`} canApply={profile.can_edit_health} canDelete={profile.can_deactivate} />
     </section>
   );

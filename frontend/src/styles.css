@@ -1822,6 +1822,45 @@ a.link-action { text-decoration: none; }
 .scale-total small { color: #856316; }
 
 /* Impresión de la ficha: incluye antecedentes y escalas */
+/* Fase 4 · turno y registro diario */
+.view-heading-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.view-heading-actions select { min-height: 38px; padding: 0 10px; border: 1px solid var(--line); border-radius: 9px; background: var(--paper); color: var(--ink); }
+.shift-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; align-items: start; }
+.shift-grid h3 { display: flex; align-items: baseline; gap: 8px; margin: 0 0 12px; font-size: 1rem; }
+.shift-grid h3 small { color: var(--muted); font-size: 0.75rem; font-weight: 500; }
+.shift-important { border-left: 4px solid #e9b949; }
+.count-badge { min-width: 22px; padding: 1px 7px; border-radius: 99px; color: var(--plum-dark); background: #f0ebff; font-size: 0.72rem; font-weight: 800; text-align: center; }
+.section-actions { display: flex; align-items: center; gap: 8px; }
+.care-entries, .care-tasks { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.care-entries li { display: grid; gap: 4px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--paper); }
+.care-entries li.important { border-color: #f1d488; background: #fffcf2; }
+.care-entries li.voided p { color: var(--muted); text-decoration: line-through; }
+.care-entries li p { margin: 0; line-height: 1.45; }
+.care-entries li .link-action { justify-self: start; padding: 0; font-size: 0.75rem; }
+.care-entry-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.care-entry-meta small, .care-tasks small { color: var(--muted); font-size: 0.74rem; }
+.void-note { color: #9a3b3b; font-size: 0.74rem; }
+.entry-tag { padding: 2px 8px; border-radius: 6px; color: #3f4660; background: #eef0f6; font-size: 0.7rem; font-weight: 700; }
+.entry-food { background: #e6f5ee; color: #2f6b52; }
+.entry-hygiene { background: #e5f1fb; color: #2b5d85; }
+.entry-sleep { background: #eeeaff; color: var(--plum-dark); }
+.entry-mood { background: #fff0e6; color: #8a4b1f; }
+.entry-activity { background: #e9f7f4; color: #2e6b62; }
+.entry-health { background: #fdeaea; color: #8f2f2f; }
+.entry-incident { background: #9a3b3b; color: #fff; }
+.care-tasks li { display: flex; justify-content: space-between; gap: 12px; align-items: center; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--paper); }
+.care-tasks li small { display: block; margin-top: 2px; }
+.modal-form textarea { font: inherit; }
+.care-tasks li p { margin: 2px 0; color: var(--muted); font-size: 0.82rem; }
+.care-tasks .overdue { color: #9a3b3b; font-weight: 700; }
+.category-chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; padding: 0; border: 0; }
+.category-chips legend { margin-bottom: 6px; font-size: 0.82rem; font-weight: 700; }
+.chip { display: inline-flex; align-items: center; padding: 6px 12px; border: 1px solid var(--line); border-radius: 99px; background: var(--paper); cursor: pointer; font-size: 0.82rem; }
+.chip input { position: absolute; opacity: 0; pointer-events: none; }
+.chip.selected { border-color: var(--plum); color: var(--plum-dark); background: #f0ebff; font-weight: 700; }
+.chip:focus-within { outline: 2px solid var(--plum); outline-offset: 2px; }
+@media (max-width: 860px) { .shift-grid { grid-template-columns: 1fr; } }
+
 @media print {
   .app-sidebar, .app-topbar, .no-print, .back-link, .view-heading, .view-meta, .management-card-heading,
   .service-card-heading, .profile-section-heading button, .record-controls button, .record-controls a,

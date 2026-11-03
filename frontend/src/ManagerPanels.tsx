@@ -33,6 +33,13 @@ const actionLabels: Record<string, string> = {
   "request.responded": "Solicitud respondida",
   "request.inbox_viewed": "Ingreso a la bandeja",
   "request.assignees_viewed": "Consulta de responsables",
+  "care_entry.created": "Registro diario cargado",
+  "care_entry.voided": "Registro diario anulado",
+  "care_log.viewed": "Consulta del registro diario",
+  "handover.viewed": "Consulta de la entrega de turno",
+  "care_task.created": "Pendiente creado",
+  "care_task.completed": "Pendiente resuelto",
+  "care_task.cancelled": "Pendiente cancelado",
 };
 
 const detailLabels: Record<string, string> = {
@@ -46,6 +53,7 @@ const detailLabels: Record<string, string> = {
   can_sign_in: "con contraseña",
   user_group: "grupo",
   invitation_sent: "invitación enviada",
+  important: "importante",
 };
 
 function describeDetails(details: AuditEvent["details"]): string {

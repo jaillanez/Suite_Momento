@@ -62,7 +62,9 @@ Detalle en [Fase 3 — Ficha de la persona mayor](fase-3-ficha-persona.md).
 
 **Resultado esperado:** ficha inicial y reglas de acceso aprobadas. El alcance clínico y los datos obligatorios deberán definirse con profesionales y revisar su pertinencia legal.
 
-## Fase 4 — Organización y registro del cuidado
+## Fase 4 — Organización y registro del cuidado (primera entrega implementada; validación con el piloto pendiente)
+
+**Hecho el 03/11/2026:** registro diario breve por persona, pendientes que pasan de turno en turno y pantalla de entrega de turno. Detalle y decisiones a revisar en [fase-4-registro-cuidado.md](fase-4-registro-cuidado.md). Medicación, plan de cuidado, voz y recordatorios siguen sin implementar.
 
 **Objetivo:** apoyar el cuidado cotidiano y facilitar la continuidad entre personas y turnos.
 
