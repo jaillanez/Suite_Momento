@@ -8,6 +8,7 @@ from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from momento_api.audit_retention import retention_years
 from momento_api.auth import get_organization_admin_account
 from momento_api.models import AuditEvent, UserAccount
 from momento_api.session import get_session
@@ -23,6 +24,15 @@ class AuditEventRead(BaseModel):
     outcome: str
     target_type: str | None
     details: dict[str, object] | None
+
+
+@router.get("/retention")
+def read_retention(
+    organization_id: UUID,
+    _: UserAccount = Depends(get_organization_admin_account),
+) -> dict[str, int]:
+    """Cuántos años se conserva el registro de control."""
+    return {"years": retention_years()}
 
 
 @router.get("", response_model=list[AuditEventRead])

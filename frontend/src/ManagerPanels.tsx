@@ -44,6 +44,7 @@ const actionLabels: Record<string, string> = {
   "family_update.published": "Publicación de una novedad para la familia",
   "family_update.withdrawn": "Retiro de una novedad para la familia",
   "family_updates.viewed": "Consulta de novedades por la familia",
+  "audit.purged": "Depuración del registro vencido",
 };
 
 const detailLabels: Record<string, string> = {
@@ -77,6 +78,7 @@ export function AuditPanel() {
   const [organizationId, setOrganizationId] = useState("");
   const [onlyDenied, setOnlyDenied] = useState(false);
   const [events, setEvents] = useState<AuditEvent[]>([]);
+  const [retentionYears, setRetentionYears] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -90,6 +92,9 @@ export function AuditPanel() {
     if (!organizationId) return;
     let active = true;
     setLoading(true);
+    getJson<{ years: number }>(`/api/organizations/${organizationId}/audit-events/retention`)
+      .then((data) => { if (active) setRetentionYears(data.years); })
+      .catch(() => undefined);
     getJson<AuditEvent[]>(`/api/organizations/${organizationId}/audit-events${onlyDenied ? "?outcome=denied" : ""}`)
       .then((items) => { if (active) setEvents(items); })
       .catch((caught: unknown) => { if (active) setError(caught instanceof Error ? caught.message : "No se pudo cargar el registro."); })
@@ -103,7 +108,7 @@ export function AuditPanel() {
         <div>
           <p className="eyebrow">Trazabilidad</p>
           <h2>Registro de control</h2>
-          <p>Quién hizo cada acción sensible y cuándo. No guarda contraseñas ni el texto de los mensajes.</p>
+          <p>Quién hizo cada acción sensible y cuándo. No guarda contraseñas ni el texto de los mensajes.{retentionYears ? ` Se conserva ${retentionYears} años.` : ""}</p>
         </div>
       </header>
       <div className="audit-filters">

@@ -33,7 +33,7 @@ Jorge confirmó que la familia podrá consultar la información autorizada, resp
 | Cuenta de usuario | Identidad de acceso de una persona | Propuesta técnica, pendiente de validar |
 | Membresía | Vínculo de una cuenta con una organización, sede o equipo y sus permisos | Propuesta técnica, pendiente de validar |
 | Autorización familiar | Permiso vinculado a una persona mayor, categorías autorizadas y acciones familiares | Categorías, autorizadores y acciones generales confirmados; vigencia y circuito de atención pendientes |
-| Auditoría | Registro de accesos y cambios relevantes | Requisito del proyecto; eventos y retención por definir |
+| Auditoría | Registro de accesos y cambios relevantes | Requisito del proyecto; se conserva 10 años (decidido el 03/11/2026) |
 
 ## Modelo conceptual de acceso para el piloto
 
@@ -79,7 +79,7 @@ Reglas aplicadas en la API:
 
 Valores por defecto que tomó el agente, ajustables sin rediseño:
 
-- **Auditoría:** se registran inicios y cierres de sesión (también los rechazados), altas y cambios de usuarios, autorizaciones y revocaciones, accesos denegados, y creación, asignación, cambio de estado y respuesta de solicitudes. Se guardan identificadores y códigos, nunca contraseñas ni el texto de los mensajes. Por ahora no se borran; la retención queda por definir.
+- **Auditoría:** se registran inicios y cierres de sesión (también los rechazados), altas y cambios de usuarios, autorizaciones y revocaciones, accesos denegados, y creación, asignación, cambio de estado y respuesta de solicitudes. Se guardan identificadores y códigos, nunca contraseñas ni el texto de los mensajes. Se conservan **10 años** (decisión del equipo del 03/11/2026; se cambia con `MOMENTO_AUDIT_RETENTION_YEARS`). Nada se borra solo: `python -m momento_api.audit_retention` cuenta los vencidos y con `--apply` los borra, dejando constancia de la depuración.
 - **Alta de cuentas:** el encargado da de alta a la persona y puede asignarle una contraseña inicial desde la misma pantalla. Mínimo 8 caracteres (pedido por Jorge el 02/11/2026). También puede enviarle una invitación por correo para que la persona elija su contraseña (ver "Correo" abajo).
 - **Datos existentes:** la migración 0006 solo reconoce, por coincidencia exacta, las descripciones que generaba el propio sistema ("Encargado de residencia", "Encargado/a", "Médico/a"). Cualquier otra queda como cuidador, el puesto con menos acceso, y el encargado debe asignar el puesto correcto a mano. No se derivan permisos de texto libre.
 - **Contraseñas:** mínimo 8 caracteres, por pedido de Jorge para usar claves simples en pruebas. Antes del piloto conviene volver a 12 o más. El límite de intentos de ingreso vive en memoria y se reinicia al reiniciar la API; debe persistirse antes de exponer el sistema.
@@ -127,7 +127,7 @@ Valores por defecto que tomó el agente, ajustables sin rediseño:
 4. ~~Bandeja persistente con designación y asignación~~ — hecho.
 5. ~~Registro de acciones sensibles y aislamiento~~ — hecho, con pantalla "Registro de control" para el encargado.
 6. ~~Ingreso web con menú por puesto~~ — hecho.
-7. ~~Baja, reactivación y cambio de contraseña por el encargado~~ — hecho. Invitación y recuperación por correo — hecho (03/11/2026). Pendiente de decisión: plazo de conservación de la auditoría.
+7. ~~Baja, reactivación y cambio de contraseña por el encargado~~ — hecho. Invitación y recuperación por correo — hecho (03/11/2026). Conservación de la auditoría: 10 años — hecho (03/11/2026).
 8. Revisar puestos, permisos y estados visibles con el equipo piloto.
 
 ## Grupos y roles candidatos

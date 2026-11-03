@@ -44,7 +44,7 @@ Documentos: [Fase 0 — Descubrimiento y definición de Momento](fase-0-descubri
 
 **Avance del 02/11/2026:** puestos confirmados (encargado, administrativo, médico y cuidador) aplicados en la API; autorizaciones familiares con otorgamiento y revocación; ingreso y portal familiar separados; bandeja guardada en PostgreSQL con designación, asignación, estados y respuesta; auditoría de acciones sensibles; pruebas de acceso permitido y denegado.
 
-**Pendiente de Fase 2:** definir cuánto tiempo se conserva la auditoría y revisar todo con el equipo piloto. El correo ya sale desde illanezjorgea@gmail.com (03/11/2026).
+**Pendiente de Fase 2:** revisar todo con el equipo piloto. La auditoría se conserva 10 años (03/11/2026). El correo ya sale desde illanezjorgea@gmail.com (03/11/2026).
 
 **Decisiones confirmadas por Jorge:** una organización prestadora puede contener varias sedes o servicios; el piloto contempla personal, familias/personas de confianza y personas mayores; el acceso familiar lo autoriza el encargado de la residencia, un administrativo habilitado o el médico, y se limita a información de la persona vinculada sobre medicación, actividades y dietas.
 

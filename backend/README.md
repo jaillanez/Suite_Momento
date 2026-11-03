@@ -43,6 +43,13 @@ Para preparar una cuenta y un escenario local de ejemplo, seguí [la guía del e
 
 La migración no se ejecuta automáticamente al iniciar la aplicación.
 
+## Conservación del registro de control
+
+El registro de control se conserva 10 años (`MOMENTO_AUDIT_RETENTION_YEARS`). Nada se borra solo:
+
+    .venv/bin/python -m momento_api.audit_retention           # cuenta los vencidos
+    .venv/bin/python -m momento_api.audit_retention --apply   # los borra
+
 ## Pruebas
 
     pytest
