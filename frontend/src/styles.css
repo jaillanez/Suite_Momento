@@ -1861,6 +1861,22 @@ a.link-action { text-decoration: none; }
 .chip:focus-within { outline: 2px solid var(--plum); outline-offset: 2px; }
 @media (max-width: 860px) { .shift-grid { grid-template-columns: 1fr; } }
 
+.care-settings { margin-top: 14px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 12px; background: #fbfbfe; }
+.care-settings summary { cursor: pointer; list-style-position: outside; }
+.care-settings summary span { display: inline-grid; gap: 2px; }
+.care-settings summary small { color: var(--muted); font-size: 0.76rem; }
+.care-settings[open] summary { margin-bottom: 10px; }
+.care-settings fieldset { display: grid; gap: 8px; margin: 0 0 14px; padding: 12px 0 0; border: 0; border-top: 1px solid var(--line); }
+.care-settings fieldset > .link-action { justify-self: start; }
+.care-settings legend { padding: 0; font-size: 0.86rem; font-weight: 800; }
+.care-settings-rows { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.care-settings-rows li { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.care-settings-rows input:not([type]), .care-settings-rows select { min-height: 34px; padding: 0 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--paper); font: inherit; }
+.care-settings-rows label { display: flex; align-items: center; gap: 6px; color: var(--muted); font-size: 0.82rem; }
+.care-settings .number-input input { width: 70px; }
+.care-settings .option-row > span { color: var(--muted); font-size: 0.82rem; }
+.visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
 @media print {
   .app-sidebar, .app-topbar, .no-print, .back-link, .view-heading, .view-meta, .management-card-heading,
   .service-card-heading, .profile-section-heading button, .record-controls button, .record-controls a,

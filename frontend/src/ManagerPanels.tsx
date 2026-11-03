@@ -40,6 +40,7 @@ const actionLabels: Record<string, string> = {
   "care_task.created": "Pendiente creado",
   "care_task.completed": "Pendiente resuelto",
   "care_task.cancelled": "Pendiente cancelado",
+  "care_settings.updated": "Cambio en la configuración del registro diario",
 };
 
 const detailLabels: Record<string, string> = {
@@ -54,6 +55,7 @@ const detailLabels: Record<string, string> = {
   user_group: "grupo",
   invitation_sent: "invitación enviada",
   important: "importante",
+  changed: "cambió",
 };
 
 function describeDetails(details: AuditEvent["details"]): string {

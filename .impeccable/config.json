@@ -1,0 +1,14 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "overused-font",
+        "value": "inter",
+        "createdAt": "2026-11-03T10:17:11.423Z",
+        "reason": "agent: fuente existente de la marca Momento (AGENTS.md: no sustituir la marca sin validar con el equipo)"
+      }
+    ]
+  }
+}

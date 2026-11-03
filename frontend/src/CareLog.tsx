@@ -7,6 +7,7 @@ export type CareEntry = {
   care_recipient_id: string;
   recipient_name: string;
   category: EntryCategory;
+  category_label: string;
   text: string;
   important: boolean;
   occurred_at: string;
@@ -31,21 +32,11 @@ export type CareTask = {
   can_cancel: boolean;
 };
 type Shift = { label: string; start: string; end: string };
-type Handover = { current_shift: Shift; previous_shift: Shift; entries: CareEntry[]; open_tasks: CareTask[] };
+export type EntrySettings = { categories: { code: EntryCategory; label: string }[]; max_backdate_days: number; incident_always_important: boolean };
+type Handover = { current_shift: Shift; previous_shift: Shift; entries: CareEntry[]; open_tasks: CareTask[]; settings: EntrySettings };
 type Organization = { id: string; name: string };
 type Unit = { id: string; name: string };
 type Recipient = { id: string; display_name: string; preferred_name?: string | null };
-
-export const entryCategoryLabels: Record<EntryCategory, string> = {
-  food: "Alimentación",
-  hygiene: "Higiene",
-  sleep: "Descanso",
-  mood: "Ánimo",
-  activity: "Actividad",
-  health: "Salud",
-  incident: "Incidente",
-  other: "Otro",
-};
 
 async function send<T>(path: string, body?: unknown): Promise<T> {
   const response = await fetch(path, {
@@ -125,7 +116,7 @@ export default function CareShiftPanel() {
             </select>
           )}
           <button className="secondary-action" type="button" disabled={!unitId} onClick={() => setAddingTask(true)}>+ Pendiente</button>
-          <button className="primary-action" type="button" disabled={!recipients.length} onClick={() => setRecording(true)}>+ Registrar</button>
+          <button className="primary-action" type="button" disabled={!recipients.length || !data} onClick={() => setRecording(true)}>+ Registrar</button>
         </div>
       </header>
       {error && <p className="form-message error-message" role="alert">{error}</p>}
@@ -149,7 +140,7 @@ export default function CareShiftPanel() {
           </article>
         </div>
       )}
-      {recording && <EntryModal unitId={unitId} recipients={recipients} onClose={() => setRecording(false)} onSaved={() => { setRecording(false); void reload(); }} />}
+      {recording && data && <EntryModal unitId={unitId} recipients={recipients} settings={data.settings} onClose={() => setRecording(false)} onSaved={() => { setRecording(false); void reload(); }} />}
       {addingTask && <TaskModal unitId={unitId} recipients={recipients} onClose={() => setAddingTask(false)} onSaved={() => { setAddingTask(false); void reload(); }} />}
     </section>
   );
@@ -159,6 +150,7 @@ export default function CareShiftPanel() {
 export function CareLogSection({ unitId, recipientId, recipientName }: { unitId: string; recipientId: string; recipientName: string }) {
   const [entries, setEntries] = useState<CareEntry[]>([]);
   const [tasks, setTasks] = useState<CareTask[]>([]);
+  const [settings, setSettings] = useState<EntrySettings | null>(null);
   const [error, setError] = useState("");
   const [recording, setRecording] = useState(false);
   const [addingTask, setAddingTask] = useState(false);
@@ -168,9 +160,10 @@ export function CareLogSection({ unitId, recipientId, recipientName }: { unitId:
     try {
       const response = await fetch(path);
       if (!response.ok) throw new Error(await readApiError(response));
-      const data = (await response.json()) as { entries: CareEntry[]; open_tasks: CareTask[] };
+      const data = (await response.json()) as { entries: CareEntry[]; open_tasks: CareTask[]; settings: EntrySettings };
       setEntries(data.entries);
       setTasks(data.open_tasks);
+      setSettings(data.settings);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "No se pudo cargar el registro.");
     }
@@ -185,14 +178,14 @@ export function CareLogSection({ unitId, recipientId, recipientName }: { unitId:
         <h4>Registro diario</h4>
         <div className="section-actions">
           <button className="link-action" type="button" onClick={() => setAddingTask(true)}>+ Pendiente</button>
-          <button className="primary-action" type="button" onClick={() => setRecording(true)}>+ Registrar</button>
+          <button className="primary-action" type="button" disabled={!settings} onClick={() => setRecording(true)}>+ Registrar</button>
         </div>
       </div>
-      <p className="modal-help">Últimos 7 días. Los registros no se editan; si hay un error, se anulan con un motivo. Un incidente solo lo anula el encargado.</p>
+      <p className="modal-help">Últimos 7 días. Los registros no se editan; si hay un error, se anulan con un motivo.</p>
       {error && <p className="form-message error-message" role="alert">{error}</p>}
       {tasks.length > 0 && <TaskList tasks={tasks} unitId={unitId} onChanged={() => void reload()} />}
       {entries.length === 0 ? <p className="list-empty">Sin registros en los últimos 7 días.</p> : <EntryList entries={entries} unitId={unitId} onChanged={() => void reload()} />}
-      {recording && <EntryModal unitId={unitId} recipients={person} onClose={() => setRecording(false)} onSaved={() => { setRecording(false); void reload(); }} />}
+      {recording && settings && <EntryModal unitId={unitId} recipients={person} settings={settings} onClose={() => setRecording(false)} onSaved={() => { setRecording(false); void reload(); }} />}
       {addingTask && <TaskModal unitId={unitId} recipients={person} onClose={() => setAddingTask(false)} onSaved={() => { setAddingTask(false); void reload(); }} />}
     </article>
   );
@@ -219,7 +212,7 @@ function EntryList({ entries, unitId, showPerson = false, onChanged }: { entries
         {entries.map((entry) => (
           <li key={entry.id} className={(entry.voided ? "voided" : "") + (entry.important ? " important" : "")}>
             <div className="care-entry-meta">
-              <span className={`entry-tag entry-${entry.category}`}>{entryCategoryLabels[entry.category]}</span>
+              <span className={`entry-tag entry-${entry.category}`}>{entry.category_label}</span>
               {showPerson && <strong>{entry.recipient_name}</strong>}
               <small>{time(entry.occurred_at)} · {entry.recorded_by_name}</small>
               {entry.important && !entry.voided && <span className="status-pill status-amber">Importante</span>}
@@ -278,7 +271,7 @@ function TaskList({ tasks, unitId, onChanged }: { tasks: CareTask[]; unitId: str
   );
 }
 
-function EntryModal({ unitId, recipients, onClose, onSaved }: { unitId: string; recipients: Recipient[]; onClose: () => void; onSaved: () => void }) {
+function EntryModal({ unitId, recipients, settings, onClose, onSaved }: { unitId: string; recipients: Recipient[]; settings: EntrySettings; onClose: () => void; onSaved: () => void }) {
   const [recipientId, setRecipientId] = useState(recipients.length === 1 ? recipients[0].id : "");
   const [category, setCategory] = useState<EntryCategory | "">("");
   const [text, setText] = useState("");
@@ -287,6 +280,9 @@ function EntryModal({ unitId, recipients, onClose, onSaved }: { unitId: string; 
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
+  const forcedImportant = category === "incident" && settings.incident_always_important;
+  const toLocalInput = (date: Date) => new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!category) { setError("Elegí el tipo de registro."); return; }
@@ -294,7 +290,7 @@ function EntryModal({ unitId, recipients, onClose, onSaved }: { unitId: string; 
     setError("");
     try {
       await send(`/api/care-units/${unitId}/care-recipients/${recipientId}/care-entries`, {
-        category, text, important: important || category === "incident",
+        category, text, important: important || forcedImportant,
         occurred_at: earlier ? new Date(earlier).toISOString() : null,
       });
       onSaved();
@@ -318,10 +314,10 @@ function EntryModal({ unitId, recipients, onClose, onSaved }: { unitId: string; 
         )}
         <fieldset className="category-chips">
           <legend>Tipo</legend>
-          {(Object.keys(entryCategoryLabels) as EntryCategory[]).map((key) => (
-            <label key={key} className={"chip" + (category === key ? " selected" : "")}>
-              <input type="radio" name="category" value={key} checked={category === key} onChange={() => setCategory(key)} />
-              {entryCategoryLabels[key]}
+          {settings.categories.map(({ code, label }) => (
+            <label key={code} className={"chip" + (category === code ? " selected" : "")}>
+              <input type="radio" name="category" value={code} checked={category === code} onChange={() => setCategory(code)} />
+              {label}
             </label>
           ))}
         </fieldset>
@@ -329,12 +325,14 @@ function EntryModal({ unitId, recipients, onClose, onSaved }: { unitId: string; 
           <textarea rows={3} value={text} onChange={(event) => setText(event.target.value)} maxLength={2000} required placeholder="Ej.: Almorzó la mitad; dijo que no tenía hambre." />
         </label>
         <label className="inline-check">
-          <input type="checkbox" checked={important || category === "incident"} disabled={category === "incident"} onChange={(event) => setImportant(event.target.checked)} />
-          Importante para el próximo turno {category === "incident" && "(los incidentes siempre lo son)"}
+          <input type="checkbox" checked={important || forcedImportant} disabled={forcedImportant} onChange={(event) => setImportant(event.target.checked)} />
+          Importante para el próximo turno {forcedImportant && "(en este servicio los incidentes siempre lo son)"}
         </label>
-        <label>¿Pasó antes? (opcional; hasta 7 días)
-          <input type="datetime-local" value={earlier} max={new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16)} onChange={(event) => setEarlier(event.target.value)} />
-        </label>
+        {settings.max_backdate_days > 0 && (
+          <label>¿Pasó antes? (opcional; hasta {settings.max_backdate_days} {settings.max_backdate_days === 1 ? "día" : "días"})
+            <input type="datetime-local" value={earlier} min={toLocalInput(new Date(Date.now() - settings.max_backdate_days * 86400000))} max={toLocalInput(new Date())} onChange={(event) => setEarlier(event.target.value)} />
+          </label>
+        )}
         <p className="modal-help">Momento no interpreta los registros. Ante una urgencia, seguí el protocolo de la residencia.</p>
         {error && <p className="form-message error-message" role="alert">{error}</p>}
         <div className="modal-actions">

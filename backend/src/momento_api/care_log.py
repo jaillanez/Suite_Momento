@@ -9,11 +9,11 @@ La medicación queda fuera hasta que el equipo valide el circuito.
 from __future__ import annotations
 
 from datetime import date, datetime, timedelta, timezone
-from typing import Literal
+from typing import Any, Literal
 from uuid import UUID
 from zoneinfo import ZoneInfo
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, status
 from pydantic import BaseModel, Field, field_validator
 from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
@@ -21,6 +21,8 @@ from sqlalchemy.orm import Session, selectinload
 from momento_api.access import find_staff_membership
 from momento_api.audit import record_event
 from momento_api.auth import get_authenticated_account
+from momento_api.care_settings import DEFAULTS, category_label, settings_for
+from momento_api.mailer import send_mail
 from momento_api.models import (
     CARE_ENTRY_CATEGORIES,
     CareEntry,
@@ -35,12 +37,9 @@ from momento_api.session import get_session
 
 router = APIRouter(prefix="/api/care-units", tags=["Registro del cuidado"])
 
-# --- Parámetros (a validar con el piloto) -------------------------------------
-# Turnos: nombre y hora de inicio; cada uno termina cuando empieza el siguiente.
-SHIFTS = [("Mañana", 6), ("Tarde", 14), ("Noche", 22)]
+# Turnos, tipos de novedad, carga retroactiva e incidentes se configuran por servicio
+# (care_settings.py). Acá solo queda la zona horaria según el país del servicio.
 TIMEZONES = {"AR": "America/Argentina/Buenos_Aires", "UY": "America/Montevideo"}
-# Hasta cuántos días hacia atrás se puede cargar un registro olvidado.
-MAX_BACKDATE_DAYS = 7
 
 Category = Literal["food", "hygiene", "sleep", "mood", "activity", "health", "incident", "other"]
 assert set(Category.__args__) == set(CARE_ENTRY_CATEGORIES)  # type: ignore[attr-defined]
@@ -53,13 +52,14 @@ def _zone(care_unit: CareUnit) -> ZoneInfo:
     return ZoneInfo(TIMEZONES.get(care_unit.country_code, "America/Argentina/Buenos_Aires"))
 
 
-def shift_at(moment: datetime, zone: ZoneInfo) -> dict[str, object]:
+def shift_at(moment: datetime, zone: ZoneInfo, shifts: list[dict[str, Any]] | None = None) -> dict[str, object]:
     """Turno que contiene el momento dado, con inicio y fin en hora local."""
+    shifts = shifts or DEFAULTS["shifts"]
     local = moment.astimezone(zone)
     starts = []
     for day_offset in (-1, 0, 1):
         day = local.date() + timedelta(days=day_offset)
-        for label, hour in SHIFTS:
+        for label, hour in ((s["label"], s["start_hour"]) for s in shifts):
             starts.append((datetime(day.year, day.month, day.day, hour, tzinfo=zone), label))
     starts.sort()
     for (start, label), (end, _) in zip(starts, starts[1:]):
@@ -146,19 +146,20 @@ def _utc(value: datetime) -> datetime:
     return value.replace(tzinfo=timezone.utc) if value.tzinfo is None else value
 
 
-def _may_void(entry: CareEntry, account: UserAccount, manager: bool) -> bool:
-    """Quien lo cargó puede anular sus registros comunes; un incidente solo lo anula el encargado."""
-    if entry.category == "incident":
+def _may_void(entry: CareEntry, account: UserAccount, manager: bool, settings: dict[str, Any]) -> bool:
+    """Quien lo cargó anula sus registros; un incidente, según la configuración del servicio."""
+    if entry.category == "incident" and settings["incident_void"] == "manager":
         return manager
     return manager or entry.recorded_by.user_account_id == account.id
 
 
-def _entry_read(entry: CareEntry, account: UserAccount, manager: bool) -> dict[str, object]:
+def _entry_read(entry: CareEntry, account: UserAccount, manager: bool, settings: dict[str, Any]) -> dict[str, object]:
     return {
         "id": str(entry.id),
         "care_recipient_id": str(entry.care_recipient_id),
         "recipient_name": entry.recipient.preferred_name or entry.recipient.display_name,
         "category": entry.category,
+        "category_label": category_label(settings, entry.category),
         "text": entry.text,
         "important": entry.important,
         "occurred_at": _utc(entry.occurred_at).isoformat(),
@@ -166,7 +167,7 @@ def _entry_read(entry: CareEntry, account: UserAccount, manager: bool) -> dict[s
         "voided": entry.voided_at is not None,
         "void_reason": entry.void_reason,
         "voided_by_name": entry.voided_by.user.display_name if entry.voided_by else None,
-        "can_void": entry.voided_at is None and _may_void(entry, account, manager),
+        "can_void": entry.voided_at is None and _may_void(entry, account, manager, settings),
     }
 
 
@@ -185,6 +186,35 @@ def _task_read(task: CareTask, account: UserAccount, manager: bool) -> dict[str,
         "closing_note": task.closing_note,
         "can_cancel": task.status == "open" and (manager or task.created_by.user_account_id == account.id),
     }
+
+
+def _entry_settings(settings: dict[str, Any]) -> dict[str, Any]:
+    """Lo que la pantalla necesita para el formulario de registro."""
+    return {
+        "categories": [c for c in settings["categories"] if c["enabled"]],
+        "max_backdate_days": settings["max_backdate_days"],
+        "incident_always_important": settings["incident_always_important"],
+    }
+
+
+def _incident_recipients(session: Session, care_unit: CareUnit, settings: dict[str, Any], author: UserAccount) -> list[str]:
+    """Correos del personal activo del servicio con los puestos elegidos, sin incluir a quien registra."""
+    roles = [StaffRole(role) for role in settings["incident_notify_roles"]]
+    if not roles:
+        return []
+    members = session.scalars(
+        select(OrganizationMembership).options(selectinload(OrganizationMembership.user)).where(
+            OrganizationMembership.organization_id == care_unit.organization_id,
+            OrganizationMembership.is_active.is_(True),
+            OrganizationMembership.staff_role.in_(roles),
+            OrganizationMembership.care_unit_id.is_(None) | (OrganizationMembership.care_unit_id == care_unit.id),
+        )
+    ).all()
+    emails = {
+        m.user.email for m in members
+        if m.user.email and m.user.is_active and m.user_account_id != author.id
+    }
+    return sorted(emails)
 
 
 _ENTRY_LOAD = (
@@ -227,14 +257,16 @@ def list_entries(
         .order_by(CareEntry.occurred_at.desc())
     ).all()
     manager = _is_manager(session, account, care_unit)
+    settings = settings_for(care_unit)
     record_event(
         session, action="care_log.viewed", actor_account_id=account.id,
         organization_id=care_unit.organization_id, target_type="care_recipient", target_id=recipient.id,
     )
     session.commit()
     return {
-        "entries": [_entry_read(entry, account, manager) for entry in entries],
+        "entries": [_entry_read(entry, account, manager, settings) for entry in entries],
         "open_tasks": [_task_read(task, account, manager) for task in _open_tasks(session, care_unit, recipient.id)],
+        "settings": _entry_settings(settings),
     }
 
 
@@ -243,21 +275,30 @@ def create_entry(
     care_unit_id: UUID,
     recipient_id: UUID,
     payload: EntryCreate,
+    background: BackgroundTasks,
     session: Session = Depends(get_session),
     account: UserAccount = Depends(get_authenticated_account),
 ) -> dict[str, object]:
     care_unit, member = _unit_and_member(session, account, care_unit_id)
     recipient = _active_recipient(session, care_unit, recipient_id)
+    settings = settings_for(care_unit)
+    if not any(c["code"] == payload.category and c["enabled"] for c in settings["categories"]):
+        raise HTTPException(status_code=422, detail="Ese tipo de novedad no está habilitado en este servicio.")
+    max_days = settings["max_backdate_days"]
     now = datetime.now(timezone.utc)
     occurred_at = _utc(payload.occurred_at) if payload.occurred_at else now
     if occurred_at > now + timedelta(minutes=5):
         raise HTTPException(status_code=422, detail="La hora del registro no puede ser futura.")
-    if occurred_at < now - timedelta(days=MAX_BACKDATE_DAYS):
-        raise HTTPException(status_code=422, detail=f"Solo se pueden cargar registros de los últimos {MAX_BACKDATE_DAYS} días.")
+    if occurred_at < now - timedelta(days=max_days, minutes=5):
+        raise HTTPException(
+            status_code=422,
+            detail="Este servicio no permite cargar registros de días anteriores." if max_days == 0
+            else f"Solo se pueden cargar registros de los últimos {max_days} días.",
+        )
     entry = CareEntry(
         care_unit_id=care_unit.id, care_recipient_id=recipient.id, category=payload.category,
-        # Los incidentes siempre se destacan en la entrega de turno.
-        text=payload.text, important=payload.important or payload.category == "incident", occurred_at=occurred_at,
+        text=payload.text, occurred_at=occurred_at,
+        important=payload.important or (payload.category == "incident" and settings["incident_always_important"]),
         recorded_by_membership_id=member.id,
     )
     session.add(entry)
@@ -267,9 +308,16 @@ def create_entry(
         organization_id=care_unit.organization_id, target_type="care_entry", target_id=entry.id,
         details={"category": payload.category, "important": entry.important},
     )
+    recipients = _incident_recipients(session, care_unit, settings, account) if payload.category == "incident" else []
     session.commit()
+    for email in recipients:
+        # Sin nombre de la persona ni texto: el detalle se ve solo dentro de Momento.
+        background.add_task(
+            send_mail, email, "Momento: nuevo incidente registrado",
+            f"Se registró un incidente en {care_unit.name}.\n\nIngresá a Momento, \"Turno y registros\", para verlo.\n\nMomento",
+        )
     entry = session.scalar(select(CareEntry).options(*_ENTRY_LOAD).where(CareEntry.id == entry.id))
-    return _entry_read(entry, account, _is_manager(session, account, care_unit))
+    return _entry_read(entry, account, _is_manager(session, account, care_unit), settings)
 
 
 @router.post("/{care_unit_id}/care-entries/{entry_id}/void")
@@ -287,8 +335,9 @@ def void_entry(
     if entry is None:
         raise HTTPException(status_code=404, detail="Registro no encontrado.")
     manager = _is_manager(session, account, care_unit)
-    if not _may_void(entry, account, manager):
-        detail = ("Un incidente solo lo puede anular el encargado." if entry.category == "incident"
+    settings = settings_for(care_unit)
+    if not _may_void(entry, account, manager, settings):
+        detail = ("En este servicio, un incidente solo lo puede anular el encargado." if entry.category == "incident"
                   else "Solo quien cargó el registro o el encargado pueden anularlo.")
         raise HTTPException(status_code=403, detail=detail)
     if entry.voided_at is not None:
@@ -303,7 +352,7 @@ def void_entry(
     )
     session.commit()
     session.refresh(entry)
-    return _entry_read(entry, account, manager)
+    return _entry_read(entry, account, manager, settings)
 
 
 # --- Pendientes --------------------------------------------------------------
@@ -413,9 +462,10 @@ def handover(
     """Lo ocurrido en el turno anterior y en el actual, y los pendientes abiertos."""
     care_unit, _ = _unit_and_member(session, account, care_unit_id)
     zone = _zone(care_unit)
+    settings = settings_for(care_unit)
     now = datetime.now(timezone.utc)
-    current = shift_at(now, zone)
-    previous = shift_at(current["start"] - timedelta(minutes=1), zone)  # type: ignore[operator]
+    current = shift_at(now, zone, settings["shifts"])
+    previous = shift_at(current["start"] - timedelta(minutes=1), zone, settings["shifts"])  # type: ignore[operator]
     entries = session.scalars(
         select(CareEntry).options(*_ENTRY_LOAD)
         .where(
@@ -438,6 +488,7 @@ def handover(
     return {
         "current_shift": window(current),
         "previous_shift": window(previous),
-        "entries": [_entry_read(entry, account, manager) for entry in entries],
+        "entries": [_entry_read(entry, account, manager, settings) for entry in entries],
         "open_tasks": [_task_read(task, account, manager) for task in _open_tasks(session, care_unit)],
+        "settings": _entry_settings(settings),
     }

@@ -1,4 +1,5 @@
 import { type FormEvent, type ReactNode, useEffect, useRef, useState } from "react";
+import CareSettingsEditor from "./CareSettings";
 import RecipientProfile from "./RecipientProfile";
 
 type CareUnitType = "residence" | "home_care";
@@ -206,6 +207,7 @@ export default function OrganizationsPanel({ view, canManage, canCreatePeople }:
                         <span className="country-label">{unit.country_code === "AR" ? "Argentina" : "Uruguay"}</span>
                       </div>
                       <WorkflowStatusEditor organizationId={organization.id} careUnitId={unit.id} />
+                      {canManage && <CareSettingsEditor organizationId={organization.id} careUnitId={unit.id} />}
                     </div>
                   ))
                 )}

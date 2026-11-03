@@ -16,18 +16,25 @@
 - Cada carga, anulación y consulta queda en el registro de control. El registro de control guarda el tipo de nota, pero no su texto.
 - Momento no interpreta los registros. El formulario recuerda que ante una urgencia se sigue el protocolo de la residencia.
 
-## Decisiones del agente (revisar con el piloto)
+## Configuración por servicio
 
-Los valores están en `backend/src/momento_api/care_log.py`, al comienzo del archivo.
+Cada residencia o servicio domiciliario decide cómo trabaja. Lo configura el **encargado de la organización** en "Organizaciones" → cada servicio → "Registro diario y turnos". Los cambios se aplican desde ese momento y quedan en el registro de control. Si un servicio no cambia nada, usa los valores por defecto.
 
-| Decisión | Valor actual | Parámetro |
+| Opción | Valor por defecto | Alternativas |
 |---|---|---|
-| Turnos | Mañana 6 a 14, Tarde 14 a 22, Noche 22 a 6, iguales para todos los servicios | `SHIFTS` |
-| Zona horaria | Argentina (Buenos Aires) o Uruguay (Montevideo), según el país del servicio | `TIMEZONES` |
-| Carga retroactiva | Hasta 7 días hacia atrás; no se aceptan horas futuras | `MAX_BACKDATE_DAYS` |
-| Tipos de registro | Los 8 de la tabla de arriba | `CARE_ENTRY_CATEGORIES` en `models.py` (requiere migración) |
-| Incidentes | Siempre se marcan como importantes; solo el encargado los anula | `create_entry`, `_may_void` |
-| Resolver pendientes | Cualquiera del servicio; queda quién lo cerró y la nota | `_close_task` |
+| Turnos | 3 de 8 h: Mañana 6, Tarde 14, Noche 22 | 2 de 12 h (Día 8, Noche 20) o de 1 a 6 turnos con nombre y hora a elección |
+| Tipos de novedad | Los 8 habilitados: alimentación, higiene, descanso, ánimo, actividad, salud, incidente, otro | Desactivar los que no se usan y cambiarles el nombre |
+| Registros olvidados | Hasta 7 días hacia atrás | De 0 (solo en el momento) a 31 días |
+| Incidente importante | Siempre se marca como importante | Que lo decida quien registra |
+| Quién anula un incidente | Solo el encargado | También quien lo cargó |
+| Aviso de incidentes por correo | Al encargado | Cualquier combinación de puestos, o nadie |
+
+Otras reglas:
+- El aviso por correo solo dice que hubo un incidente en el servicio. No incluye el nombre de la persona ni lo que pasó, y no le llega a quien lo registró. El correo real requiere configurar el servidor de correo (ver Fase 2).
+- Cualquiera del servicio puede marcar un pendiente como hecho, y queda guardado quién fue y su nota. Cancelarlo es solo de quien lo creó o del encargado.
+- La zona horaria sale del país del servicio (Argentina o Uruguay).
+
+Los valores por defecto están en `backend/src/momento_api/care_settings.py` (`DEFAULTS`).
 
 ## Fuera de esta entrega
 
@@ -37,6 +44,4 @@ Los valores están en `backend/src/momento_api/care_log.py`, al comienzo del arc
 
 ## Preguntas para el piloto
 
-1. ¿Los turnos son de 8 horas (mañana, tarde, noche) o de 12? ¿Cambian según el servicio?
-2. ¿Qué tipos de registro usan hoy en el cuaderno o planilla de novedades?
-3. ¿Quién tiene que enterarse de un incidente y cómo se avisa hoy?
+Ya no bloquean el desarrollo: cada servicio las responde en su configuración. Conviene igual revisarlas con el piloto para elegir buenos valores por defecto.
