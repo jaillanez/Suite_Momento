@@ -699,6 +699,7 @@ function MembershipsPanel({
   const [handlesInbox, setHandlesInbox] = useState(false);
   const [careUnitId, setCareUnitId] = useState("");
   const [password, setPassword] = useState("");
+  const [sendInvitation, setSendInvitation] = useState(true);
   const [authorizing, setAuthorizing] = useState<Membership | null>(null);
   const [settingPassword, setSettingPassword] = useState<Membership | null>(null);
   const [showInactive, setShowInactive] = useState(false);
@@ -726,6 +727,18 @@ function MembershipsPanel({
     void loadMemberships();
   }, [path, showInactive]);
 
+  async function invite(membership: Membership) {
+    setError("");
+    setNotice("");
+    try {
+      const response = await fetch(`${path}/${membership.id}/invite`, { method: "POST" });
+      if (!response.ok) throw new Error(await readApiError(response));
+      setNotice(((await response.json()) as { detail: string }).detail);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "No se pudo enviar la invitación.");
+    }
+  }
+
   async function createMembership(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setSaving(true);
@@ -745,6 +758,7 @@ function MembershipsPanel({
           staff_role: group === "staff" ? staffRole : null,
           handles_inbox: group === "staff" && handlesInbox,
           password: password || null,
+          send_invitation: Boolean(email) && !password && sendInvitation,
         }),
       });
       if (!response.ok) throw new Error(await readApiError(response));
@@ -755,7 +769,7 @@ function MembershipsPanel({
       setHandlesInbox(false);
       setPassword("");
       setOpen(false);
-      setNotice(password ? "La cuenta se creó y ya puede ingresar." : "La cuenta se vinculó a la organización.");
+      setNotice(password ? "La cuenta se creó y ya puede ingresar." : email && sendInvitation ? `La cuenta se creó. Enviamos una invitación a ${email} para que elija su contraseña.` : "La cuenta se vinculó a la organización.");
       await loadMemberships();
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "No se pudo guardar la cuenta.");
@@ -854,6 +868,9 @@ function MembershipsPanel({
                   {canManage && membership.user.email && (
                     <button className="link-action" type="button" onClick={() => setSettingPassword(membership)}>{membership.user.can_sign_in ? "Cambiar contraseña" : "Dar acceso"}</button>
                   )}
+                  {canManage && membership.user.email && membership.is_active && (
+                    <button className="link-action" type="button" onClick={() => void invite(membership)}>Enviar enlace por correo</button>
+                  )}
                   {canManage && (
                     <button
                       className={"link-action" + (membership.is_active ? " danger" : "")}
@@ -922,7 +939,13 @@ function MembershipsPanel({
             <label>Contraseña para ingresar (opcional)
               <input type="text" autoComplete="new-password" value={password} onChange={(event) => setPassword(event.target.value)} minLength={8} maxLength={128} placeholder="Mínimo 8 caracteres" />
             </label>
-            <p className="modal-help">{password ? "Necesita correo. Entregale la contraseña a la persona." : "Sin contraseña, la persona queda registrada pero no puede ingresar."}</p>
+            {email && !password && (
+              <label className="inline-check">
+                <input type="checkbox" checked={sendInvitation} onChange={(event) => setSendInvitation(event.target.checked)} />
+                Enviar invitación por correo para que elija su contraseña
+              </label>
+            )}
+            <p className="modal-help">{password ? "Necesita correo. Entregale la contraseña a la persona." : email && sendInvitation ? "La persona recibe un enlace que vence en 72 horas." : "Sin contraseña, la persona queda registrada pero no puede ingresar."}</p>
             {error && <p className="form-message error-message" role="alert">{error}</p>}
             <div className="modal-actions">
               <button className="secondary-action" type="button" onClick={() => setOpen(false)}>Cancelar</button>

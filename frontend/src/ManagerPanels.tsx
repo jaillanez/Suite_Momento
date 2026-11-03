@@ -19,6 +19,10 @@ const actionLabels: Record<string, string> = {
   "membership.created": "Alta de usuario",
   "membership.updated": "Cambio de usuario",
   "account.password_set": "Cambio de contraseña",
+  "account.invitation_sent": "Invitación enviada por correo",
+  "account.password_set_by_invite": "Contraseña creada desde la invitación",
+  "account.password_set_by_reset": "Contraseña recuperada por correo",
+  "auth.password_reset_requested": "Pedido de recuperación de contraseña",
   "organization.renamed": "Cambio de nombre de la organización",
   "family_authorization.granted": "Autorización familiar otorgada",
   "family_authorization.revoked": "Autorización familiar quitada",
@@ -41,6 +45,7 @@ const detailLabels: Record<string, string> = {
   to: "a",
   can_sign_in: "con contraseña",
   user_group: "grupo",
+  invitation_sent: "invitación enviada",
 };
 
 function describeDetails(details: AuditEvent["details"]): string {

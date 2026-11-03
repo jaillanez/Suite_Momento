@@ -69,6 +69,7 @@ class MembershipCreate(BaseModel):
     staff_role: StaffRole | None = None
     handles_inbox: bool = False
     password: str | None = Field(default=None, min_length=8, max_length=128)
+    send_invitation: bool = False
 
     @field_validator("display_name")
     @classmethod

@@ -3,7 +3,7 @@
 from datetime import datetime, timezone
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, Response, status
 from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session, joinedload
 
@@ -31,6 +31,7 @@ from momento_api.schemas import (
     MembershipUpdate,
     OrganizationMembershipRead,
 )
+from momento_api.password_links import issue_link, queue_link_email
 from momento_api.session import get_session
 
 router = APIRouter(prefix="/api/organizations", tags=["Usuarios y membresías"])
@@ -45,6 +46,7 @@ def create_membership(
     organization_id: UUID,
     payload: MembershipCreate,
     response: Response,
+    background: BackgroundTasks,
     session: Session = Depends(get_session),
     current_user: UserAccount = Depends(get_organization_admin_account),
 ) -> OrganizationMembership:
@@ -104,10 +106,16 @@ def create_membership(
             "staff_role": payload.staff_role.value if payload.staff_role else None,
             "handles_inbox": payload.handles_inbox,
             "can_sign_in": bool(payload.password),
+            "invitation_sent": bool(payload.send_invitation and account.email and not payload.password),
         },
     )
+    token = None
+    if payload.send_invitation and account.email and not payload.password:
+        token = issue_link(session, account, "invite")
     session.commit()
     session.refresh(membership)
+    if token:
+        queue_link_email(background, account, token, "invite", organization.name)
     response.headers["Location"] = (
         f"/api/organizations/{organization_id}/memberships/{membership.id}"
     )
@@ -251,29 +259,7 @@ def set_password(
     Solo se permite si la cuenta pertenece únicamente a esta organización, para
     que un encargado no cambie el acceso de una persona a otro prestador.
     """
-    membership = session.scalar(
-        select(OrganizationMembership).where(
-            OrganizationMembership.id == membership_id,
-            OrganizationMembership.organization_id == organization_id,
-        )
-    )
-    if membership is None:
-        raise HTTPException(status_code=404, detail="Usuario no encontrado.")
-    account = session.get(UserAccount, membership.user_account_id)
-    if account is None or not account.email:
-        raise HTTPException(status_code=422, detail="La cuenta necesita un correo para ingresar.")
-    other_organization = session.scalar(
-        select(OrganizationMembership.id).where(
-            OrganizationMembership.user_account_id == account.id,
-            OrganizationMembership.organization_id != organization_id,
-        ).limit(1)
-    )
-    if other_organization is not None:
-        raise HTTPException(
-            status_code=422,
-            detail="Esta cuenta también pertenece a otra organización; no se puede cambiar desde acá.",
-        )
-
+    membership, account = _own_account(session, organization_id, membership_id)
     credential = session.get(UserCredential, account.id)
     if credential is None:
         session.add(UserCredential(user_account_id=account.id, password_hash=hash_password(payload.password)))
@@ -297,3 +283,64 @@ def set_password(
     )
     session.commit()
     return Response(status_code=204)
+
+
+def _own_account(session: Session, organization_id: UUID, membership_id: UUID) -> tuple[OrganizationMembership, UserAccount]:
+    """Vínculo y cuenta, solo si la cuenta pertenece únicamente a esta organización.
+
+    Así un encargado no cambia el acceso de una persona a otro prestador.
+    """
+    membership = session.scalar(
+        select(OrganizationMembership).where(
+            OrganizationMembership.id == membership_id,
+            OrganizationMembership.organization_id == organization_id,
+        )
+    )
+    if membership is None:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado.")
+    account = session.get(UserAccount, membership.user_account_id)
+    if account is None or not account.email:
+        raise HTTPException(status_code=422, detail="La cuenta necesita un correo para ingresar.")
+    other_organization = session.scalar(
+        select(OrganizationMembership.id).where(
+            OrganizationMembership.user_account_id == account.id,
+            OrganizationMembership.organization_id != organization_id,
+        ).limit(1)
+    )
+    if other_organization is not None:
+        raise HTTPException(
+            status_code=422,
+            detail="Esta cuenta también pertenece a otra organización; no se puede cambiar desde acá.",
+        )
+
+    return membership, account
+
+
+@router.post(
+    "/{organization_id}/memberships/{membership_id}/invite",
+    status_code=202,
+)
+def send_invitation(
+    organization_id: UUID,
+    membership_id: UUID,
+    background: BackgroundTasks,
+    session: Session = Depends(get_session),
+    current_user: UserAccount = Depends(get_organization_admin_account),
+) -> dict[str, str]:
+    """Envía por correo un enlace para que la persona cree (o cambie) su contraseña."""
+    membership, account = _own_account(session, organization_id, membership_id)
+    if not membership.is_active or not account.is_active:
+        raise HTTPException(status_code=422, detail="Reactivá el usuario antes de invitarlo.")
+    organization = session.get(Organization, organization_id)
+    token = issue_link(session, account, "invite")
+    record_event(
+        session,
+        action="account.invitation_sent",
+        actor_account_id=current_user.id,
+        organization_id=organization_id,
+        target_type="membership",
+        target_id=membership.id,
+    )
+    session.commit()
+    queue_link_email(background, account, token, "invite", organization.name if organization else None)
+    return {"detail": f"Enviamos la invitación a {account.email}."}

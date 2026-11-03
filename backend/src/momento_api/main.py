@@ -13,6 +13,7 @@ from momento_api.family_authorizations import router as family_authorizations_ro
 from momento_api.family_requests import family_router, staff_router as requests_router
 from momento_api.memberships import router as memberships_router
 from momento_api.organizations import router as organizations_router
+from momento_api.password_links import router as password_links_router
 from momento_api.workflow_config import router as workflow_config_router
 
 app = FastAPI(
@@ -21,6 +22,7 @@ app = FastAPI(
     version="0.1.0",
 )
 app.include_router(auth_router)
+app.include_router(password_links_router)
 authenticated = [Depends(get_management_account)]
 app.include_router(organizations_router, dependencies=authenticated)
 app.include_router(memberships_router, dependencies=authenticated)

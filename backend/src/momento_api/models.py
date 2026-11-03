@@ -747,3 +747,31 @@ class AuthSession(Base):
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )
     revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class PasswordToken(Base):
+    """Enlace de un solo uso, enviado por correo, para crear o recuperar la contraseña.
+
+    Solo se guarda la huella del token; el token viaja únicamente en el correo.
+    """
+
+    __tablename__ = "password_tokens"
+    __table_args__ = (
+        UniqueConstraint("token_hash", name="uq_password_tokens_token_hash"),
+        CheckConstraint("purpose IN ('reset', 'invite')", name="ck_password_tokens_purpose"),
+    )
+
+    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
+    user_account_id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("user_accounts.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    token_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    purpose: Mapped[str] = mapped_column(String(10), nullable=False)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+    used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)

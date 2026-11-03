@@ -1,6 +1,6 @@
 # Fase 2 — Organizaciones, usuarios y acceso
 
-**Estado:** implementación completa al 02/11/2026; queda la validación con el equipo piloto. Están implementados los puestos del personal, las autorizaciones familiares, el acceso familiar separado, la bandeja persistente, la auditoría con su pantalla, la baja y reactivación de cuentas y el cambio de contraseña por el encargado, con pruebas automáticas. Quedan fuera de esta fase la invitación y recuperación de cuentas y la revisión con el equipo piloto.  
+**Estado:** implementación completa al 02/11/2026; queda la validación con el equipo piloto. Están implementados los puestos del personal, las autorizaciones familiares, el acceso familiar separado, la bandeja persistente, la auditoría con su pantalla, la baja y reactivación de cuentas y el cambio de contraseña por el encargado, con pruebas automáticas. El 03/11/2026 se agregaron la invitación y la recuperación de contraseña por correo. Queda la revisión con el equipo piloto.  
 **Propósito:** acordar cómo se organiza Momento y qué información puede consultar o modificar cada persona.
 
 ## Contexto confirmado
@@ -80,7 +80,7 @@ Reglas aplicadas en la API:
 Valores por defecto que tomó el agente, ajustables sin rediseño:
 
 - **Auditoría:** se registran inicios y cierres de sesión (también los rechazados), altas y cambios de usuarios, autorizaciones y revocaciones, accesos denegados, y creación, asignación, cambio de estado y respuesta de solicitudes. Se guardan identificadores y códigos, nunca contraseñas ni el texto de los mensajes. Por ahora no se borran; la retención queda por definir.
-- **Alta de cuentas:** el encargado da de alta a la persona y puede asignarle una contraseña inicial desde la misma pantalla. Mínimo 8 caracteres (pedido por Jorge el 02/11/2026). Invitaciones por correo o WhatsApp quedan para más adelante.
+- **Alta de cuentas:** el encargado da de alta a la persona y puede asignarle una contraseña inicial desde la misma pantalla. Mínimo 8 caracteres (pedido por Jorge el 02/11/2026). También puede enviarle una invitación por correo para que la persona elija su contraseña (ver "Correo" abajo).
 - **Datos existentes:** la migración 0006 solo reconoce, por coincidencia exacta, las descripciones que generaba el propio sistema ("Encargado de residencia", "Encargado/a", "Médico/a"). Cualquier otra queda como cuidador, el puesto con menos acceso, y el encargado debe asignar el puesto correcto a mano. No se derivan permisos de texto libre.
 - **Contraseñas:** mínimo 8 caracteres, por pedido de Jorge para usar claves simples en pruebas. Antes del piloto conviene volver a 12 o más. El límite de intentos de ingreso vive en memoria y se reinicia al reiniciar la API; debe persistirse antes de exponer el sistema.
 - **Encargado de una sede:** ve y gestiona solo los usuarios de su sede; el encargado de toda la organización ve todo.
@@ -110,7 +110,12 @@ Valores por defecto que tomó el agente, ajustables sin rediseño:
 - Todo el personal ingresa al panel web y ve un menú según su puesto: el administrativo y el médico ven familias para autorizarlas; el cuidador no.
 - La familia ve qué temas tiene autorizados, pero todavía no hay información de medicación, actividades o dietas para mostrar: esos registros llegan en Fases 3 y 4.
 - No hay comunicaciones iniciadas por la residencia que la familia pueda responder; por ahora solo existen las consultas de la familia.
-- No hay envío de invitaciones ni "olvidé mi contraseña" por correo o WhatsApp: requieren un servicio externo que todavía no se eligió. Mientras tanto, el encargado asigna la contraseña desde "Usuarios y vínculos".
+- **Correo (decidido por Jorge el 03/11/2026: por ahora solo correo).**
+  - *Invitación:* al crear un usuario con correo y sin contraseña, el encargado puede marcar "Enviar invitación por correo". También hay un botón "Enviar enlace por correo" en cada usuario. El enlace vence en 72 horas.
+  - *Recuperación:* "¿Olvidaste tu contraseña?" en la pantalla de ingreso. Solo funciona para cuentas que ya tienen contraseña; la respuesta es la misma exista o no la cuenta. El enlace vence en 1 hora. Máximo 5 pedidos cada 15 minutos por equipo.
+  - Los enlaces sirven una sola vez; pedir uno nuevo anula el anterior; al usarlo se cierran las sesiones abiertas. Solo se guarda la huella del enlace, nunca el enlace.
+  - Los correos no incluyen datos de salud: solo el nombre, la organización y el enlace.
+  - Remitente: `MOMENTO_MAIL_FROM` (por defecto illanezjorgea@gmail.com). Sin `MOMENTO_SMTP_HOST` el correo **no se envía**: se muestra en la consola de la API. Configuración en `backend/.env.example`. Vigencias en `LINK_HOURS` de `password_links.py`.
 - Agenda y equipo del turno del dashboard siguen con contenido de muestra (corresponden a la Fase 4).
 - No se debe exponer ni desplegar el entorno local hasta revisar los permisos con el equipo piloto.
 
@@ -122,7 +127,7 @@ Valores por defecto que tomó el agente, ajustables sin rediseño:
 4. ~~Bandeja persistente con designación y asignación~~ — hecho.
 5. ~~Registro de acciones sensibles y aislamiento~~ — hecho, con pantalla "Registro de control" para el encargado.
 6. ~~Ingreso web con menú por puesto~~ — hecho.
-7. ~~Baja, reactivación y cambio de contraseña por el encargado~~ — hecho. Pendiente de decisión: canal de invitación y recuperación por correo o WhatsApp, y plazo de conservación de la auditoría.
+7. ~~Baja, reactivación y cambio de contraseña por el encargado~~ — hecho. Invitación y recuperación por correo — hecho (03/11/2026). Pendiente de decisión: plazo de conservación de la auditoría.
 8. Revisar puestos, permisos y estados visibles con el equipo piloto.
 
 ## Grupos y roles candidatos

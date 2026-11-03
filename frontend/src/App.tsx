@@ -1,5 +1,6 @@
 import { type FormEvent, useEffect, useState } from "react";
 import FamilyPortal from "./FamilyPortal";
+import { ForgotPasswordForm, ResetPasswordScreen } from "./PasswordScreens";
 import { AuditPanel, SettingsPanel } from "./ManagerPanels";
 import InboxPanel, { categoryClass, formatDate, type InboxRequest, loadInboxes } from "./InboxPanel";
 import OrganizationsPanel, { categoryLabels, type OrganizationView, type StaffRole, staffRoleLabels } from "./OrganizationsPanel";
@@ -33,12 +34,25 @@ const pageTitles: Record<Exclude<Page, "landing" | "login" | "family">, string> 
   settings: "Configuración",
 };
 
+function readResetToken(): string {
+  const match = window.location.hash.match(/^#restablecer=([\w-]+)$/);
+  if (match) window.history.replaceState(null, "", window.location.pathname + window.location.search);
+  return match?.[1] ?? "";
+}
+
 export default function App() {
   const [page, setPage] = useState<Page>("landing");
   const [apiState, setApiState] = useState<ApiState>("checking");
   const [userName, setUserName] = useState("");
   const [access, setAccess] = useState<Access>({ role: null, inbox: false });
   const [logoutError, setLogoutError] = useState("");
+  // Enlace del correo (#restablecer=…); se quita de la barra de direcciones al leerlo.
+  const [resetToken, setResetToken] = useState(readResetToken);
+  useEffect(() => {
+    const onHashChange = () => { const token = readResetToken(); if (token) setResetToken(token); };
+    window.addEventListener("hashchange", onHashChange);
+    return () => window.removeEventListener("hashchange", onHashChange);
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -77,6 +91,7 @@ export default function App() {
     }
   }
 
+  if (resetToken) return <ResetPasswordScreen token={resetToken} onDone={() => { setResetToken(""); setPage("login"); }} />;
   if (page === "landing") return <PublicLanding onLogin={() => setPage("login")} />;
   if (page === "login") {
     return <LoginScreen onBack={() => setPage("landing")} onAuthenticated={(name, portal, memberships) => { setUserName(name); setAccess(accessFrom(memberships)); setPage(portal === "family" ? "family" : "dashboard"); }} />;
@@ -165,6 +180,7 @@ function LoginScreen({
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [forgot, setForgot] = useState(false);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -194,7 +210,8 @@ function LoginScreen({
       <section className="login-card">
         <div className="login-brand"><img src="/brand/iso-momento.png" alt="" /><span>Momento</span></div>
         <p className="eyebrow">Acceso al sistema</p>
-        <h1>Iniciar sesión</h1>
+        <h1>{forgot ? "Recuperar contraseña" : "Iniciar sesión"}</h1>
+        {forgot ? <ForgotPasswordForm onBack={() => setForgot(false)} /> : <>
         <div className="login-switch" role="tablist" aria-label="Tipo de acceso">
           <button type="button" role="tab" aria-selected={portal === "staff"} className={portal === "staff" ? "active" : ""} onClick={() => { setPortal("staff"); setError(""); }}>Equipo de la residencia</button>
           <button type="button" role="tab" aria-selected={portal === "family"} className={portal === "family" ? "active" : ""} onClick={() => { setPortal("family"); setError(""); }}>Familias</button>
@@ -206,7 +223,9 @@ function LoginScreen({
           {error && <p className="form-message error-message" role="alert">{error}</p>}
           <button type="submit" disabled={submitting}>{submitting ? "Validando acceso…" : "Ingresar a Momento"}</button>
         </form>
+        <button className="back-link" type="button" onClick={() => { setForgot(true); setError(""); }}>¿Olvidaste tu contraseña?</button>
         <button className="back-link" type="button" onClick={onBack}>Volver a la página pública</button>
+        </>}
       </section>
     </main>
   );
