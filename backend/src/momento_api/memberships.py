@@ -227,7 +227,15 @@ def update_membership(
     if payload.is_active is not None and payload.is_active != membership.is_active:
         membership.is_active = payload.is_active
         changes["is_active"] = payload.is_active
-        if not payload.is_active:
+        # Solo si la cuenta no tiene acceso activo en otra organización: un encargado
+        # no debe anular enlaces que la persona necesita para otro prestador.
+        if not payload.is_active and session.scalar(
+            select(OrganizationMembership.id).where(
+                OrganizationMembership.user_account_id == membership.user_account_id,
+                OrganizationMembership.organization_id != organization_id,
+                OrganizationMembership.is_active.is_(True),
+            ).limit(1)
+        ) is None:
             cancel_pending_links(session, membership.user_account_id)
 
     if changes:
