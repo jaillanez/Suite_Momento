@@ -60,6 +60,18 @@ def mail_settings() -> MailSettings:
     )
 
 
+def _tls_context() -> ssl.SSLContext:
+    """Contexto que verifica certificado y nombre del servidor.
+
+    El Python de python.org en macOS no trae certificados raíz propios; en ese caso se
+    usan los del sistema (/etc/ssl/cert.pem) en lugar de desactivar la verificación.
+    """
+    context = ssl.create_default_context()
+    if not context.cert_store_stats().get("x509_ca") and os.path.exists("/etc/ssl/cert.pem"):
+        context.load_verify_locations(cafile="/etc/ssl/cert.pem")
+    return context
+
+
 def send_mail(to: str, subject: str, body: str) -> None:
     """Envía o, en modo local, muestra el correo. Los errores se informan sin cortar la API."""
     settings = mail_settings()
@@ -85,7 +97,9 @@ def send_mail(to: str, subject: str, body: str) -> None:
     try:
         with smtplib.SMTP(settings.host, settings.port, timeout=20) as client:
             if settings.starttls:
-                client.starttls(context=ssl.create_default_context())  # verifica certificado y nombre
+                client.ehlo()
+                client.starttls(context=_tls_context())  # verifica certificado y nombre
+                client.ehlo()
             elif settings.user:
                 print("[Momento · correo no enviado: no se envían credenciales sin STARTTLS]", file=sys.stderr, flush=True)
                 return
