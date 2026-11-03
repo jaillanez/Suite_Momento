@@ -42,10 +42,33 @@ def test_only_expired_events_are_deleted_and_only_with_apply(monkeypatch: pytest
         session.commit()
         assert len(session.scalars(select(AuditEvent)).all()) == 2
 
-        assert purge_expired(session, apply=True, now=NOW) == 1
+        assert purge_expired(session, apply=True, now=NOW, operator="jorge") == 1
         session.commit()
         actions = sorted(e.action for e in session.scalars(select(AuditEvent)).all())
         assert actions == ["audit.purged", "reciente"]
+        purged = session.scalar(select(AuditEvent).where(AuditEvent.action == "audit.purged"))
+        assert purged.details["run_by"] == "jorge"
+
+
+def test_purge_is_recorded_in_each_affected_organization(monkeypatch: pytest.MonkeyPatch) -> None:
+    from momento_api.models import Organization
+    monkeypatch.delenv("MOMENTO_AUDIT_RETENTION_YEARS", raising=False)
+    engine = create_engine("sqlite:///:memory:")
+    Base.metadata.create_all(engine)
+    with Session(engine) as session:
+        orgs = [Organization(name="A"), Organization(name="B")]
+        session.add_all(orgs)
+        session.flush()
+        old = NOW.replace(year=2010)
+        for org, count in ((orgs[0], 2), (orgs[1], 1)):
+            for _ in range(count):
+                session.add(AuditEvent(action="viejo", outcome="success", occurred_at=old, organization_id=org.id))
+        session.commit()
+        assert purge_expired(session, apply=True, now=NOW, operator="jorge") == 3
+        session.commit()
+        records = {e.organization_id: e.details["deleted"] for e in session.scalars(select(AuditEvent)).all()}
+        assert records == {orgs[0].id: 2, orgs[1].id: 1}
+    engine.dispose()
     engine.dispose()
 
 

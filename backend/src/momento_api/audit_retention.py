@@ -13,6 +13,7 @@ vencieron.
 from __future__ import annotations
 
 import argparse
+import getpass
 import os
 from datetime import datetime, timezone
 
@@ -43,17 +44,25 @@ def cutoff(now: datetime, years: int) -> datetime:
         return now.replace(year=now.year - years, day=28)
 
 
-def purge_expired(session: Session, *, apply: bool, now: datetime | None = None) -> int:
+def purge_expired(session: Session, *, apply: bool, now: datetime | None = None, operator: str | None = None) -> int:
     """Cuenta (y si apply, borra) los eventos anteriores al plazo. Quien llama confirma."""
     years = retention_years()
     limit = cutoff(now or datetime.now(timezone.utc), years)
-    expired = session.scalar(select(func.count(AuditEvent.id)).where(AuditEvent.occurred_at < limit)) or 0
+    per_organization = dict(session.execute(
+        select(AuditEvent.organization_id, func.count(AuditEvent.id))
+        .where(AuditEvent.occurred_at < limit)
+        .group_by(AuditEvent.organization_id)
+    ).all())
+    expired = sum(per_organization.values())
     if apply and expired:
         session.execute(delete(AuditEvent).where(AuditEvent.occurred_at < limit))
-        record_event(
-            session, action="audit.purged", actor_account_id=None,
-            details={"deleted": expired, "retention_years": years, "before": limit.date().isoformat()},
-        )
+        # Una constancia por organización, para que cada encargado la vea en su registro.
+        for organization_id, deleted in per_organization.items():
+            record_event(
+                session, action="audit.purged", actor_account_id=None, organization_id=organization_id,
+                details={"deleted": deleted, "retention_years": years, "before": limit.date().isoformat(),
+                         "run_by": operator or "desconocido"},
+            )
     return expired
 
 
@@ -69,7 +78,7 @@ def main() -> None:
     try:
         with Session(engine) as session, session.begin():
             years = retention_years()
-            count = purge_expired(session, apply=args.apply)
+            count = purge_expired(session, apply=args.apply, operator=getpass.getuser())
         if args.apply:
             print(f"Plazo: {years} años. Se borraron {count} eventos vencidos.")
         else:
